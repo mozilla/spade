@@ -1,0 +1,3 @@
+# Pure-python dependencies; pre-installed in vendor/
+
+Django==1.4
