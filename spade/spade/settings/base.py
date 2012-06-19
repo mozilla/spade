@@ -1,3 +1,7 @@
+"""
+Default Django Settings for Spade
+
+"""
 from os.path import dirname, join, abspath
 from os import environ
 
@@ -52,18 +56,18 @@ USE_TZ = True
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
-MEDIA_ROOT = ''
+MEDIA_ROOT = join(BASE_PATH, 'media')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
-MEDIA_URL = ''
+MEDIA_URL = '/media/'
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
-STATIC_ROOT = ''
+STATIC_ROOT = join(BASE_PATH, 'assets')
 
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"
@@ -71,6 +75,7 @@ STATIC_URL = '/static/'
 
 # Additional locations of static files
 STATICFILES_DIRS = (
+    join(BASE_PATH, "static"),
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
@@ -109,12 +114,11 @@ ROOT_URLCONF = 'spade.view.urls'
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'spade.wsgi.application'
 
-TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
+TEMPLATE_DIRS = [
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    'spade/view/templates'
-)
+    join(BASE_PATH, 'spade/view/templates'),
+]
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -123,6 +127,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'spade.model',
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
