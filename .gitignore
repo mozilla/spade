@@ -30,3 +30,6 @@ docs/_build/*
 
 #Local.py
 spade/spade/settings/local.py
+
+#vendor
+vendor/*
