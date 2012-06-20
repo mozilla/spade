@@ -1,5 +1,4 @@
 # These requirements are not included in the bundled ``vendor/`` lib, and
 # must be installed on target machines via system package managers.
 
-# only needed for getting test code coverage
-# coverage==3.5.1
+MySQL-python

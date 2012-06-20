@@ -29,7 +29,4 @@ pip-log.txt
 docs/_build/*
 
 #Local.py
-spade/spade/settings/local.py
-
-#vendor
-vendor/*
+spade/settings/local.py
