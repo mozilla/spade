@@ -1,3 +1,7 @@
 # Pure-python dependencies; pre-installed in vendor/
 
 Django==1.4
+py==1.4.9
+pytest==2.2.4
+pytest-django==1.3.2
+Scrapy==0.14.4
