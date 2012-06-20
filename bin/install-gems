@@ -1,0 +1,21 @@
+#!/bin/bash
+
+
+# Install Ruby gems required to compile MozTrap Sass to CSS.
+
+vfile=$1
+
+if [ -n ${vfile} ]; then
+vfile="requirements/gems.txt"
+fi
+
+for line in `cat ${vfile}`; do
+gem=${line%%=*}
+    version=${line##*=}
+    if gem list | grep ${gem} | grep "(${version})"; then
+echo "${gem} (${version}) is already installed"
+    else
+gem install ${gem} -v ${version} --no-rdoc --no-ri
+    fi
+done
+gem cleanup
