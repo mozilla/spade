@@ -5,7 +5,7 @@
 
 from scrapy.item import Item, Field
 
-class SiteItem(Item):
+class GeneralItem(Item):
     url = Field()
     status_code = Field()
     body = Field()

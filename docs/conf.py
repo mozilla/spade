@@ -40,7 +40,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Spade'
-copyright = u'Mozilla MPL 1.1/GPL 2.0/LGPL 2.1'
+copyright = u'Mozilla'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
