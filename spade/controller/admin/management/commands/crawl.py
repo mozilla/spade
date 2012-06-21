@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-def run_from_argv(self, argv):
+    def run_from_argv(self, argv):
         self._argv = argv
         self.execute()
 
