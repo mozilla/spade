@@ -149,7 +149,7 @@ html_static_path = ['_static']
 #html_show_sourcelink = True
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
-#html_show_sphinx = True
+html_show_sphinx = False
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
 #html_show_copyright = True
@@ -227,7 +227,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'Spade', u'Spade Documentation',
-   u'Sam Liu', 'Spade', 'One line description of project.',
+   u'Sam Liu', 'Spade', 'Measure markup properties given various UA strings',
    'Miscellaneous'),
 ]
 
