@@ -5,7 +5,9 @@ Default Django Settings for Spade
 from os.path import dirname, join, abspath
 from os import environ
 
+
 BASE_PATH = dirname(dirname(dirname(abspath(__file__))))
+environ['SCRAPY_SETTINGS_MODULE'] = 'scraper.settings'
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
