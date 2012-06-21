@@ -92,7 +92,7 @@ STATICFILES_FINDERS = (
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '_z^vjh)a-4n1f)7i^watq3dox@0xs4b(mtf0(&amp;$5vnx!)^py_8$'
 
-# List of callables that know how to import templates frocool :D I guess I can m various sources.
+# List of callables that know how to import templates from
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
@@ -127,8 +127,10 @@ INSTALLED_APPS = (
     #'django.contrib.sites',
     #'django.contrib.messages',
     'django.contrib.staticfiles',
-    'spade.model',
     'spade.controller.admin',
+    'spade.model',
+    'spade.model.batch',
+    'spade.model.scan',
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
