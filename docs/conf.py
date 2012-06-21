@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Spade documentation build configuration file, created by
 # sphinx-quickstart on Mon Jun 18 15:39:03 2012.
@@ -41,7 +40,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Spade'
-copyright = u'2012, Sam Liu'
+copyright = u'Mozilla MPL 1.1/GPL 2.0/LGPL 2.1'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
