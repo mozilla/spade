@@ -1,7 +1,7 @@
 # General spider for retrieving site information
 
 from scrapy.spider import BaseSpider
-import zlib
+from scrapy import log
 import json
 import urlparse
 
@@ -41,12 +41,15 @@ class GeneralSpider(BaseSpider):
 
         # TODO: Ideally for a site we use every UA in a table
         self.set_user_agent('IPHONE')
+        log.msg("Using user agent "+str(self.user_agent), level=log.DEBUG)
+
 
     def set_user_agent(self, UA):
-        self.user_agent = USER_AGENTS[UA]
+        self.user_agent = "".join(USER_AGENTS[UA])
 
     def get_start_urls(self):
         # Gets URLs to start crawl from
+        # TODO: get urls from database
         start_urls = [
             # This page gives the user agent that visited it
             "http://ambushnetworks.com/test.php",
