@@ -7,7 +7,7 @@ from os import environ
 
 
 BASE_PATH = dirname(dirname(dirname(abspath(__file__))))
-environ['SCRAPY_SETTINGS_MODULE'] = 'spade.scraper.scraper.settings'
+environ['SCRAPY_SETTINGS_MODULE'] = 'scraper.settings'
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -131,8 +131,6 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'spade.controller.admin',
     'spade.model',
-    'spade.model.batch',
-    'spade.model.scan',
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:

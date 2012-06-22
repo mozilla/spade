@@ -1,9 +1,14 @@
 # General spider for retrieving site information
 
+from datetime import datetime
+from django.utils.timezone import utc
 from scrapy.spider import BaseSpider
 from scrapy import log
 import json
 import urlparse
+
+#from scraper.items import BatchItem
+import spade.model.models as models
 
 
 # TODO: Make these user agents come from database
@@ -43,8 +48,15 @@ class GeneralSpider(BaseSpider):
         self.set_user_agent('IPHONE')
         log.msg("Using user agent "+str(self.user_agent), level=log.DEBUG)
 
+        self.batch = models.Batch()
+        self.batch.kickoff_time = self.get_now_time()
+
+    def get_now_time(self):
+        # Convenience function for timezone-aware timestamps
+        return datetime.utcnow().replace(tzinfo=utc)
 
     def set_user_agent(self, UA):
+        # Set the user agent
         self.user_agent = "".join(USER_AGENTS[UA])
 
     def get_start_urls(self):
@@ -90,12 +102,13 @@ class GeneralSpider(BaseSpider):
 
 
     def parse(self, response):
-        # TODO: Put item model here, call save on the item model
+        # Called when a URL is being parsed
+        self.batch.finish_time = self.get_now_time()
+        self.batch.save()
 
-        # STUB
         print response.body
         #print response.url
-        #print response.headers
+        #print response.headers                                                                                                                                              from spade.model.models import Batch, SiteScan, URLScan, URLContent, LinkedCSS, UserAgent
         #print self.get_content_type(response.headers)
         #print response.meta.get('referrer')
         #print USER_AGENT

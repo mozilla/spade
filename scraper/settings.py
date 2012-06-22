@@ -19,10 +19,6 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'spade.settings'
 SPIDER_MODULES = ['scraper.spiders']
 NEWSPIDER_MODULE = 'scraper.spiders'
 
-## For using the manage.py command
-#SPIDER_MODULES = ['spade.scraper.scraper.spiders']
-#NEWSPIDER_MODULE = 'spade.scraper.scraper.spiders'
-
 ITEM_PIPELINES = ['scraper.pipelines.ScraperPipeline']
 
 # Necessary for using different user agents
