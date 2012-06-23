@@ -39,6 +39,12 @@ class GeneralSpider(BaseSpider):
     # This class variable necessary for scrapy to detect this spider
     name="general"
 
+    rules = (
+        # Extract links matching 'item.css' and parse them with the spider's method parse_item
+        Rule(SgmlLinkExtractor(allow=('\.css', )), callback='parse_style'),
+    )
+
+
     def __init__(self):
         # Initialize variables as instance vars to access instance methods
         self.allowed_domains = self.get_allowed_domains()
@@ -50,6 +56,7 @@ class GeneralSpider(BaseSpider):
 
         self.batch = models.Batch()
         self.batch.kickoff_time = self.get_now_time()
+        self.user_agents = USER_AGENTS
 
     def get_now_time(self):
         # Convenience function for timezone-aware timestamps
@@ -103,12 +110,35 @@ class GeneralSpider(BaseSpider):
 
     def parse(self, response):
         # Called when a URL is being parsed
-        self.batch.finish_time = self.get_now_time()
-        self.batch.save()
+
+        # Create sitescan object for this particular site
+        sitescan = models.SiteScan()
+        sitescan.batch = self.batch
+        sitescan.timestamp = self.get_now_time()
+        sitescan.site_url = response.url
+        sitescan.save()
+
+        # Scan URLs and save their content starting with this one
+        root_urlscan = models.URLScan()
+        root_urlscan.site_scan = sitescan
+        root_urlscan.page_url =
+        root_urlscan.save()
+
+        #
+
+        # For each URL, parse and create a URLScan belonging to sitescan
 
         print response.body
-        #print response.url
-        #print response.headers                                                                                                                                              from spade.model.models import Batch, SiteScan, URLScan, URLContent, LinkedCSS, UserAgent
+        #print response.headers
         #print self.get_content_type(response.headers)
         #print response.meta.get('referrer')
         #print USER_AGENT
+
+
+        #TODO for each CSS page,
+        #abs_url = urljoin(self.start_urls[0], url) + '.css'
+            #yield Request(abs_url, callback=self.parse_image)
+
+        # Update batch finish time
+        self.batch.finish_time = self.get_now_time()
+        self.batch.save()
