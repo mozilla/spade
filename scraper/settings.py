@@ -26,3 +26,15 @@ DOWNLOADER_MIDDLEWARES = {
     'scraper.middlewares.PreRequestMiddleware': 400,
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
 }
+
+DEPTH_LIMIT = 1
+DOWNLOAD_DELAY = 0
+DOWNLOAD_TIMEOUT=20
+ENCODING_ALIASES = {'gb2312':'zh-cn', 'cp1251':'win-1251'}
+CONCURRENT_REQUESTS = 64
+CONCURRENT_REQUESTS_PER_DOMAIN = 16
+LOG_LEVEL='INFO'
+DEPTH_PRIORITY = 1
+
+#obey robots.txt
+ROBOTSTXT_OBEY=True
