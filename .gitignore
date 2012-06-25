@@ -30,3 +30,6 @@ docs/_build/*
 
 #Local.py
 spade/settings/local.py
+
+#Scrapy stuff
+.scrapy

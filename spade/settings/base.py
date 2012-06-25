@@ -7,7 +7,7 @@ from os import environ
 
 
 BASE_PATH = dirname(dirname(dirname(abspath(__file__))))
-environ['SCRAPY_SETTINGS_MODULE'] = 'scraper.settings'
+environ['SCRAPY_SETTINGS_MODULE'] = 'spade.scraper.settings'
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
