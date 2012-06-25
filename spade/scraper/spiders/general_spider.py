@@ -105,6 +105,9 @@ class GeneralSpider(BaseSpider):
         urlscan.page_url = response.url
         urlscan.save()
 
+        # Define name of flatfiles used to save markup
+        filename = str(response.url)
+
         # Scan 1 level (spider knows how in configs as long as we set referrer
         if 'text/html' in self.get_content_type(response.headers):
             # First save the request contents into a URLContent
@@ -114,12 +117,12 @@ class GeneralSpider(BaseSpider):
 
             # Store raw headers
             file_content = ContentFile(str(response.body))
-            urlcontent.raw_markup.save("headers",file_content)
+            urlcontent.raw_markup.save(filename+"_html",file_content)
             urlcontent.raw_markup.close()
 
             # Store raw html
             file_content = ContentFile(str(response.headers))
-            urlcontent.headers.save("headers",file_content)
+            urlcontent.headers.save(filename+"_headers",file_content)
             urlcontent.headers.close()
 
             urlcontent.save()
@@ -152,7 +155,7 @@ class GeneralSpider(BaseSpider):
 
             # Store raw js
             file_content = ContentFile(str(response.body))
-            linkedjs.raw_js.save("headers",file_content)
+            linkedjs.raw_js.save(filename+"_js",file_content)
             linkedjs.raw_js.close()
 
             linkedjs.save()
@@ -163,7 +166,7 @@ class GeneralSpider(BaseSpider):
 
             # Store raw css
             file_content = ContentFile(str(response.body))
-            linkedcss.raw_css.save("headers",file_content)
+            linkedcss.raw_css.save(filename+"_css",file_content)
             linkedcss.raw_css.close()
 
             linkedcss.save()

@@ -20,18 +20,18 @@ class URLContent(models.Model):
     # On-page content, including html, on-page CSS, on-page JS
     url_scan    = models.ForeignKey('URLScan', db_index=True)
     user_agent  = models.CharField(max_length=250)
-    raw_markup  = models.FileField(upload_to='crawls/%Y/%m/%d')
-    headers     = models.FileField(upload_to='crawls/%Y/%m/%d')
+    raw_markup  = models.FileField(upload_to='crawls/html/%Y/%m/%d')
+    headers     = models.FileField(upload_to='crawls/headers/%Y/%m/%d')
 
 class LinkedCSS(models.Model):
     # Each url can have multiple stylesheets
     url_scan = models.ForeignKey('URLScan', db_index=True)
-    raw_css  = models.FileField(upload_to='crawls/%Y/%m/%d')
+    raw_css  = models.FileField(upload_to='crawls/css/%Y/%m/%d')
 
 class LinkedJS(models.Model):
     # Each url can have multiple javascripts
     url_scan = models.ForeignKey('URLScan', db_index=True)
-    raw_js   = models.FileField(upload_to='crawls/%Y/%m/%d')
+    raw_js   = models.FileField(upload_to='crawls/js/%Y/%m/%d')
 
 class UserAgent(models.Model):
     ua_string   = models.CharField(max_length=250, unique=True, db_index=True)
