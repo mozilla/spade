@@ -35,6 +35,9 @@ class UserAgent(models.Model):
     """A user-agent string we will use for scanning."""
     ua_string   = models.CharField(max_length=250, unique=True)
 
+    def __unicode__(self):
+        return self.ua_string
+
 
 class URLContent(models.Model):
     """
