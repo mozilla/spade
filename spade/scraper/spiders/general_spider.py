@@ -9,7 +9,6 @@ from scrapy.http import Request
 from scrapy import log
 
 from datetime import datetime
-import json
 import urlparse
 
 # Django Models
@@ -95,7 +94,6 @@ class GeneralSpider(BaseSpider):
         if response.meta.get('referrer') is None:
             self.curr_sitescan = models.SiteScan()
             self.curr_sitescan.batch = self.batch
-            self.curr_sitescan.timestamp = self.get_now_time()
             self.curr_sitescan.site_url = response.url
             self.curr_sitescan.save()
 
@@ -103,6 +101,7 @@ class GeneralSpider(BaseSpider):
         urlscan = models.URLScan()
         urlscan.site_scan = self.curr_sitescan
         urlscan.page_url = response.url
+        urlscan.timestamp = self.get_now_time()
         urlscan.save()
 
         # Define name of flatfiles used to save markup

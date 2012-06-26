@@ -1,6 +1,9 @@
-# Enable us to call scrapy from manage.py
+"""
+Just a thin wrapper around scrapy, so we can run it as a management command.
 
+"""
 from __future__ import absolute_import
+
 from django.core.management.base import BaseCommand
 
 
