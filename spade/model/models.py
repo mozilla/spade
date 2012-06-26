@@ -10,11 +10,20 @@ class Batch(models.Model):
     kickoff_time    = models.DateTimeField("When crawl started")
     finish_time     = models.DateTimeField("When crawl ended")
 
+    def __unicode__(self):
+        return u"Batch started at {0}".format(self.kickoff_time)
+
+    class Meta:
+        verbose_name_plural = u"Batches"
+
 
 class SiteScan(models.Model):
     """An individual site scanned."""
     batch       = models.ForeignKey(Batch, db_index=True)
     site_url    = models.CharField(max_length=200)
+
+    def __unicode__(self):
+        return self.site_url
 
 
 class URLScan(models.Model):
@@ -29,6 +38,9 @@ class URLScan(models.Model):
     site_scan   = models.ForeignKey(SiteScan, db_index=True)
     page_url    = models.CharField(max_length=200)
     timestamp   = models.DateTimeField("timestamp")
+
+    def __unicode__(self):
+        return self.page_url
 
 
 class UserAgent(models.Model):
@@ -54,12 +66,22 @@ class URLContent(models.Model):
     headers     = models.FileField(
         max_length=500, upload_to='crawls/headers/%Y/%m/%d')
 
+    def __unicode__(self):
+        return u"'{0}' scanned with '{1}'".format(
+            self.url_scan, self.user_agent)
+
 
 class LinkedCSS(models.Model):
     """A single linked CSS file."""
     url_scan = models.ForeignKey(URLScan)
     raw_css  = models.FileField(
         max_length=500, upload_to='crawls/css/%Y/%m/%d')
+
+    def __unicode__(self):
+        return self.raw_css.name
+
+    class Meta:
+        verbose_name_plural = "Linked CSS"
 
 
 class LinkedJS(models.Model):
@@ -68,7 +90,16 @@ class LinkedJS(models.Model):
     raw_js   = models.FileField(
         max_length=500, upload_to='crawls/js/%Y/%m/%d')
 
+    def __unicode__(self):
+        return self.raw_js.name
+
+    class Meta:
+        verbose_name_plural = "Linked JS"
+
 
 class CrawlList(models.Model):
     """A site URL to be crawled."""
     url = models.CharField(max_length=200, unique=True)
+
+    def __unicode__(self):
+        return self.url
