@@ -1,4 +1,4 @@
-# These requirements are not included in the bundled ``vendor/`` lib, and
-# must be installed on target machines via system package managers.
+# These requirements are not included in the bundled ``vendor/`` lib, and must
+# be installed on target machines via system package managers (or pip).
 
 MySQL-python
