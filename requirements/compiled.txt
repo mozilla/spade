@@ -2,3 +2,6 @@
 # be installed on target machines via system package managers (or pip).
 
 MySQL-python
+lxml
+Twisted>=2.5
+pyOpenSSL
