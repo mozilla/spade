@@ -60,12 +60,19 @@ class GeneralSpider(BaseSpider):
             raise CommandError('No text file. Use -s URLS=somefile.txt')
         else:
             # TODO: open text file, load vals into start_urls array
-            pass
+            try:
+                start_urls = []
+                with open(settings.get('URLS')) as data:
+                    datalines = (line.rstrip('\r\n') for line in data)
+                    for line in datalines:
+                        start_urls.append(line)
 
-        start_urls = []
-        for crawllist in models.CrawlList.objects.all():
-            start_urls.append(crawllist.url)
-        return start_urls
+            except IOError:
+                raise CommandError('No such file exists!')
+
+            #for crawllist in models.CrawlList.objects.all():
+            #    start_urls.append(crawllist.url)
+            return start_urls
 
 
     def get_allowed_domains(self):
@@ -127,8 +134,8 @@ class GeneralSpider(BaseSpider):
             # Parse stylesheet links, scripts, and hyperlinks
             hxs = HtmlXPathSelector(response)
             for url in hxs.select('//link/@href').extract() + \
-                hxs.select('//script/@src').extract() + \
                 hxs.select('//a/@href').extract():
+                #hxs.select('//script/@src').extract() + \
 
                 if not url.startswith('http://'):
                     # ensure that links are to real sites
