@@ -24,9 +24,8 @@ class GeneralSpider(BaseSpider):
         self.allowed_domains = self.get_allowed_domains()
         self.start_urls = self.get_start_urls()
 
-        # TODO: Do something about this.
+        # Default user agent, used to browse the structure of the site
         self.user_agent = "Mozilla/5.0"
-        self.log("Using user agent "+str(self.user_agent))
 
         self.batch = models.Batch()
         self.batch.kickoff_time = self.get_now_time()
@@ -88,8 +87,44 @@ class GeneralSpider(BaseSpider):
             return False
 
 
-    # Called when any URL is being parsed
     def parse(self, response):
+    # Called when any URL is being parsed
+
+        # Generate requests per user agent if it wasn't set
+        if response.meta.get('user_agent') is None:
+            for ua in self.user_agents:
+                meta = {
+                        'referrer':response.meta.get('referrer'),
+                        'user_agent':ua.ua_string
+                       }
+
+                ua_request = Request(url=response.url,
+                                     meta=meta,
+                                     callback=self.store_info)
+                yield ua_request
+
+        # Scan 1 level (spider knows how in configs as long as we set referrer
+        if 'text/html' in self.get_content_type(response.headers):
+            # Parse stylesheet links, scripts, and hyperlinks
+            hxs = HtmlXPathSelector(response)
+            for url in hxs.select('//link/@href').extract() + \
+                hxs.select('//script/@src').extract() + \
+                hxs.select('//a/@href').extract():
+
+                if not url.startswith('http://'):
+                    # ensure that links are to real sites
+                    if url.startswith('javascript:'):
+                        # the "a href" was not a real url link, skip this one!
+                        continue
+                    else:
+                        url = urlparse.urljoin(response.url,url)
+
+                # Make Request & set referrer (else spider can't 1-level crawl)
+                request = Request(url, callback=self.parse)
+                request.meta['referrer'] = response.url
+                yield request
+
+    def store_info(self, response):
         # Only create a sitescan object for each base site in the list
         if response.meta.get('referrer') is None:
             self.curr_sitescan = models.SiteScan()
@@ -125,28 +160,6 @@ class GeneralSpider(BaseSpider):
             urlcontent.headers.close()
 
             urlcontent.save()
-
-            # Parse stylesheet links, scripts, and hyperlinks
-            hxs = HtmlXPathSelector(response)
-            for url in hxs.select('//link/@href').extract() + \
-                hxs.select('//script/@src').extract() + \
-                hxs.select('//a/@href').extract():
-
-                if not url.startswith('http://'):
-                    # ensure that links are to real sites
-                    if url.startswith('javascript:'):
-                        # the "a href" was not a real url link, skip this one!
-                        continue
-                    else:
-                        url = urlparse.urljoin(response.url,url)
-
-                # Log what link we're parsing for debug purposes
-                self.log(url)
-
-                # Make Request & set referrer (else spider can't 1-level crawl)
-                request = Request(url, callback=self.parse)
-                request.meta['referrer'] = response.url
-                yield request
 
         elif 'text/javascript' in self.get_content_type(response.headers):
             linkedjs = models.LinkedJS()
