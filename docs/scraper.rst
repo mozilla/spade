@@ -11,5 +11,6 @@ Using the scraper
 management command.
     `python manage.py useragents --add "Firefox / 5.0"`
 
+
 2. Call the scraper crawl all command, giving it a text file of URLs to parse.
     `python manage.py scraper crawl all -s URLS=somefile.txt`
