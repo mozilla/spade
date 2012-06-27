@@ -23,7 +23,7 @@ Contents:
    :maxdepth: 2
 
    installation
-   howto
+   scraper
    architecture
 
 

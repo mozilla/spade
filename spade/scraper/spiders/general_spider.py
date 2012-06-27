@@ -1,13 +1,18 @@
 # General spider for retrieving site information
 
+# Django Imports
 from django.core.files.base import ContentFile
+from django.core.management.base import CommandError
 from django.utils.timezone import utc
 
-from scrapy.spider import BaseSpider
-from scrapy.selector import HtmlXPathSelector
-from scrapy.http import Request
+# Scrapy Imports
 from scrapy import log
+from scrapy.conf import settings
+from scrapy.http import Request
+from scrapy.selector import HtmlXPathSelector
+from scrapy.spider import BaseSpider
 
+# Utility Imports
 from datetime import datetime
 import urlparse
 
@@ -17,7 +22,7 @@ import spade.model.models as models
 
 class GeneralSpider(BaseSpider):
     # This class variable necessary for scrapy to detect this spider
-    name="general"
+    name="all"
 
     def __init__(self):
         # Initialize variables as instance vars to access instance methods
@@ -50,6 +55,13 @@ class GeneralSpider(BaseSpider):
 
     def get_start_urls(self):
         # List of URLs to crawl from (descending to 1 level from these sites)
+
+        if settings.get('URLS') == None:
+            raise CommandError('No text file. Use -s URLS=somefile.txt')
+        else:
+            # TODO: open text file, load vals into start_urls array
+            pass
+
         start_urls = []
         for crawllist in models.CrawlList.objects.all():
             start_urls.append(crawllist.url)
@@ -71,22 +83,6 @@ class GeneralSpider(BaseSpider):
             for h in headers:
                 if h.lower().strip() == 'content-type':
                     return headers[h]
-
-
-    def desired_content_type(self, content_type):
-        # Reject anything not CSS/HTML/JS
-        target_types = [
-                        'text/html',
-                        'text/css',
-                        'application/x-javascript',
-                        'text/javascript',
-                        'application/javascript',
-                       ]
-
-        if content_type in target_types:
-            return True
-        else:
-            return False
 
 
     def parse(self, response):
