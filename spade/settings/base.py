@@ -13,9 +13,10 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 
-ADMINS = (
+ADMINS = [
     ("Sam Liu", "sliu@mozilla.com"),
-)
+    ("Carl Meyer", "cmeyer@mozilla.com"),
+]
 
 MANAGERS = ADMINS
 
@@ -123,18 +124,15 @@ TEMPLATE_DIRS = [
 ]
 
 INSTALLED_APPS = (
-    #'django.contrib.auth',
-    #'django.contrib.contenttypes',
-    #'django.contrib.sessions',
-    #'django.contrib.sites',
-    #'django.contrib.messages',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.sites',
+    'django.contrib.messages',
     'django.contrib.staticfiles',
-    'spade.controller.admin',
+    'django.contrib.admin',
+    'spade.controller',
     'spade.model',
-    # Uncomment the next line to enable the admin:
-    # 'django.contrib.admin',
-    # Uncomment the next line to enable admin documentation:
-    # 'django.contrib.admindocs',
 )
 
 # A sample logging configuration. The only tangible logging
