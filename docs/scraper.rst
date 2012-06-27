@@ -8,9 +8,11 @@ agents are specified in the database.
 Using the scraper
 -----------------
 1. Add user agent strings that you would like to crawl with by running the
-management command.
-    `python manage.py useragents --add "Firefox / 5.0"`
+management command.::
+
+    python manage.py useragents --add "Firefox / 5.0"
 
 
-2. Call the scraper crawl all command, giving it a text file of URLs to parse.
-    `python manage.py scraper crawl all -s URLS=somefile.txt`
+2. Call the scraper crawl all command, giving it a text file of URLs to parse.::
+
+    python manage.py scraper crawl all -s URLS=somefile.txt
