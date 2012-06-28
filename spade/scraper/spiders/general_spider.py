@@ -55,23 +55,18 @@ class GeneralSpider(BaseSpider):
 
     def get_start_urls(self):
         # List of URLs to crawl from (descending to 1 level from these sites)
-
         if settings.get('URLS') == None:
             raise CommandError('No text file. Use -s URLS=somefile.txt')
         else:
-            # TODO: open text file, load vals into start_urls array
             try:
                 start_urls = []
                 with open(settings.get('URLS')) as data:
                     datalines = (line.rstrip('\r\n') for line in data)
                     for line in datalines:
                         start_urls.append(line)
-
             except IOError:
                 raise CommandError('No such file exists!')
 
-            #for crawllist in models.CrawlList.objects.all():
-            #    start_urls.append(crawllist.url)
             return start_urls
 
 
@@ -93,8 +88,6 @@ class GeneralSpider(BaseSpider):
 
 
     def parse(self, response):
-
-
         # Only create a sitescan object for each base site in the list
         if response.meta.get('referrer') is None:
             self.curr_sitescan = models.SiteScan()
