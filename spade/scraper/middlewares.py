@@ -1,5 +1,12 @@
+from scrapy.contrib.spidermiddleware.offsite import OffsiteMiddleware
 from scrapy.http import Request
+from scrapy.utils.httpobj import urlparse_cached
+from scrapy import log
+
 import spade.model.models as models
+
+from urlparse import urlparse
+import re
 
 # Define middleware here
 USER_AGENTS = models.UserAgent.objects.all()
@@ -32,3 +39,36 @@ class PreRequestMiddleware(object):
                 # Recurse
                 agent_index = agent_index + 1
                 self.process_request(new_request, spider)
+
+
+class CustomOffsiteMiddleware(OffsiteMiddleware):
+
+    def process_spider_output(self, response, result, spider):
+        # Given a request, we figure out if we want it
+
+        for req in result:
+            if isinstance(req, Request):
+                if req.dont_filter or self.should_follow(response, req, spider):
+                    yield req
+                else:
+                    domain = urlparse_cached(req).hostname
+                    if domain and domain not in self.domains_seen[spider]:
+                        log.msg("Filtered offsite request to %r: %s" % (domain, req),
+                            level=log.DEBUG, spider=spider)
+                        self.domains_seen[spider].add(domain)
+            else:
+                yield req
+
+    def should_follow(self, response, request, spider):
+        # Determine if response.url and request.url have the same domain root
+
+        req_domain = urlparse(response.url)
+        res_domain = urlparse(request.url)
+
+        return req_domain.netloc == res_domain.netloc
+
+    def spider_opened(self, spider):
+        self.domains_seen[spider] = set()
+
+    def spider_closed(self, spider):
+        del self.domains_seen[spider]
