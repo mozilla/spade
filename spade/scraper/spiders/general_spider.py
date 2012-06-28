@@ -135,7 +135,6 @@ class GeneralSpider(BaseSpider):
             hxs = HtmlXPathSelector(response)
             for url in hxs.select('//link/@href').extract() + \
                 hxs.select('//a/@href').extract():
-                #hxs.select('//script/@src').extract() + \
 
                 if not url.startswith('http://'):
                     # ensure that links are to real sites
@@ -150,7 +149,7 @@ class GeneralSpider(BaseSpider):
                 request.meta['referrer'] = response.url
                 yield request
 
-        elif 'text/javascript' in self.get_content_type(response.headers):
+        elif any(a in self.get_content_type(response.headers) for a in ('text/javascript', 'application/x-javascript', 'application/javascript')):
             linkedjs = models.LinkedJS()
             linkedjs.url_scan = urlscan
 
