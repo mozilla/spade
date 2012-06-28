@@ -27,6 +27,11 @@ DOWNLOADER_MIDDLEWARES = {
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
 }
 
+SPIDER_MIDDLEWARES = {
+    'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware':None,
+    'spade.scraper.middlewares.CustomOffsiteMiddleware': 543,
+}
+
 DEPTH_LIMIT = 1
 DOWNLOAD_DELAY = 0
 DOWNLOAD_TIMEOUT=20
