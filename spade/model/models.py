@@ -20,7 +20,7 @@ class Batch(models.Model):
 class SiteScan(models.Model):
     """An individual site scanned."""
     batch       = models.ForeignKey(Batch, db_index=True)
-    site_url    = models.CharField(max_length=200)
+    site_url    = models.TextField()
 
     def __unicode__(self):
         return self.site_url
@@ -36,7 +36,7 @@ class URLScan(models.Model):
 
     """
     site_scan   = models.ForeignKey(SiteScan, db_index=True)
-    page_url    = models.CharField(max_length=200)
+    page_url    = models.TextField()
     timestamp   = models.DateTimeField("timestamp")
 
     def __unicode__(self):
@@ -95,11 +95,3 @@ class LinkedJS(models.Model):
 
     class Meta:
         verbose_name_plural = "Linked JS"
-
-
-class CrawlList(models.Model):
-    """A site URL to be crawled."""
-    url = models.CharField(max_length=200, unique=True)
-
-    def __unicode__(self):
-        return self.url
