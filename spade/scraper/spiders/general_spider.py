@@ -21,12 +21,22 @@ import spade.model.models as models
 
 
 class GeneralSpider(BaseSpider):
-    # This class variable necessary for scrapy to detect this spider
+    """
+    A generic spider
+
+    Crawls CSS, HTML, JS up to 1 level of depth from a given domain. Domains
+    outside of the list provided are not crawled.
+    """
     name="all"
 
     def __init__(self):
+        """
+        Initialization
+
+        Get list of user agents, allowed domains, start urls as well as create
+        a new batch to represent a single scraper run.
+        """
         # Initialize variables as instance vars to access instance methods
-        self.allowed_domains = self.get_allowed_domains()
         self.start_urls = self.get_start_urls()
 
 
@@ -44,48 +54,34 @@ class GeneralSpider(BaseSpider):
 
 
     def get_now_time(self):
+        """Gets a datetime"""
         # Convenience function for timezone-aware timestamps
         return datetime.utcnow().replace(tzinfo=utc)
 
 
     def log(self, msg):
-        # Debug function -- log messages
+        """Function for logging events"""
         log.msg(msg, level=log.DEBUG)
 
 
     def get_start_urls(self):
-        # List of URLs to crawl from (descending to 1 level from these sites)
-
+        """Extracts urls from a text file into the list of URLs to crawl"""
         if settings.get('URLS') == None:
             raise CommandError('No text file. Use -s URLS=somefile.txt')
         else:
-            # TODO: open text file, load vals into start_urls array
             try:
                 start_urls = []
                 with open(settings.get('URLS')) as data:
                     datalines = (line.rstrip('\r\n') for line in data)
                     for line in datalines:
                         start_urls.append(line)
-
             except IOError:
                 raise CommandError('No such file exists!')
 
-            #for crawllist in models.CrawlList.objects.all():
-            #    start_urls.append(crawllist.url)
             return start_urls
 
-
-    def get_allowed_domains(self):
-        # Make all the URLs we started at "allowed"
-        self.allowed_domains = []
-        for domain in self.get_start_urls():
-            self.allowed_domains.append(urlparse.urlsplit(domain)[1])
-
-        return self.allowed_domains
-
-
     def get_content_type(self, headers):
-        # Get's a content type from the headers
+        """Get's a content type from the headers"""
         if headers:
             for h in headers:
                 if h.lower().strip() == 'content-type':
@@ -93,7 +89,7 @@ class GeneralSpider(BaseSpider):
 
 
     def parse(self, response):
-
+        """Default spider callback function"""
 
         # Only create a sitescan object for each base site in the list
         if response.meta.get('referrer') is None:
@@ -112,8 +108,18 @@ class GeneralSpider(BaseSpider):
         # Define name of flatfiles used to save markup
         filename = str(response.url)
 
+        headers = self.get_content_type(response.headers)
+        if headers == None:
+            headers = ""
+
+        js_mimes = (
+                     'text/javascript',
+                     'application/x-javascript',
+                     'application/javascript'
+                   )
+
         # Scan 1 level (spider knows how in configs as long as we set referrer
-        if 'text/html' in self.get_content_type(response.headers):
+        if 'text/html' in headers:
             # First save the request contents into a URLContent
             urlcontent = models.URLContent()
             urlcontent.url_scan = urlscan
@@ -121,53 +127,72 @@ class GeneralSpider(BaseSpider):
 
             # Store raw headers
             file_content = ContentFile(str(response.body))
-            urlcontent.raw_markup.save(filename+"_html",file_content)
+            urlcontent.raw_markup.save(filename[:100]+"_html",file_content)
             urlcontent.raw_markup.close()
 
             # Store raw html
             file_content = ContentFile(str(response.headers))
-            urlcontent.headers.save(filename+"_headers",file_content)
+            urlcontent.headers.save(filename[:100]+"_headers",file_content)
             urlcontent.headers.close()
 
             urlcontent.save()
 
             # Parse stylesheet links, scripts, and hyperlinks
             hxs = HtmlXPathSelector(response)
-            for url in hxs.select('//link/@href').extract() + \
-                hxs.select('//a/@href').extract():
-                #hxs.select('//script/@src').extract() + \
+
+            # Extract other target links
+            try:
+                css_links  = hxs.select('//link/@href').extract()
+            except TypeError:
+                css_links = []
+
+            try:
+                js_links   = hxs.select('//script/@src').extract()
+            except TypeError:
+                js_links = []
+
+            try:
+                hyperlinks = hxs.select('//a/@href').extract()
+            except TypeError:
+                hyperlinks = []
+
+
+            # Examine links, yield requests if they are valid
+            all_links = hyperlinks + js_links + css_links
+            for url in all_links:
 
                 if not url.startswith('http://'):
                     # ensure that links are to real sites
                     if url.startswith('javascript:'):
-                        # the "a href" was not a real url link, skip this one!
                         continue
                     else:
                         url = urlparse.urljoin(response.url,url)
 
-                # Crawl further
                 request = Request(url)
                 request.meta['referrer'] = response.url
                 yield request
 
-        elif 'text/javascript' in self.get_content_type(response.headers):
+        elif any(a in headers for a in js_mimes):
+
             linkedjs = models.LinkedJS()
             linkedjs.url_scan = urlscan
 
             # Store raw js
             file_content = ContentFile(str(response.body))
             linkedjs.raw_js.save(filename+"_js",file_content)
+            linkedjs.raw_js.save(filename[:100]+"_js",file_content)
+
             linkedjs.raw_js.close()
 
             linkedjs.save()
 
-        elif 'text/css' in self.get_content_type(response.headers):
+        elif 'text/css' in headers:
             linkedcss = models.LinkedCSS()
             linkedcss.url_scan = urlscan
 
             # Store raw css
             file_content = ContentFile(str(response.body))
-            linkedcss.raw_css.save(filename+"_css",file_content)
+            linkedcss.raw_css.save(filename[:100]+"_css",file_content)
             linkedcss.raw_css.close()
 
             linkedcss.save()
