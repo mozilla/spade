@@ -10,12 +10,12 @@ from django.core.management.base import BaseCommand, CommandError
 class Command(BaseCommand):
     args = "<newline delimited textfile of URLs to scrape>"
     help = (
-        "  Scrapes and parses html/css properties down to 1-level\n"
-        "  on each site from the specified text file\n")
+        u"  Scrapes and parses html/css properties down to 1-level\n"
+        u"  on each site from the specified text file\n")
 
     def handle(self, *args, **options):
-        if (not len(args) == 1) or (args[0] == "help"):
-            self.stdout.write("Usage: {0}\n".format(self.args))
+        if (not len(args) == 1) or (args[0] == u"help"):
+            self.stdout.write(u"Usage: {0}\n".format(self.args))
             self.stdout.write(self.help)
         else:
             # Take a filename from command line to crawl
