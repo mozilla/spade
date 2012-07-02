@@ -14,4 +14,4 @@ Using the scraper
 
 2. Call the scraper crawl all command, giving it a text file of URLs to parse. ::
 
-    python manage.py scraper crawl all -s URLS=somefile.txt
+    python manage.py scrape [newline delimited text file of URLS]
