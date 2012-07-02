@@ -8,12 +8,14 @@ from django.db import IntegrityError
 from spade.model.models import UserAgent
 
 
+def pytest_funcarg__ua(request):
+    return UserAgent(ua_string=u"Mozilla/5.0")
 
-def test_unicode():
+
+def test_unicode(ua):
     """Unicode representation of a user agent is the UA string."""
-    ua = UserAgent(ua_string=u"Mozilla/5.0")
-
     assert unicode(ua) == u"Mozilla/5.0"
+
 
 def test_length_toolong():
     """Strings longer than 250 characters will be truncated, raise warning"""
@@ -28,6 +30,7 @@ def test_length_toolong():
             True
     False
 
+
 def test_length_rightlength():
     """Strings 250 chars or less should pass without warning"""
     super_long_ua = u"b" * 250
@@ -40,6 +43,7 @@ def test_length_rightlength():
         except:
             False
     True
+
 
 def test_unique_insert():
     """Inserting two of the same useragents will fail duplicate key"""
@@ -54,6 +58,7 @@ def test_unique_insert():
 
     True
 
+
 def test_diff_insert():
     """Inserting two different useragents will pass"""
     first_ua = UserAgent(ua_string=u"Something/5.0")
@@ -64,4 +69,3 @@ def test_diff_insert():
     except IntegrityError:
         False
     True
-
