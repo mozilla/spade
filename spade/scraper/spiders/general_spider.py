@@ -14,10 +14,10 @@ from scrapy.spider import BaseSpider
 
 # Utility Imports
 from datetime import datetime
-import urlparse
+from urlparse import urljoin, urlparse
 
-# Django Models
 import spade.model.models as models
+import os
 
 
 class GeneralSpider(BaseSpider):
@@ -48,7 +48,13 @@ class GeneralSpider(BaseSpider):
         self.user_agents = models.UserAgent.objects.all()
 
         # Default user agent, used to browse the structure of the site
-        self.user_agent = self.user_agents[0] # start from the first by default
+
+        try:
+            # Start from the first by default
+            self.user_agent = self.user_agents[0]
+        except IndexError:
+            raise CommandError('No user agents have been set yet. '
+                               'Need to add user agents.')
 
         self.curr_sitescan = None
 
@@ -96,6 +102,7 @@ class GeneralSpider(BaseSpider):
             self.curr_sitescan = models.SiteScan()
             self.curr_sitescan.batch = self.batch
             self.curr_sitescan.site_url = response.url
+            self.curr_sitescan.folder_name = urlparse(response.url).netloc
             self.curr_sitescan.save()
 
         # Generate a urlscan for this url
@@ -106,7 +113,7 @@ class GeneralSpider(BaseSpider):
         urlscan.save()
 
         # Define name of flatfiles used to save markup
-        filename = str(response.url)
+        filename = os.path.basename(urlparse(response.url).path)
 
         headers = self.get_content_type(response.headers)
         if headers == None:
@@ -166,7 +173,7 @@ class GeneralSpider(BaseSpider):
                     if url.startswith('javascript:'):
                         continue
                     else:
-                        url = urlparse.urljoin(response.url,url)
+                        url = urljoin(response.url,url)
 
                 request = Request(url)
                 request.meta['referrer'] = response.url

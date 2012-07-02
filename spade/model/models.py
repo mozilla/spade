@@ -2,7 +2,31 @@
 Spade models.
 
 """
+from datetime import datetime
 from django.db import models
+
+# The following organizes a naming scheme for local filesystem
+now = datetime.now()
+YEAR = unicode(now.year)
+MONTH = unicode(now.month)
+DAY = unicode(now.day)
+
+# Define file naming callables
+def html_filename(instance, filename):
+    fs = [YEAR, MONTH, DAY, instance.url_scan.site_scan.folder_name, filename]
+    return '/'.join(['html']+fs)
+
+def css_filename(instance, filename):
+    fs = [YEAR, MONTH, DAY, instance.url_scan.site_scan.folder_name, filename]
+    return '/'.join(['css']+fs)
+
+def headers_filename(instance, filename):
+    fs = [YEAR, MONTH, DAY, instance.url_scan.site_scan.folder_name, filename]
+    return '/'.join(['headers']+fs)
+
+def js_filename(instance, filename):
+    fs = [YEAR, MONTH, DAY, instance.url_scan.site_scan.folder_name, filename]
+    return '/'.join(['js']+fs)
 
 
 class Batch(models.Model):
@@ -21,6 +45,7 @@ class SiteScan(models.Model):
     """An individual site scanned."""
     batch       = models.ForeignKey(Batch, db_index=True)
     site_url    = models.TextField()
+    folder_name = models.TextField(max_length=200)
 
     def __unicode__(self):
         return self.site_url
@@ -33,6 +58,8 @@ class URLScan(models.Model):
     For each ``SiteScan``, we follow links one level deep from the entry page,
     so every ``SiteScan`` will have a number of associated ``URLScan``s, one
     for the entry page URL and one for each link followed.
+
+    The folder_name is what the folder on disk will be called.
 
     """
     site_scan   = models.ForeignKey(SiteScan, db_index=True)
@@ -62,9 +89,9 @@ class URLContent(models.Model):
     url_scan    = models.ForeignKey(URLScan)
     user_agent  = models.CharField(max_length=250, db_index=True)
     raw_markup  = models.FileField(
-        max_length=500, upload_to='crawls/html/%Y/%m/%d')
+        max_length=500, upload_to=html_filename)
     headers     = models.FileField(
-        max_length=500, upload_to='crawls/headers/%Y/%m/%d')
+        max_length=500, upload_to=headers_filename)
 
     def __unicode__(self):
         return u"'{0}' scanned with '{1}'".format(
@@ -75,7 +102,7 @@ class LinkedCSS(models.Model):
     """A single linked CSS file."""
     url_scan = models.ForeignKey(URLScan)
     raw_css  = models.FileField(
-        max_length=500, upload_to='crawls/css/%Y/%m/%d')
+        max_length=500, upload_to=css_filename)
 
     def __unicode__(self):
         return self.raw_css.name
@@ -88,7 +115,7 @@ class LinkedJS(models.Model):
     """A single linked JS file."""
     url_scan = models.ForeignKey(URLScan)
     raw_js   = models.FileField(
-        max_length=500, upload_to='crawls/js/%Y/%m/%d')
+        max_length=500, upload_to=js_filename)
 
     def __unicode__(self):
         return self.raw_js.name
