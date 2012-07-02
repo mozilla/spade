@@ -14,4 +14,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         from scrapy.cmdline import execute
-        execute(self._argv[1:])
+
+        # Take a filename from command line to crawl
+        default = [u""]
+        default.append(u"crawl")
+        default.append(u"all")
+        default.append(u"-s")
+        default.append(u"URLS="+unicode(self._argv[2]))
+        execute(default)
