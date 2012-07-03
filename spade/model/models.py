@@ -2,13 +2,33 @@
 Spade models.
 
 """
+from datetime import datetime
 from django.db import models
+
+# The following organizes a naming scheme for local filesystem
+def get_file_path(instance, filename):
+    now = datetime.now()
+    return [unicode(now.year), unicode(now.month), unicode(now.day),
+            instance.url_scan.site_scan.folder_name, filename]
+
+# Define file naming callables
+def html_filename(instance, filename):
+    return '/'.join(['html'] + get_file_path(instance, filename))
+
+def css_filename(instance, filename):
+    return '/'.join(['css'] + get_file_path(instance, filename))
+
+def headers_filename(instance, filename):
+    return '/'.join(['headers'] + get_file_path(instance, filename))
+
+def js_filename(instance, filename):
+    return '/'.join(['js'] + get_file_path(instance, filename))
 
 
 class Batch(models.Model):
     """A batch of sites scanned in one run."""
-    kickoff_time    = models.DateTimeField("When crawl started")
-    finish_time     = models.DateTimeField("When crawl ended")
+    kickoff_time = models.DateTimeField("When crawl started")
+    finish_time = models.DateTimeField("When crawl ended")
 
     def __unicode__(self):
         return u"Batch started at {0}".format(self.kickoff_time)
@@ -19,8 +39,9 @@ class Batch(models.Model):
 
 class SiteScan(models.Model):
     """An individual site scanned."""
-    batch       = models.ForeignKey(Batch, db_index=True)
-    site_url    = models.TextField()
+    batch = models.ForeignKey(Batch, db_index=True)
+    site_url = models.TextField()
+    folder_name = models.TextField(max_length=200)
 
     def __unicode__(self):
         return self.site_url
@@ -34,10 +55,12 @@ class URLScan(models.Model):
     so every ``SiteScan`` will have a number of associated ``URLScan``s, one
     for the entry page URL and one for each link followed.
 
+    The folder_name is what the folder on disk will be called.
+
     """
-    site_scan   = models.ForeignKey(SiteScan, db_index=True)
-    page_url    = models.TextField()
-    timestamp   = models.DateTimeField("timestamp")
+    site_scan = models.ForeignKey(SiteScan, db_index=True)
+    page_url = models.TextField()
+    timestamp = models.DateTimeField("timestamp")
 
     def __unicode__(self):
         return self.page_url
@@ -45,7 +68,7 @@ class URLScan(models.Model):
 
 class UserAgent(models.Model):
     """A user-agent string we will use for scanning."""
-    ua_string   = models.CharField(max_length=250, unique=True)
+    ua_string = models.CharField(max_length=250, unique=True)
 
     def __unicode__(self):
         return self.ua_string
@@ -59,12 +82,12 @@ class URLContent(models.Model):
     ``LinkedCSS`` and ``LinkedJS`` tables.
 
     """
-    url_scan    = models.ForeignKey(URLScan)
-    user_agent  = models.CharField(max_length=250, db_index=True)
-    raw_markup  = models.FileField(
-        max_length=500, upload_to='crawls/html/%Y/%m/%d')
-    headers     = models.FileField(
-        max_length=500, upload_to='crawls/headers/%Y/%m/%d')
+    url_scan = models.ForeignKey(URLScan)
+    user_agent = models.CharField(max_length=250, db_index=True)
+    raw_markup = models.FileField(
+        max_length=500, upload_to=html_filename)
+    headers = models.FileField(
+        max_length=500, upload_to=headers_filename)
 
     def __unicode__(self):
         return u"'{0}' scanned with '{1}'".format(
@@ -74,8 +97,8 @@ class URLContent(models.Model):
 class LinkedCSS(models.Model):
     """A single linked CSS file."""
     url_scan = models.ForeignKey(URLScan)
-    raw_css  = models.FileField(
-        max_length=500, upload_to='crawls/css/%Y/%m/%d')
+    raw_css = models.FileField(
+        max_length=500, upload_to=css_filename)
 
     def __unicode__(self):
         return self.raw_css.name
@@ -87,8 +110,8 @@ class LinkedCSS(models.Model):
 class LinkedJS(models.Model):
     """A single linked JS file."""
     url_scan = models.ForeignKey(URLScan)
-    raw_js   = models.FileField(
-        max_length=500, upload_to='crawls/js/%Y/%m/%d')
+    raw_js = models.FileField(
+        max_length=500, upload_to=js_filename)
 
     def __unicode__(self):
         return self.raw_js.name
