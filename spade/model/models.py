@@ -6,27 +6,23 @@ from datetime import datetime
 from django.db import models
 
 # The following organizes a naming scheme for local filesystem
-now = datetime.now()
-YEAR = unicode(now.year)
-MONTH = unicode(now.month)
-DAY = unicode(now.day)
+def get_file_path(instance, filename):
+    now = datetime.now()
+    return [unicode(now.year), unicode(now.month), unicode(now.day),
+            instance.url_scan.site_scan.folder_name, filename]
 
 # Define file naming callables
 def html_filename(instance, filename):
-    fs = [YEAR, MONTH, DAY, instance.url_scan.site_scan.folder_name, filename]
-    return '/'.join(['html']+fs)
+    return '/'.join(['html'] + get_file_path(instance,filename))
 
 def css_filename(instance, filename):
-    fs = [YEAR, MONTH, DAY, instance.url_scan.site_scan.folder_name, filename]
-    return '/'.join(['css']+fs)
+    return '/'.join(['css'] + get_file_path(instance,filename))
 
 def headers_filename(instance, filename):
-    fs = [YEAR, MONTH, DAY, instance.url_scan.site_scan.folder_name, filename]
-    return '/'.join(['headers']+fs)
+    return '/'.join(['headers'] + get_file_path(instance,filename))
 
 def js_filename(instance, filename):
-    fs = [YEAR, MONTH, DAY, instance.url_scan.site_scan.folder_name, filename]
-    return '/'.join(['js']+fs)
+    return '/'.join(['js'] + get_file_path(instance,filename))
 
 
 class Batch(models.Model):
