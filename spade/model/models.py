@@ -13,16 +13,16 @@ def get_file_path(instance, filename):
 
 # Define file naming callables
 def html_filename(instance, filename):
-    return '/'.join(['html'] + get_file_path(instance,filename))
+    return '/'.join(['html'] + get_file_path(instance, filename))
 
 def css_filename(instance, filename):
-    return '/'.join(['css'] + get_file_path(instance,filename))
+    return '/'.join(['css'] + get_file_path(instance, filename))
 
 def headers_filename(instance, filename):
-    return '/'.join(['headers'] + get_file_path(instance,filename))
+    return '/'.join(['headers'] + get_file_path(instance, filename))
 
 def js_filename(instance, filename):
-    return '/'.join(['js'] + get_file_path(instance,filename))
+    return '/'.join(['js'] + get_file_path(instance, filename))
 
 
 class Batch(models.Model):
