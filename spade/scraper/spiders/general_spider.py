@@ -1,7 +1,6 @@
 # General spider for retrieving site information
 
 # Django Imports
-from django.core.files.base import ContentFile
 from django.core.management.base import CommandError
 from django.utils.timezone import utc
 
@@ -11,10 +10,12 @@ from scrapy.conf import settings
 from scrapy.http import Request
 from scrapy.selector import HtmlXPathSelector
 from scrapy.spider import BaseSpider
+from spade.scraper.items import MarkupItem
 
 # Utility Imports
 from datetime import datetime
-import urlparse
+from urlparse import urljoin, urlparse
+import os
 
 # Django Models
 import spade.model.models as models
@@ -46,12 +47,6 @@ class GeneralSpider(BaseSpider):
         self.batch.save()
 
         self.user_agents = models.UserAgent.objects.all()
-
-        # Default user agent, used to browse the structure of the site
-        self.user_agent = self.user_agents[0] # start from the first by default
-
-        self.curr_sitescan = None
-
 
     def get_now_time(self):
         """Gets a datetime"""
@@ -89,116 +84,77 @@ class GeneralSpider(BaseSpider):
 
 
     def parse(self, response):
-        """Default spider callback function"""
-
-        # Only create a sitescan object for each base site in the list
-        if response.meta.get('referrer') is None:
-            self.curr_sitescan = models.SiteScan()
-            self.curr_sitescan.batch = self.batch
-            self.curr_sitescan.site_url = response.url
-            self.curr_sitescan.save()
-
-        # Generate a urlscan for this url
-        urlscan = models.URLScan()
-        urlscan.site_scan = self.curr_sitescan
-        urlscan.page_url = response.url
-        urlscan.timestamp = self.get_now_time()
-        urlscan.save()
-
-        # Define name of flatfiles used to save markup
-        filename = str(response.url)
-
         headers = self.get_content_type(response.headers)
         if headers == None:
             headers = ""
 
-        js_mimes = (
-                     'text/javascript',
-                     'application/x-javascript',
-                     'application/javascript'
-                   )
+        if response.meta.get('user_agent') == None:
+            # Ensure user agents have been set
+            if len(self.user_agents) == 0:
+                raise CommandError('No user agents have been set yet. '
+                                   'Need to add user agents.')
 
-        # Scan 1 level (spider knows how in configs as long as we set referrer
-        if 'text/html' in headers:
-            # First save the request contents into a URLContent
-            urlcontent = models.URLContent()
-            urlcontent.url_scan = urlscan
-            urlcontent.user_agent = self.user_agent
+            # Generate different UA requests for each UA
+            agent_index = 0
+            while agent_index < len(self.user_agents):
+                ua = self.user_agents[agent_index].ua_string
 
-            # Store raw headers
-            file_content = ContentFile(str(response.body))
-            urlcontent.raw_markup.save(filename[:100]+"_html",file_content)
-            urlcontent.raw_markup.close()
+                # Generate new request
+                new_request = Request(response.url)
+                new_request.meta['referrer'] = None
+                new_request.headers.setdefault('User-Agent', ua)
+                new_request.meta['user_agent'] = ua
+                new_request.dont_filter = True
 
-            # Store raw html
-            file_content = ContentFile(str(response.headers))
-            urlcontent.headers.save(filename[:100]+"_headers",file_content)
-            urlcontent.headers.close()
+                agent_index = agent_index + 1
+                yield new_request
 
-            urlcontent.save()
+            # Continue crawling
+            if 'text/html' in headers:
+                # Parse stylesheet links, scripts, and hyperlinks
+                hxs = HtmlXPathSelector(response)
 
-            # Parse stylesheet links, scripts, and hyperlinks
-            hxs = HtmlXPathSelector(response)
+                # Extract other target links
+                try:
+                    css_links  = hxs.select('//link/@href').extract()
+                except TypeError:
+                    css_links = []
 
-            # Extract other target links
-            try:
-                css_links  = hxs.select('//link/@href').extract()
-            except TypeError:
-                css_links = []
+                try:
+                    js_links   = hxs.select('//script/@src').extract()
+                except TypeError:
+                    js_links = []
 
-            try:
-                js_links   = hxs.select('//script/@src').extract()
-            except TypeError:
-                js_links = []
+                try:
+                    hyperlinks = hxs.select('//a/@href').extract()
+                except TypeError:
+                    hyperlinks = []
 
-            try:
-                hyperlinks = hxs.select('//a/@href').extract()
-            except TypeError:
-                hyperlinks = []
+                # Examine links, yield requests if they are valid
+                all_links = hyperlinks + js_links + css_links
+                for url in all_links:
 
+                    if not url.startswith('http://'):
+                        # ensure that links are to real sites
+                        if url.startswith('javascript:'):
+                            continue
+                        else:
+                            url = urljoin(response.url,url)
 
-            # Examine links, yield requests if they are valid
-            all_links = hyperlinks + js_links + css_links
-            for url in all_links:
+                    request = Request(url)
+                    request.meta['referrer'] = response.url
+                    request.meta['user_agent'] = None
+                    request.dont_filter = True
 
-                if not url.startswith('http://'):
-                    # ensure that links are to real sites
-                    if url.startswith('javascript:'):
-                        continue
-                    else:
-                        url = urlparse.urljoin(response.url,url)
+                    yield request
 
-                request = Request(url)
-                request.meta['referrer'] = response.url
-                yield request
-
-        elif any(a in headers for a in js_mimes):
-
-            linkedjs = models.LinkedJS()
-            linkedjs.url_scan = urlscan
-
-            # Store raw js
-            file_content = ContentFile(str(response.body))
-            linkedjs.raw_js.save(filename+"_js",file_content)
-            linkedjs.raw_js.save(filename[:100]+"_js",file_content)
-
-            linkedjs.raw_js.close()
-
-            linkedjs.save()
-
-        elif 'text/css' in headers:
-            linkedcss = models.LinkedCSS()
-            linkedcss.url_scan = urlscan
-
-            # Store raw css
-            file_content = ContentFile(str(response.body))
-            linkedcss.raw_css.save(filename[:100]+"_css",file_content)
-            linkedcss.raw_css.close()
-
-            linkedcss.save()
-
-
-        # Update batch finish time, keep this last
-        self.batch.finish_time = self.get_now_time()
-        self.batch.save()
-
+        else:
+            # The response contains a user agent, we should yield an item
+            item = MarkupItem()
+            item['raw_markup'] = response.body
+            item['headers'] = unicode(response.headers)
+            item['user_agent'] = response.meta.get('user_agent')
+            item['meta'] = response.meta
+            item['filename'] = os.path.basename(urlparse(response.url).path)
+            item['url'] = response.url
+            yield item
