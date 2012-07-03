@@ -53,15 +53,15 @@ class SiteScan(models.Model):
 
 class URLScan(models.Model):
     """
-An individual URL scanned.
+    An individual URL scanned.
 
-For each ``SiteScan``, we follow links one level deep from the entry page,
-so every ``SiteScan`` will have a number of associated ``URLScan``s, one
-for the entry page URL and one for each link followed.
+    For each ``SiteScan``, we follow links one level deep from the entry page,
+    so every ``SiteScan`` will have a number of associated ``URLScan``s, one
+    for the entry page URL and one for each link followed.
 
-The folder_name is what the folder on disk will be called.
+    The folder_name is what the folder on disk will be called.
 
-"""
+    """
     site_scan = models.ForeignKey(SiteScan, db_index=True)
     page_url = models.TextField()
     timestamp = models.DateTimeField("timestamp")
@@ -80,12 +80,12 @@ class UserAgent(models.Model):
 
 class URLContent(models.Model):
     """
-The content for a particular user-agent from one scanned URL.
+    The content for a particular user-agent from one scanned URL.
 
-Stores raw markup and headers; linked CSS and JS are stored in the
-``LinkedCSS`` and ``LinkedJS`` tables.
+    Stores raw markup and headers; linked CSS and JS are stored in the
+    ``LinkedCSS`` and ``LinkedJS`` tables.
 
-"""
+    """
     url_scan = models.ForeignKey(URLScan)
     user_agent = models.CharField(max_length=250, db_index=True)
     raw_markup = models.FileField(
