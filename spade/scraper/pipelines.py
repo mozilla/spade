@@ -11,13 +11,14 @@ from urlparse import urljoin, urlparse
 
 class ScraperPipeline(object):
     def process_item(self, item, spider):
-
         item_domain = urlparse(item['url']).netloc
+
+        # Find the foreign keys they belong to, if they exist
         sitescan = models.SiteScan.objects.filter(site_url=item_domain)[:1]
         urlscan = models.URLScan.objects.filter(page_url=item['url'])[:1]
 
         # Generate appropriate site and url scans as needed
-        if len(sitescan) == 0:
+        if not sitescan:
             sitescan = models.SiteScan()
             sitescan.batch = spider.batch
             sitescan.site_url = item_domain
@@ -25,7 +26,7 @@ class ScraperPipeline(object):
         else:
             sitescan = sitescan[0]
 
-        if len(urlscan)==0:
+        if not urlscan:
             urlscan = models.URLScan()
             urlscan.site_scan = sitescan
             urlscan.page_url = item['url']
@@ -34,10 +35,12 @@ class ScraperPipeline(object):
         else:
             urlscan = urlscan[0]
 
+        # Javascript MIME types
         js_mimes = ('text/javascript',
                     'application/x-javascript',
                     'application/javascript')
 
+        # Parse each file based on what its MIME specifies
         if 'text/html' in item['headers']:
             # First save the request contents into a URLContent
             urlcontent = models.URLContent()

@@ -8,7 +8,7 @@ from django.db import models
 # The following organizes a naming scheme for local filesystem
 def get_file_path(instance, filename):
     now = datetime.now()
-    if filename=="":
+    if filename == "":
         filename = "index.html"
     return [unicode(now.year), unicode(now.month), unicode(now.day),
             instance.url_scan.site_scan.site_url, filename]
