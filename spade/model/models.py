@@ -8,8 +8,10 @@ from django.db import models
 # The following organizes a naming scheme for local filesystem
 def get_file_path(instance, filename):
     now = datetime.now()
+    if filename=="":
+        filename = "index.html"
     return [unicode(now.year), unicode(now.month), unicode(now.day),
-            instance.url_scan.site_scan.folder_name, filename]
+            instance.url_scan.site_scan.site_url, filename]
 
 # Define file naming callables
 def html_filename(instance, filename):
@@ -41,7 +43,6 @@ class SiteScan(models.Model):
     """An individual site scanned."""
     batch = models.ForeignKey(Batch, db_index=True)
     site_url = models.TextField()
-    folder_name = models.TextField(max_length=200)
 
     def __unicode__(self):
         return self.site_url
@@ -54,10 +55,8 @@ class URLScan(models.Model):
     For each ``SiteScan``, we follow links one level deep from the entry page,
     so every ``SiteScan`` will have a number of associated ``URLScan``s, one
     for the entry page URL and one for each link followed.
-
-    The folder_name is what the folder on disk will be called.
-
     """
+
     site_scan = models.ForeignKey(SiteScan, db_index=True)
     page_url = models.TextField()
     timestamp = models.DateTimeField("timestamp")

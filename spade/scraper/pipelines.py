@@ -7,80 +7,79 @@ from django.core.files.base import ContentFile
 
 from scrapy.exceptions import DropItem
 import spade.model.models as models
+from urlparse import urljoin, urlparse
 
 class ScraperPipeline(object):
     def process_item(self, item, spider):
-        print "got item for "+ item['url']
 
-        # TODO: Check if a sitescan exists. If not, create it. If so, set it to a var.
-        # TODO: Check if a urlscan exists: if so, use it as a parent for each page. if not, create it with parent sitescan.
+        item_domain = urlparse(item['url']).netloc
+        sitescan = models.SiteScan.objects.filter(site_url=item_domain)[:1]
+        urlscan = models.URLScan.objects.filter(page_url=item['url'])[:1]
 
-        ## Only create a sitescan object for each base site in the list
-        #if response.meta.get('referrer') is None:
-        #    # Take care not to generate
-        #    curr_sitescan = models.SiteScan()
-        #    curr_sitescan.batch = self.batch
-        #    curr_sitescan.site_url = urlparse(response.url).netloc
-        #    curr_sitescan.folder_name = urlparse(response.url).netloc
-        #    curr_sitescan.save()
-        #    print "new sitescan for " + urlparse(response.url).netloc
+        # Generate appropriate site and url scans as needed
+        if len(sitescan) == 0:
+            sitescan = models.SiteScan()
+            sitescan.batch = spider.batch
+            sitescan.site_url = item_domain
+            sitescan.save()
+        else:
+            sitescan = sitescan[0]
 
-        ## Generate a urlscan for this url
-        #curr_urlscan = models.URLScan()
-        #curr_urlscan.site_scan = self.curr_sitescan
-        #curr_urlscan.page_url = response.url
-        #curr_urlscan.timestamp = self.get_now_time()
-        #curr_urlscan.save()
+        if len(urlscan)==0:
+            urlscan = models.URLScan()
+            urlscan.site_scan = sitescan
+            urlscan.page_url = item['url']
+            urlscan.timestamp = spider.get_now_time()
+            urlscan.save()
+        else:
+            urlscan = urlscan[0]
 
+        js_mimes = ('text/javascript',
+                    'application/x-javascript',
+                    'application/javascript')
 
+        if 'text/html' in item['headers']:
+            # First save the request contents into a URLContent
+            urlcontent = models.URLContent()
+            urlcontent.url_scan = urlscan
+            urlcontent.user_agent = item['user_agent']
 
-        #js_mimes = ('text/javascript',
-        #            'application/x-javascript',
-        #            'application/javascript')
+            # Store raw markup
+            file_content = ContentFile(item['raw_markup'])
+            urlcontent.raw_markup.save(item['filename'],file_content)
+            urlcontent.raw_markup.close()
 
-        #if 'text/html' in item['headers']:
-        #    # First save the request contents into a URLContent
-        #    urlcontent = models.URLContent()
-        #    urlcontent.url_scan = item['url_scan']
-        #    urlcontent.user_agent = item['user_agent']
+            # Store raw headers
+            file_content = ContentFile(item['headers'])
+            urlcontent.headers.save(item['filename'],file_content)
+            urlcontent.headers.close()
 
-        #    # Store raw markup
-        #    file_content = ContentFile(item['raw_markup'])
-        #    urlcontent.raw_markup.save(item['filename'],file_content)
-        #    urlcontent.raw_markup.close()
+            urlcontent.save()
 
-        #    # Store raw headers
-        #    file_content = ContentFile(item['headers'])
-        #    urlcontent.headers.save(item['filename'],file_content)
-        #    urlcontent.headers.close()
+        elif any(mime in item['headers'] for mime in js_mimes):
+            linkedjs = models.LinkedJS()
+            linkedjs.url_scan = urlscan
 
-        #    urlcontent.save()
+            # Store raw js
+            file_content = ContentFile(item['raw_markup'])
+            linkedjs.raw_js.save(item['filename'],file_content)
+            linkedjs.raw_js.close()
 
-        #elif any(mime in item['headers'] for mime in js_mimes):
-        #    linkedjs = models.LinkedJS()
-        #    linkedjs.url_scan = item['url_scan']
+            linkedjs.save()
 
-        #    # Store raw js
-        #    file_content = ContentFile(item['raw_markup'])
-        #    linkedjs.raw_js.save(item['filename'],file_content)
-        #    linkedjs.raw_js.close()
+        elif 'text/css' in item['headers']:
+            linkedcss = models.LinkedCSS()
+            linkedcss.url_scan = urlscan
 
-        #    linkedjs.save()
+            # Store raw css
+            file_content = ContentFile(item['raw_markup'])
+            linkedcss.raw_css.save(item['filename'],file_content)
+            linkedcss.raw_css.close()
 
-        #elif 'text/css' in item['headers']:
-        #    linkedcss = models.LinkedCSS()
-        #    linkedcss.url_scan = item['url_scan']
+            linkedcss.save()
 
-        #    # Store raw css
-        #    file_content = ContentFile(item['raw_markup'])
-        #    linkedcss.raw_css.save(item['filename'],file_content)
-        #    linkedcss.raw_css.close()
+        # Update batch finish time, keep this last
+        spider.batch.finish_time = spider.get_now_time()
+        spider.batch.save()
 
-        #    linkedcss.save()
-
-        ## Update batch finish time, keep this last
-        #spider.batch.finish_time = spider.get_now_time()
-        #spider.batch.save()
-
-        print item['meta']
         return item
