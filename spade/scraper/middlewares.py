@@ -9,7 +9,6 @@ from urlparse import urlparse
 import re
 
 # Define middleware here
-from urlparse import urlparse
 
 class CustomOffsiteMiddleware(OffsiteMiddleware):
     """
@@ -35,8 +34,8 @@ class CustomOffsiteMiddleware(OffsiteMiddleware):
     def should_follow(self, response, request):
         """Determine if response.url and request.url have the same root url"""
 
-        req_domain = urlparse(response.url)
-        res_domain = urlparse(request.url)
+        req_domain = urlparse_cached(response.url)
+        res_domain = urlparse_cached(request.url)
         return req_domain.netloc == res_domain.netloc
 
     def spider_opened(self, spider):
