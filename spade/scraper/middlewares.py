@@ -1,11 +1,13 @@
+"""
+Custom middleware for scrapy
+"""
 from scrapy.contrib.spidermiddleware.offsite import OffsiteMiddleware
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy import log
+from urlparse import urlparse
 
 import spade.model.models as models
-
-from urlparse import urlparse
 import re
 
 # Define middleware here
@@ -34,8 +36,8 @@ class CustomOffsiteMiddleware(OffsiteMiddleware):
     def should_follow(self, response, request):
         """Determine if response.url and request.url have the same root url"""
 
-        req_domain = urlparse_cached(response.url)
-        res_domain = urlparse_cached(request.url)
+        req_domain = urlparse(response.url)
+        res_domain = urlparse(request.url)
         return req_domain.netloc == res_domain.netloc
 
     def spider_opened(self, spider):
