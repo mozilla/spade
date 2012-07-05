@@ -34,19 +34,9 @@ class GeneralSpider(BaseSpider):
         """
         Initialization
 
-        Get list of user agents, allowed domains, start urls as well as create
-        a new batch to represent a single scraper run.
+        Set URLs to traverse from
         """
-        # Initialize variables as instance vars to access instance methods
         self.start_urls = self.get_start_urls()
-
-
-        self.batch = models.Batch()
-        self.batch.kickoff_time = self.get_now_time()
-        self.batch.finish_time = self.get_now_time()
-        self.batch.save()
-
-        self.user_agents = models.UserAgent.objects.all()
 
     def get_now_time(self):
         """Gets a datetime"""
@@ -84,9 +74,7 @@ class GeneralSpider(BaseSpider):
 
 
     def parse(self, response):
-        headers = self.get_content_type(response.headers)
-        if headers == None:
-            headers = ""
+        headers = self.get_content_type(response.headers) or ""
 
         if response.meta.get('user_agent') == None:
             # Ensure user agents have been set
@@ -95,9 +83,8 @@ class GeneralSpider(BaseSpider):
                                    'Need to add user agents.')
 
             # Generate different UA requests for each UA
-            agent_index = 0
-            while agent_index < len(self.user_agents):
-                ua = self.user_agents[agent_index].ua_string
+            for user_agent in self.user_agents:
+                ua = user_agent.ua_string
 
                 # Generate new request
                 new_request = Request(response.url)
@@ -106,7 +93,6 @@ class GeneralSpider(BaseSpider):
                 new_request.meta['user_agent'] = ua
                 new_request.dont_filter = True
 
-                agent_index = agent_index + 1
                 yield new_request
 
             # Continue crawling
@@ -151,7 +137,7 @@ class GeneralSpider(BaseSpider):
         else:
             # The response contains a user agent, we should yield an item
             item = MarkupItem()
-            item['raw_markup'] = response.body
+            item['raw_content'] = response.body
             item['headers'] = unicode(response.headers)
             item['user_agent'] = response.meta.get('user_agent')
             item['meta'] = response.meta

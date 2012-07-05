@@ -6,25 +6,25 @@ from datetime import datetime
 from django.db import models
 
 # The following organizes a naming scheme for local filesystem
-def get_file_path(instance, filename):
+def get_file_path_components(instance, filename):
     now = datetime.now()
-    if filename == "":
-        filename = "index.html"
     return [unicode(now.year), unicode(now.month), unicode(now.day),
             instance.url_scan.site_scan.site_url, filename]
 
 # Define file naming callables
 def html_filename(instance, filename):
-    return '/'.join(['html'] + get_file_path(instance, filename))
+    filename = filename or "index.html"
+    return '/'.join(['html'] +
+                   get_file_path_components(instance,filename or "index.html"))
 
 def css_filename(instance, filename):
-    return '/'.join(['css'] + get_file_path(instance, filename))
+    return '/'.join(['css'] + get_file_path_components(instance, filename))
 
 def headers_filename(instance, filename):
-    return '/'.join(['headers'] + get_file_path(instance, filename))
+    return '/'.join(['headers'] + get_file_path_components(instance, filename))
 
 def js_filename(instance, filename):
-    return '/'.join(['js'] + get_file_path(instance, filename))
+    return '/'.join(['js'] + get_file_path_components(instance, filename))
 
 
 class Batch(models.Model):

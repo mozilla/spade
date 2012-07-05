@@ -8,7 +8,7 @@ from scrapy.item import Item, Field
 class MarkupItem(Item):
     url = Field()
     user_agent = Field()
-    raw_markup = Field()
+    raw_content = Field()
     headers = Field()
     filename = Field()
     meta = Field()
