@@ -22,20 +22,19 @@ class CustomOffsiteMiddleware(OffsiteMiddleware):
 
         for req in result:
             if isinstance(req, Request):
-                if req.dont_filter and self.should_follow(response, req):
+                if self.should_follow(response, req):
                     yield req
                 else:
                     domain = urlparse_cached(req).hostname
                     if domain and domain not in self.domains_seen[spider]:
                         log.msg("Filtered offsite request to %r: %s" % (domain, req),
-                            level=log.DEBUG, spider=spider)
+                            level=log.INFO, spider=spider)
                         self.domains_seen[spider].add(domain)
             else:
                 yield req
 
     def should_follow(self, response, request):
         """Determine if response.url and request.url have the same root url"""
-
         req_domain = urlparse(response.url)
         res_domain = urlparse(request.url)
         return req_domain.netloc == res_domain.netloc
