@@ -72,9 +72,12 @@ class GeneralSpider(BaseSpider):
                 if h.lower().strip() == 'content-type':
                     return headers[h]
 
+        # If something went wrong, return empty sting
+        return ""
+
 
     def parse(self, response):
-        headers = self.get_content_type(response.headers) or ""
+        content_type = self.get_content_type(response.headers)
 
         if response.meta.get('user_agent') == None:
             # Ensure user agents have been set
@@ -96,7 +99,7 @@ class GeneralSpider(BaseSpider):
                 yield new_request
 
             # Continue crawling
-            if 'text/html' in headers:
+            if 'text/html' in content_type:
                 # Parse stylesheet links, scripts, and hyperlinks
                 hxs = HtmlXPathSelector(response)
 
@@ -139,6 +142,7 @@ class GeneralSpider(BaseSpider):
             item = MarkupItem()
             item['raw_content'] = response.body
             item['headers'] = unicode(response.headers)
+            item['content_type'] = self.get_content_type(response.headers)
             item['user_agent'] = response.meta.get('user_agent')
             item['meta'] = response.meta
             item['filename'] = os.path.basename(urlparse(response.url).path)

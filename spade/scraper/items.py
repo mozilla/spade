@@ -10,5 +10,6 @@ class MarkupItem(Item):
     user_agent = Field()
     raw_content = Field()
     headers = Field()
+    content_type = Field()
     filename = Field()
     meta = Field()
