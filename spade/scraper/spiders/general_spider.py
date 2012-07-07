@@ -79,6 +79,7 @@ class GeneralSpider(BaseSpider):
     def parse(self, response):
         content_type = self.get_content_type(response.headers)
         sitescan = response.meta.get('sitescan') or response.url
+        print sitescan
 
         if response.meta.get('user_agent') == None:
             # Ensure user agents have been set
@@ -92,9 +93,10 @@ class GeneralSpider(BaseSpider):
 
                 # Generate new request
                 new_request = Request(response.url)
-                new_request.meta['referrer'] = None
                 new_request.headers.setdefault('User-Agent', ua)
                 new_request.meta['user_agent'] = ua
+                new_request.meta['sitescan'] = response.meta.get('sitescan')
+                new_request.meta['referrer'] = None
                 new_request.dont_filter = True
 
                 yield new_request
