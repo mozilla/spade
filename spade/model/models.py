@@ -4,18 +4,19 @@ Spade models.
 """
 from datetime import datetime
 from django.db import models
+from urlparse import urlparse
 
 # The following organizes a naming scheme for local filesystem
 def get_file_path_components(instance, filename):
     now = datetime.now()
     return [unicode(now.year), unicode(now.month), unicode(now.day),
-            instance.url_scan.site_scan.site_url, filename]
+            urlparse(instance.url_scan.site_scan.site_url).netloc, filename]
 
 # Define file naming callables
 def html_filename(instance, filename):
     filename = filename or "index.html"
     return '/'.join(['html'] +
-                   get_file_path_components(instance,filename or "index.html"))
+                  get_file_path_components(instance, filename or "index.html"))
 
 def css_filename(instance, filename):
     return '/'.join(['css'] + get_file_path_components(instance, filename))
@@ -43,6 +44,9 @@ class SiteScan(models.Model):
     """An individual site scanned."""
     batch = models.ForeignKey(Batch, db_index=True)
     site_url = models.TextField()
+
+    class Meta:
+        unique_together = ("batch", "site_url")
 
     def __unicode__(self):
         return self.site_url

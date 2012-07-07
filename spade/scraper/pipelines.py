@@ -4,36 +4,24 @@
 # See: http://doc.scrapy.org/topics/item-pipeline.html
 from django.core.files.base import ContentFile
 from scrapy.exceptions import DropItem
-from urlparse import urljoin, urlparse
 
 import spade.model.models as models
 
 class ScraperPipeline(object):
     def process_item(self, item, spider):
         """Called whenever an item is yielded by the spider"""
-        item_domain = urlparse(item['url']).netloc
 
-        # Find the foreign keys they belong to, if they exist
-        sitescan = models.SiteScan.objects.filter(batch=spider.batch,
-                                                  site_url=item_domain)
+        sitescan, ss_created = models.SiteScan.objects.get_or_create(
+                                   batch=spider.batch,
+                                   site_url=item['url'] #todo: make this different
+                               )
 
-        # Generate appropriate site and url scans as needed
-        # TODO: DEAL WITH RACE CONDITIONS
-        if not sitescan:
-            sitescan = models.SiteScan.objects.create(batch=spider.batch,
-                                       site_url=item_domain)
-        else:
-            sitescan = sitescan[0]
+        urlscan, us_created = models.URLScan.objects.get_or_create(
+                                  site_scan=sitescan,
+                                  page_url=item['url'],
+                                  defaults={'timestamp': spider.get_now_time()}
+                              )
 
-        urlscan = models.URLScan.objects.filter(site_scan = sitescan,
-                                                page_url=item['url'])
-
-        if not urlscan:
-            urlscan = models.URLScan.objects.create(site_scan=sitescan,
-                                     page_url=item['url'],
-                                     timestamp=spider.get_now_time())
-        else:
-            urlscan = urlscan[0]
 
         # Javascript MIME types
         js_mimes = ('text/javascript',
