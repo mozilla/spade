@@ -13,7 +13,7 @@ class ScraperPipeline(object):
 
         sitescan, ss_created = models.SiteScan.objects.get_or_create(
                                    batch=spider.batch,
-                                   site_url=item['url'] #todo: make this different
+                                   site_url=item['sitescan'] #todo: make this different
                                )
 
         urlscan, us_created = models.URLScan.objects.get_or_create(

@@ -7,6 +7,7 @@ from scrapy.item import Item, Field
 
 class MarkupItem(Item):
     url = Field()
+    sitescan = Field()
     user_agent = Field()
     raw_content = Field()
     headers = Field()
