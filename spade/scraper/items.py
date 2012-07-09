@@ -5,10 +5,12 @@
 
 from scrapy.item import Item, Field
 
-class GeneralItem(Item):
+class MarkupItem(Item):
+    content_type = Field()
+    filename = Field()
+    headers = Field()
+    meta = Field()
+    raw_content = Field()
+    sitescan = Field()
     url = Field()
-    batch = Field()
-    sitescan
-    urlscan
-    urlcontent
-
+    user_agent = Field()

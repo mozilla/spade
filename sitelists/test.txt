@@ -1,1 +1,1 @@
-http://ambushnetworks.com/test.php
+http://ambushnetworks.com/test/test.php

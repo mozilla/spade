@@ -24,7 +24,6 @@ ITEM_PIPELINES = ['spade.scraper.pipelines.ScraperPipeline']
 # Disable default user agent middleware, swap in our custom one which uses all
 # user agents listed in the database.
 DOWNLOADER_MIDDLEWARES = {
-    'spade.scraper.middlewares.PreRequestMiddleware': 400,
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
 }
 
@@ -35,7 +34,12 @@ SPIDER_MIDDLEWARES = {
     'spade.scraper.middlewares.CustomOffsiteMiddleware': 543,
 }
 
-DEPTH_LIMIT = 1
+# Based on our modifications, depth_limit is x+1 because we use level 0 to
+# crawl the backbone of the site. Rescanning the same page with different user
+# agents is considered level 1, and we want to go down to level 2 (which is
+# really just 1 level deep).
+DEPTH_LIMIT = 2
+
 DOWNLOAD_DELAY = 0
 DOWNLOAD_TIMEOUT=20
 ENCODING_ALIASES = {'gb2312':'zh-cn', 'cp1251':'win-1251'}
@@ -44,5 +48,5 @@ CONCURRENT_REQUESTS_PER_DOMAIN = 16
 LOG_LEVEL='INFO'
 DEPTH_PRIORITY = 1
 
-#obey robots.txt
+#Obey robots.txt
 ROBOTSTXT_OBEY=True
