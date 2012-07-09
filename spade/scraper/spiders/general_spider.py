@@ -47,9 +47,6 @@ class GeneralSpider(BaseSpider):
 
         self.user_agents = models.UserAgent.objects.all()
 
-        # Default user agent, used to browse the structure of the site
-        self.user_agent = self.user_agents[0] # start from the first by default
-
         self.curr_sitescan = None
 
 
