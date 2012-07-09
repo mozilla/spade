@@ -3,6 +3,7 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/topics/item-pipeline.html
 from django.core.files.base import ContentFile
+from hashlib import sha256
 from scrapy.exceptions import DropItem
 
 import spade.model.models as models
@@ -21,7 +22,8 @@ class ScraperPipeline(object):
 
         sitescan, ss_created = models.SiteScan.objects.get_or_create(
                                    batch=spider.batch,
-                                   site_url=item['sitescan']
+                                   site_url=item['sitescan'],
+                                   site_hash=sha256(item['sitescan']).hexdigest(),
                                )
 
         urlscan, us_created = models.URLScan.objects.get_or_create(
