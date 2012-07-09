@@ -3,7 +3,6 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/topics/item-pipeline.html
 from django.core.files.base import ContentFile
-from hashlib import sha256
 from scrapy.exceptions import DropItem
 
 import spade.model.models as models

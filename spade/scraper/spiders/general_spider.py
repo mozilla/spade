@@ -14,6 +14,7 @@ from spade.scraper.items import MarkupItem
 
 # Utility Imports
 from datetime import datetime
+from hashlib import sha256
 from urlparse import urljoin, urlparse
 import os
 

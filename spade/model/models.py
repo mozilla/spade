@@ -76,7 +76,7 @@ class URLScan(models.Model):
     page_url_hash = models.CharField(max_length=64)
 
     class Meta:
-        unique_together = ("batch", "page_url_hash")
+        unique_together = ("site_scan", "page_url_hash")
 
     def __unicode__(self):
         return self.page_url
