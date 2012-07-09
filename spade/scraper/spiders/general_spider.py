@@ -78,7 +78,25 @@ class GeneralSpider(BaseSpider):
 
     def parse(self, response):
         content_type = self.get_content_type(response.headers)
+
         sitescan = response.meta.get('sitescan') or response.url
+        if response.url == sitescan:
+            # This sitescan needs to be created
+            sitescan, ss_created = models.SiteScan.objects.get_or_create(
+                           batch=self.batch,
+                           site_url=sitescan,
+                           site_url_hash=sha256(sitescan).hexdigest(),
+                       )
+            if ss_created == False:
+                # Duplicate URL in the text file, ignore this site
+                return
+
+        urlscan, us_created = models.URLScan.objects.get_or_create(
+                                  site_scan=sitescan,
+                                  page_url=response.url,
+                                  page_url_hash=sha256(response.url).hexdigest(),
+                                  defaults={'timestamp': self.get_now_time()}
+                              )
 
         if response.meta.get('user_agent') == None:
             # Ensure user agents have been set
@@ -94,7 +112,7 @@ class GeneralSpider(BaseSpider):
                 new_request = Request(response.url)
                 new_request.headers.setdefault('User-Agent', ua)
                 new_request.meta['referrer'] = None
-                new_request.meta['sitescan'] = response.meta.get('sitescan')
+                new_request.meta['sitescan'] = sitescan
                 new_request.meta['user_agent'] = ua
                 new_request.dont_filter = True
 
@@ -149,6 +167,7 @@ class GeneralSpider(BaseSpider):
             item['meta'] = response.meta
             item['raw_content'] = response.body
             item['sitescan'] = sitescan
+            item['urlscan'] = urlscan
             item['url'] = response.url
             item['user_agent'] = response.meta.get('user_agent')
             yield item

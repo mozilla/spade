@@ -12,19 +12,6 @@ class ScraperPipeline(object):
     def process_item(self, item, spider):
         """Called whenever an item is yielded by the spider"""
 
-        sitescan, ss_created = models.SiteScan.objects.get_or_create(
-                                   batch=spider.batch,
-                                   site_url=item['sitescan'],
-                                   site_hash=sha256(item['sitescan']).hexdigest(),
-                               )
-
-        urlscan, us_created = models.URLScan.objects.get_or_create(
-                                  site_scan=sitescan,
-                                  page_url=item['url'],
-                                  defaults={'timestamp': spider.get_now_time()}
-                              )
-
-
         # Javascript MIME types
         js_mimes = ('text/javascript',
                     'application/x-javascript',
@@ -33,7 +20,7 @@ class ScraperPipeline(object):
         # Parse each file based on what its MIME specifies
         if 'text/html' in item['content_type']:
             # First save the request contents into a URLContent
-            urlcontent = models.URLContent.objects.create(url_scan=urlscan,
+            urlcontent = models.URLContent.objects.create(url_scan=item['urlscan'],
                                            user_agent = item['user_agent'])
 
             # Store raw markup
@@ -49,7 +36,7 @@ class ScraperPipeline(object):
             urlcontent.save()
 
         elif any(mime in item['content_type'] for mime in js_mimes):
-            linkedjs = models.LinkedJS.objects.create(url_scan=urlscan)
+            linkedjs = models.LinkedJS.objects.create(url_scan=item['urlscan'])
 
             # Store raw js
             file_content = ContentFile(item['raw_content'])
@@ -59,7 +46,7 @@ class ScraperPipeline(object):
             linkedjs.save()
 
         elif 'text/css' in item['content_type']:
-            linkedcss = models.LinkedCSS.objects.create(url_scan=urlscan)
+            linkedcss = models.LinkedCSS.objects.create(url_scan=item['urlscan'])
 
             # Store raw css
             file_content = ContentFile(item['raw_content'])

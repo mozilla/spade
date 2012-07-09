@@ -12,5 +12,6 @@ class MarkupItem(Item):
     meta = Field()
     raw_content = Field()
     sitescan = Field()
+    urlscan = Field()
     url = Field()
     user_agent = Field()
