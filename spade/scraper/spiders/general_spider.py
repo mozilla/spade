@@ -85,8 +85,8 @@ class GeneralSpider(BaseSpider):
             # This sitescan needs to be created
             sitescan, ss_created = models.SiteScan.objects.get_or_create(
                            batch=self.batch,
-                           site_url=sitescan,
                            site_url_hash=sha256(sitescan).hexdigest(),
+                           defaults={'site_url': sitescan}
                        )
             if ss_created == False:
                 # Duplicate URL in the text file, ignore this site
@@ -94,9 +94,8 @@ class GeneralSpider(BaseSpider):
 
         urlscan, us_created = models.URLScan.objects.get_or_create(
                                   site_scan=sitescan,
-                                  page_url=response.url,
                                   page_url_hash=sha256(response.url).hexdigest(),
-                                  defaults={'timestamp': self.get_now_time()}
+                                  defaults={'page_url': response.url, 'timestamp': self.get_now_time()}
                               )
 
         if response.meta.get('user_agent') == None:
