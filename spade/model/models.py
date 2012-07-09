@@ -43,10 +43,11 @@ class Batch(models.Model):
 class SiteScan(models.Model):
     """An individual site scanned."""
     batch = models.ForeignKey(Batch, db_index=True)
+    site_hash = models.CharField(max_length=64)
     site_url = models.TextField()
 
     class Meta:
-        unique_together = ("batch", "site_url")
+        unique_together = ("batch", "site_hash")
 
     def __unicode__(self):
         return self.site_url
