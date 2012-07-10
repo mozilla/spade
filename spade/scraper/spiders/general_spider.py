@@ -92,10 +92,14 @@ class GeneralSpider(BaseSpider):
                 # Duplicate URL in the text file, ignore this site
                 return
 
+        # URLScans should not be duplicated but we don't try to catch "created"
+        # here because different user agent strings are used on the same url
+        # at every pass.
         urlscan, us_created = models.URLScan.objects.get_or_create(
-                                  site_scan=sitescan,
-                                  page_url_hash=sha256(response.url).hexdigest(),
-                                  defaults={'page_url': response.url, 'timestamp': self.get_now_time()}
+                                site_scan=sitescan,
+                                page_url_hash=sha256(response.url).hexdigest(),
+                                defaults={'page_url': response.url,
+                                          'timestamp': self.get_now_time()}
                               )
 
         if response.meta.get('user_agent') == None:
