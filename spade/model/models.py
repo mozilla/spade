@@ -114,7 +114,9 @@ class URLContent(models.Model):
 
 class LinkedCSS(models.Model):
     """A single linked CSS file."""
-    url_scan = models.ForeignKey(URLScan)
+    linked_from = models.ManyToManyField(URLContent)
+    url = models.TextField()
+    url_hash = models.CharField(max_length=64)
     raw_css = models.FileField(
         max_length=500, upload_to=css_filename)
 
@@ -127,7 +129,9 @@ class LinkedCSS(models.Model):
 
 class LinkedJS(models.Model):
     """A single linked JS file."""
-    url_scan = models.ForeignKey(URLScan)
+    linked_from = models.ManyToManyField(URLContent)
+    url = models.TextField()
+    url_hash = models.CharField(max_length=64)
     raw_js = models.FileField(
         max_length=500, upload_to=js_filename)
 
