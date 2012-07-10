@@ -23,16 +23,16 @@ def test_read_from_file(spider):
     else:
         assert False
 
-def test_crawl_1level(spider):
-    """Ensure crawl only descends to 1 level"""
-    # This test needs to insert a request into the downloader middleware and
-    # ensure that no response comes out of the downloader
-    assert False
-
 def test_useragents_pipeline(spider):
     """Ensure multiple items with different user agent strings are emitted"""
-    # This needs to test that items in the item pipeline have different user
+    # This needs to test that items sent to the item pipeline have different user
     # agents
+    assert False
+
+def test_savedcontent(spider):
+    """Ensure html, css, and javascript are saved correctly"""
+    # Look at items emitted after spider crawls a stub page to ensure that
+    # items for CSS, JS, and HTML are all emitted
     assert False
 
 def test_useragents_downloader(spider):
@@ -40,18 +40,6 @@ def test_useragents_downloader(spider):
     # Mock requests with different UAs and see the response UA is the same.
     # This could be further tested with an actual web server that responds
     # differently to different UAs
-    assert False
-
-def test_savedcontent(spider):
-    """Ensure html, css, and javascript are saved correctly"""
-    # Look in the item pipeline after spider crawls a stub page to ensure that
-    # items for CSS, JS, and HTML are all emitted
-    assert False
-
-def test_offsitefilter(spider):
-    """Ensure offsite links are not crawled"""
-    # This needs to test the offsitemiddleware (a spidermiddleware) which sends
-    # requests to the scheduler. Enure that requests emitted do not go offsite.
     assert False
 
 def test_duplinks(spider):
