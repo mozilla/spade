@@ -1,7 +1,6 @@
 # General spider for retrieving site information
 
 # Django Imports
-from django.core.management.base import CommandError
 from django.utils.timezone import utc
 
 # Scrapy Imports
@@ -39,6 +38,7 @@ class GeneralSpider(BaseSpider):
         """
         self.start_urls = self.get_start_urls()
 
+
     def get_now_time(self):
         """Gets a datetime"""
         # Convenience function for timezone-aware timestamps
@@ -52,41 +52,33 @@ class GeneralSpider(BaseSpider):
 
     def get_start_urls(self):
         """Extracts urls from a text file into the list of URLs to crawl"""
-        if settings.get('URLS') == None:
-            raise CommandError('No text file. Use -s URLS=somefile.txt')
-        else:
-            try:
-                start_urls = []
-                with open(settings.get('URLS')) as data:
-                    datalines = (line.rstrip('\r\n') for line in data)
-                    for line in datalines:
-                        start_urls.append(line)
-            except IOError:
-                raise CommandError('No such file exists!')
+        if not settings.get('URLS'):
+            raise ValueError('No text file. Use -s URLS=somefile.txt')
 
-            return start_urls
+        with open(settings.get('URLS')) as data:
+            return [line.rstrip('\r\n') for line in data]
+
 
     def get_content_type(self, headers):
-        """Get's a content type from the headers"""
+        """Gets a content type from the headers"""
         if headers:
-            for h in headers:
+            for h, val in headers.items():
                 if h.lower().strip() == 'content-type':
-                    return headers[h]
+                    return val
 
-        # If something went wrong, return empty sting
         return ""
 
 
     def parse(self, response):
         content_type = self.get_content_type(response.headers)
 
-        sitescan = response.meta.get('sitescan') or response.url
-        if response.url == sitescan:
+        sitescan = response.meta.get('sitescan')
+        if sitescan is None:
             # This sitescan needs to be created
             sitescan, ss_created = models.SiteScan.objects.get_or_create(
                            batch=self.batch,
-                           site_url_hash=sha256(sitescan).hexdigest(),
-                           defaults={'site_url': sitescan}
+                           site_url_hash=sha256(response.url).hexdigest(),
+                           defaults={'site_url': response.url}
                        )
             if ss_created == False:
                 # Duplicate URL in the text file, ignore this site
@@ -103,11 +95,6 @@ class GeneralSpider(BaseSpider):
                               )
 
         if response.meta.get('user_agent') == None:
-            # Ensure user agents have been set
-            if len(self.user_agents) == 0:
-                raise CommandError('No user agents have been set yet. '
-                                   'Need to add user agents.')
-
             # Generate different UA requests for each UA
             for user_agent in self.user_agents:
                 ua = user_agent.ua_string
