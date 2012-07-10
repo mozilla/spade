@@ -7,6 +7,7 @@ def pytest_funcarg__spider(request):
     settings.overrides['LOG_ENABLED'] = True
     settings.overrides['URLS'] = "spade/tests/sitelists/urls.txt"
     spider = GeneralSpider()
+    spider.user_agents = ['Firefox / 13.0', 'Chrome / 11.0']
 
     return spider
 
@@ -20,7 +21,7 @@ def test_name(spider):
     """Ensure the spider's name is correct"""
     assert spider.name == "all"
 
-def test_start_urls(spider):
+def test_read_from_file(spider):
     """Ensure the test list of urls was read correctly"""
     if len(start_urls) != 1:
         assert False
@@ -50,4 +51,8 @@ def test_savedcontent(spider, server):
 
 def test_offsitefilter(spider, server):
     """Ensure offsite links are not crawled"""
+    assert False
+
+def test_duplinks(spider, server):
+    """Ensure pages containing two of the same link only visit once / save 1"""
     assert False
