@@ -14,15 +14,17 @@ def get_file_path_components(instance, filename):
 
 # Define file naming callables
 def html_filename(instance, filename):
-    filename = filename or "index.html"
-    return '/'.join(['html'] +
-                  get_file_path_components(instance, filename or "index.html"))
+    return '/'.join(
+        ['html'] + get_file_path_components(
+            instance, filename or "index.html")
+        )
 
 def css_filename(instance, filename):
     return '/'.join(['css'] + get_file_path_components(instance, filename))
 
 def headers_filename(instance, filename):
-    return '/'.join(['headers'] + get_file_path_components(instance, filename))
+    return '/'.join(
+        ['headers'] + get_file_path_components(instance, filename or "index"))
 
 def js_filename(instance, filename):
     return '/'.join(['js'] + get_file_path_components(instance, filename))
