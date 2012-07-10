@@ -1,6 +1,5 @@
 from scrapy.conf import settings
 from spade.scraper.spiders.general_spider import GeneralSpider
-from spade.tests.spider.webserver.server import TestServer
 
 def pytest_funcarg__spider(request):
     """Use scrapy's overrides to start the spider w/ specific settings"""
@@ -17,39 +16,47 @@ def test_name(spider):
 
 def test_read_from_file(spider):
     """Ensure the test list of urls was read correctly"""
-    if len(start_urls) != 1:
+    if len(spider.start_urls) != 1:
         assert False
-    elif start_urls[0] == "http://localhost:8181":
+    elif spider.start_urls[0] == "http://localhost:8181":
         assert True
     else:
         assert False
 
-def test_crawl_site(spider):
-    """Ensure crawl gets kicked off and ends without failure"""
-    #
-    assert False
-
 def test_crawl_1level(spider):
     """Ensure crawl only descends to 1 level"""
-    # STUB
+    # This test needs to insert a request into the downloader middleware and
+    # ensure that no response comes out of the downloader
     assert False
 
-def test_useragents(spider):
+def test_useragents_pipeline(spider):
     """Ensure multiple items with different user agent strings are emitted"""
-    # STUB
+    # This needs to test that items in the item pipeline have different user
+    # agents
+    assert False
+
+def test_useragents_downloader(spider):
+    """Ensure the downloader uses useragents given to it """
+    # Mock requests with different UAs and see the response UA is the same.
+    # This could be further tested with an actual web server that responds
+    # differently to different UAs
     assert False
 
 def test_savedcontent(spider):
     """Ensure html, css, and javascript are saved correctly"""
-    # STUB
+    # Look in the item pipeline after spider crawls a stub page to ensure that
+    # items for CSS, JS, and HTML are all emitted
     assert False
 
 def test_offsitefilter(spider):
     """Ensure offsite links are not crawled"""
-    # STUB
+    # This needs to test the offsitemiddleware (a spidermiddleware) which sends
+    # requests to the scheduler. Enure that requests emitted do not go offsite.
     assert False
 
 def test_duplinks(spider):
     """Ensure pages containing two of the same link only visit once / save 1"""
-    # STUB
+    # The downloader will issue two responses to the spider, with the same link
+    # Ensure that we filter out the responses in the spider, since the scrapy
+    # core dupfilter is disabled.
     assert False
