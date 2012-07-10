@@ -11,12 +11,6 @@ def pytest_funcarg__spider(request):
 
     return spider
 
-def pytest_funcarg__server(request):
-    """Mock web server with some pages we can test"""
-    server = TestServer(8181)
-    server.startserver()
-    return server
-
 def test_name(spider):
     """Ensure the spider's name is correct"""
     assert spider.name == "all"
@@ -35,24 +29,27 @@ def test_crawl_site(spider):
     # STUB
     assert False
 
-def test_crawl_1level(spider, server):
+def test_crawl_1level(spider):
     """Ensure crawl only descends to 1 level"""
     # STUB
-    server.
     assert False
 
-def test_useragents(spider, server):
+def test_useragents(spider):
     """Ensure multiple items with different user agent strings are emitted"""
+    # STUB
     assert False
 
-def test_savedcontent(spider, server):
+def test_savedcontent(spider):
     """Ensure html, css, and javascript are saved correctly"""
+    # STUB
     assert False
 
-def test_offsitefilter(spider, server):
+def test_offsitefilter(spider):
     """Ensure offsite links are not crawled"""
+    # STUB
     assert False
 
-def test_duplinks(spider, server):
+def test_duplinks(spider):
     """Ensure pages containing two of the same link only visit once / save 1"""
+    # STUB
     assert False
