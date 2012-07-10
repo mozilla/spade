@@ -17,8 +17,8 @@ from hashlib import sha256
 from urlparse import urljoin, urlparse
 import os
 
-# Django Models
-import spade.model.models as models
+# Django model
+from spade import model
 
 
 class GeneralSpider(BaseSpider):
@@ -75,7 +75,7 @@ class GeneralSpider(BaseSpider):
         sitescan = response.meta.get('sitescan')
         if sitescan is None:
             # This sitescan needs to be created
-            sitescan, ss_created = models.SiteScan.objects.get_or_create(
+            sitescan, ss_created = model.SiteScan.objects.get_or_create(
                            batch=self.batch,
                            site_url_hash=sha256(response.url).hexdigest(),
                            defaults={'site_url': response.url}
@@ -87,7 +87,7 @@ class GeneralSpider(BaseSpider):
         # URLScans should not be duplicated but we don't try to catch "created"
         # here because different user agent strings are used on the same url
         # at every pass.
-        urlscan, us_created = models.URLScan.objects.get_or_create(
+        urlscan, us_created = model.URLScan.objects.get_or_create(
                                 site_scan=sitescan,
                                 page_url_hash=sha256(response.url).hexdigest(),
                                 defaults={'page_url': response.url,
