@@ -1,37 +1,25 @@
-# Define your item pipelines here
-#
-# Don't forget to add your pipeline to the ITEM_PIPELINES setting
-# See: http://doc.scrapy.org/topics/item-pipeline.html
-from django.core.files.base import ContentFile
-from hashlib import sha256
-from scrapy.exceptions import DropItem
+"""
+Item pipeline.
 
-import spade.model.models as models
+"""
+from django.core.files.base import ContentFile
+
+from spade import model
 
 class ScraperPipeline(object):
-    def open_spider(spider):
-        pass
-        # open batch
+    def __init__(self):
+        """Initialize pipeline with user agents."""
+        # Get user agents from database
+        self.user_agents = list(model.UserAgent.objects.all())
 
-    def close_spider(spider):
-        pass
-        # close batch
+
+        if not self.user_agents:
+            raise ValueError(
+                "No user agents; add some with 'manage.py useragent --add'")
+
 
     def process_item(self, item, spider):
         """Called whenever an item is yielded by the spider"""
-
-        sitescan, ss_created = models.SiteScan.objects.get_or_create(
-                                   batch=spider.batch,
-                                   site_url=item['sitescan'],
-                                   site_hash=sha256(item['sitescan']).hexdigest(),
-                               )
-
-        urlscan, us_created = models.URLScan.objects.get_or_create(
-                                  site_scan=sitescan,
-                                  page_url=item['url'],
-                                  defaults={'timestamp': spider.get_now_time()}
-                              )
-
 
         # Javascript MIME types
         js_mimes = ('text/javascript',
@@ -41,8 +29,8 @@ class ScraperPipeline(object):
         # Parse each file based on what its MIME specifies
         if 'text/html' in item['content_type']:
             # First save the request contents into a URLContent
-            urlcontent = models.URLContent.objects.create(url_scan=urlscan,
-                                           user_agent = item['user_agent'])
+            urlcontent = model.URLContent.objects.create(
+                url_scan=item['urlscan'], user_agent = item['user_agent'])
 
             # Store raw markup
             file_content = ContentFile(item['raw_content'])
@@ -57,7 +45,7 @@ class ScraperPipeline(object):
             urlcontent.save()
 
         elif any(mime in item['content_type'] for mime in js_mimes):
-            linkedjs = models.LinkedJS.objects.create(url_scan=urlscan)
+            linkedjs = model.LinkedJS.objects.create(url_scan=item['urlscan'])
 
             # Store raw js
             file_content = ContentFile(item['raw_content'])
@@ -67,7 +55,8 @@ class ScraperPipeline(object):
             linkedjs.save()
 
         elif 'text/css' in item['content_type']:
-            linkedcss = models.LinkedCSS.objects.create(url_scan=urlscan)
+            linkedcss = model.LinkedCSS.objects.create(
+                url_scan=item['urlscan'])
 
             # Store raw css
             file_content = ContentFile(item['raw_content'])
@@ -89,10 +78,8 @@ class ScraperPipeline(object):
         now = spider.get_now_time()
 
         # Create initial batch
-        spider.batch = models.Batch.objects.create(kickoff_time=now,
-                                                   finish_time=now)
+        spider.batch = model.Batch.objects.create(
+            kickoff_time=now, finish_time=now)
         spider.batch.save()
 
-        # Get user agents from database and make them available to the spider
-        spider.user_agents = models.UserAgent.objects.all()
-
+        spider.user_agents = self.user_agents

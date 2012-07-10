@@ -14,15 +14,17 @@ def get_file_path_components(instance, filename):
 
 # Define file naming callables
 def html_filename(instance, filename):
-    filename = filename or "index.html"
-    return '/'.join(['html'] +
-                  get_file_path_components(instance, filename or "index.html"))
+    return '/'.join(
+        ['html'] + get_file_path_components(
+            instance, filename or "index.html")
+        )
 
 def css_filename(instance, filename):
     return '/'.join(['css'] + get_file_path_components(instance, filename))
 
 def headers_filename(instance, filename):
-    return '/'.join(['headers'] + get_file_path_components(instance, filename))
+    return '/'.join(
+        ['headers'] + get_file_path_components(instance, filename or "index"))
 
 def js_filename(instance, filename):
     return '/'.join(['js'] + get_file_path_components(instance, filename))
@@ -43,11 +45,17 @@ class Batch(models.Model):
 class SiteScan(models.Model):
     """An individual site scanned."""
     batch = models.ForeignKey(Batch, db_index=True)
-    site_hash = models.CharField(max_length=64)
     site_url = models.TextField()
 
+    # Need the hash of the URL to be in a key constraint. A "Textfield" cannot
+    # be in a key constraint. Thus we have both fields for the site_url as well
+    # as a hash of the url, which we ultimately use in the (batch, url_hash)
+    # key constraint.
+    site_url_hash = models.CharField(max_length=64)
+
+
     class Meta:
-        unique_together = ("batch", "site_hash")
+        unique_together = ("batch", "site_url_hash")
 
     def __unicode__(self):
         return self.site_url
@@ -65,6 +73,12 @@ class URLScan(models.Model):
     site_scan = models.ForeignKey(SiteScan, db_index=True)
     page_url = models.TextField()
     timestamp = models.DateTimeField("timestamp")
+
+    # See comment for site_url_hash -- same reason.
+    page_url_hash = models.CharField(max_length=64)
+
+    class Meta:
+        unique_together = ("site_scan", "page_url_hash")
 
     def __unicode__(self):
         return self.page_url

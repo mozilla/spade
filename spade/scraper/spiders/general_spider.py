@@ -1,7 +1,6 @@
 # General spider for retrieving site information
 
 # Django Imports
-from django.core.management.base import CommandError
 from django.utils.timezone import utc
 
 # Scrapy Imports
@@ -14,6 +13,7 @@ from spade.scraper.items import MarkupItem
 
 # Utility Imports
 from datetime import datetime
+from hashlib import sha256
 from urlparse import urljoin, urlparse
 import os
 
@@ -38,6 +38,7 @@ class GeneralSpider(BaseSpider):
         """
         self.start_urls = self.get_start_urls()
 
+
     def get_now_time(self):
         """Gets a datetime"""
         # Convenience function for timezone-aware timestamps
@@ -51,41 +52,49 @@ class GeneralSpider(BaseSpider):
 
     def get_start_urls(self):
         """Extracts urls from a text file into the list of URLs to crawl"""
-        if settings.get('URLS') == None:
-            raise CommandError('No text file. Use -s URLS=somefile.txt')
-        else:
-            try:
-                start_urls = []
-                with open(settings.get('URLS')) as data:
-                    datalines = (line.rstrip('\r\n') for line in data)
-                    for line in datalines:
-                        start_urls.append(line)
-            except IOError:
-                raise CommandError('No such file exists!')
+        if not settings.get('URLS'):
+            raise ValueError('No text file. Use -s URLS=somefile.txt')
 
-            return start_urls
+        with open(settings.get('URLS')) as data:
+            return [line.rstrip('\r\n') for line in data]
+
 
     def get_content_type(self, headers):
-        """Get's a content type from the headers"""
+        """Gets a content type from the headers"""
         if headers:
-            for h in headers:
+            for h, val in headers.items():
                 if h.lower().strip() == 'content-type':
-                    return headers[h]
+                    return val
 
-        # If something went wrong, return empty sting
         return ""
 
 
     def parse(self, response):
         content_type = self.get_content_type(response.headers)
-        sitescan = response.meta.get('sitescan') or response.url
+
+        sitescan = response.meta.get('sitescan')
+        if sitescan is None:
+            # This sitescan needs to be created
+            sitescan, ss_created = models.SiteScan.objects.get_or_create(
+                           batch=self.batch,
+                           site_url_hash=sha256(response.url).hexdigest(),
+                           defaults={'site_url': response.url}
+                       )
+            if ss_created == False:
+                # Duplicate URL in the text file, ignore this site
+                return
+
+        # URLScans should not be duplicated but we don't try to catch "created"
+        # here because different user agent strings are used on the same url
+        # at every pass.
+        urlscan, us_created = models.URLScan.objects.get_or_create(
+                                site_scan=sitescan,
+                                page_url_hash=sha256(response.url).hexdigest(),
+                                defaults={'page_url': response.url,
+                                          'timestamp': self.get_now_time()}
+                              )
 
         if response.meta.get('user_agent') == None:
-            # Ensure user agents have been set
-            if len(self.user_agents) == 0:
-                raise CommandError('No user agents have been set yet. '
-                                   'Need to add user agents.')
-
             # Generate different UA requests for each UA
             for user_agent in self.user_agents:
                 ua = user_agent.ua_string
@@ -94,7 +103,7 @@ class GeneralSpider(BaseSpider):
                 new_request = Request(response.url)
                 new_request.headers.setdefault('User-Agent', ua)
                 new_request.meta['referrer'] = None
-                new_request.meta['sitescan'] = response.meta.get('sitescan')
+                new_request.meta['sitescan'] = sitescan
                 new_request.meta['user_agent'] = ua
                 new_request.dont_filter = True
 
@@ -149,6 +158,7 @@ class GeneralSpider(BaseSpider):
             item['meta'] = response.meta
             item['raw_content'] = response.body
             item['sitescan'] = sitescan
+            item['urlscan'] = urlscan
             item['url'] = response.url
             item['user_agent'] = response.meta.get('user_agent')
             yield item
