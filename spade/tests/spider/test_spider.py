@@ -6,19 +6,9 @@ from spade.scraper.items import MarkupItem
 
 def pytest_funcarg__spider(request):
     """Use scrapy's overrides to start the spider w/ specific settings"""
-    # Create 2 User agents
-    ua1 = model.UserAgent()
-    ua1.ua_string = 'Firefox / 11.0'
-    ua1.save()
-
-    ua1 = model.UserAgent()
-    ua1.site_url = 'Chrome / 20.0'
-    ua1.save()
-
     settings.overrides['LOG_ENABLED'] = True
-    settings.overrides['URLS'] = "spade/tests/sitelists/urls.txt"
+    settings.overrides['URLS'] = u"spade/tests/sitelists/urls.txt"
     spider = GeneralSpider()
-    spider.user_agents = list(model.UserAgent.objects.all())
 
     # Create initial batch
     now = spider.get_now_time()
@@ -27,6 +17,45 @@ def pytest_funcarg__spider(request):
     spider.batch.save()
 
     return spider
+
+def pytest_funcarg__html_headers(request):
+    html_headers = {'X-Powered-By': ['PHP/5.3.2-1ubuntu4.17'],
+                    'Vary': ['Accept-Encoding'],
+                    'Server': ['Apache/2.2.14 (Ubuntu)'],
+                    'Connection': ['close'],
+                    'Date': ['Tue, 10 Jul 2012 21:52:28 GMT'],
+                    'Content-Type': ['text/html']}
+    return html_headers
+
+def pytest_funcarg__scrape_request(request):
+    # Create a mock request
+    mock_request = Request('http://thisdoesntmatter:12345')
+    mock_request.meta['referrer'] = None
+    mock_request.meta['sitescan'] = None
+    mock_request.meta['user_agent'] = None
+    mock_request.dont_filter = True
+    return mock_request
+
+def pytest_funcarg__mock_html_twolinks(request):
+    mock_html = """
+                <html>
+                <head></head>
+                <body>
+                <a href="link1.html">Link 1</a>
+                <a href="link2.html">Link 2</a>
+                </body></html>
+                """
+    return mock_html
+
+def pytest_funcarg__mock_html_nolinks(request):
+    mock_html = """
+                <html>
+                <head></head>
+                <body>
+                </body></html>
+                """
+    return mock_html
+
 
 def test_spider_name(spider):
     """Ensure the spider's name is correct"""
@@ -41,76 +70,94 @@ def test_spider_read_from_file(spider):
     else:
         assert False
 
-def test_useragents_spider(spider, httpserver):
-    """Ensure multiple requests with different user agent strings are emitted"""
+def test_useragents_spider(spider, scrape_request, html_headers,
+                           mock_html_nolinks):
+    """Ensure multiple requests with different user agent strings emitted"""
+    # Create 2 useragents
+    ua1 = model.UserAgent()
+    ua1.ua_string = u'Firefox / 11.0'
+    ua1.save()
 
-    mock_html = """
-                <html>
-                <head></head>
-                <body>
-                <a href="link1.html">Link 1</a>
-                <a href="link2.html">Link 2</a>
-                </body></html>
-                """
+    ua2 = model.UserAgent()
+    ua2.ua_string = u'Chrome / 20.0'
+    ua2.save()
+    spider.user_agents = list(model.UserAgent.objects.all())
 
-    mock_headers = {'Content-Length': ['220'],
-                    'X-Powered-By': ['PHP/5.3.2-1ubuntu4.17'],
-                    'Vary': ['Accept-Encoding'],
-                    'Server': ['Apache/2.2.14 (Ubuntu)'],
-                    'Connection': ['close'],
-                    'Date': ['Tue, 10 Jul 2012 21:52:28 GMT'],
-                    'Content-Type': ['text/html']}
-
-    httpserver.serve_content(content=mock_html,
-                             code=200,
-                             headers=mock_headers)
-
-    # Create a mock request
-    mock_request = Request(httpserver.url)
-    mock_request.meta['referrer'] = None
-    mock_request.meta['sitescan'] = None
-    mock_request.meta['user_agent'] = None
-    mock_request.dont_filter = True
-
-
-    # Create a mock response linked to the request
-    mock_response = Response(httpserver.url, body=mock_html)
-    mock_response.flags = []
-    mock_response.request = mock_request
+    # Generate a mock response
+    mock_response = Response('http://thisdoesntmatter:12345',
+                             body=mock_html_nolinks)
+    mock_response.request = scrape_request
+    mock_response.headers = html_headers
     mock_response.status = 200
-    mock_response.headers = mock_headers
-    mock_response.encoding = 'ascii'
+    mock_response.encoding = u'ascii'
+    mock_response.flags = []
 
-    generator = spider.parse(mock_response)
+    # Call the spider on the mock response
+    pipeline_generator = spider.parse(mock_response)
 
-    items = 0
-    requests = 0
-    for item in generator:
-        if isinstance(item, Request):
-            requests = requests + 1
-            # TODO: Inspect each request for correct user agents
-        if isinstance(item, MarkupItem):
-            items = items + 1
+    # Assert that we have two requests for this linkless page, one for each
+    # of the user agents we inserted
+    request_uas = []
+    for new_request in pipeline_generator:
+        if isinstance(new_request, Request):
+            request_uas.append(new_request.meta['user_agent'])
+        else:
+            # We're not expecting anything other than Requests
+            assert False
 
-    assert (items == 0) and (requests == 4)
+    assert set(request_uas) == set([u'Firefox / 11.0', u'Chrome / 20.0'])
 
+def test_spider_crawls_links(spider, scrape_request, html_headers,
+                           mock_html_twolinks):
+    """Ensure spider always picks up relevant links to HTML pages"""
+    # Use only 1 user agent for easier counting
+    ua1 = model.UserAgent()
+    ua1.ua_string = u'Firefox / 11.0'
+    ua1.save()
+    spider.user_agents = list(model.UserAgent.objects.all())
 
-#def test_savedcontent(spider):
-#    """Ensure html, css, and javascript are saved correctly"""
-#    # Look at items emitted after spider crawls a stub page to ensure that
-#    # items for CSS, JS, and HTML are all emitted
-#    assert False
-#
-#def test_useragents_downloader(spider):
-#    """Ensure the downloader uses useragents given to it """
-#    # Mock requests with different UAs and see the response UA is the same.
-#    # This could be further tested with an actual web server that responds
-#    # differently to different UAs
-#    assert False
-#
-#def test_duplinks(spider):
-#    """Ensure pages containing two of the same link only visit once / save 1"""
-#    # The downloader will issue two responses to the spider, with the same link
-#    # Ensure that we filter out the responses in the spider, since the scrapy
-#    # core dupfilter is disabled.
-#    assert False
+    # Generate a mock response based on html containing two links
+    mock_response = Response('http://thisdoesntmatter:12345',
+                             body=mock_html_twolinks)
+    mock_response.request = scrape_request
+    mock_response.headers = html_headers
+    mock_response.status = 200
+    mock_response.encoding = u'ascii'
+    mock_response.flags = []
+
+    # Call spider on the mock response
+    pipeline_generator = spider.parse(mock_response)
+
+    # Assert that we got the expected set of new requests generated in the
+    # spider and nothing else
+    sites_expected = set([mock_response.url,
+                     mock_response.url + '/link1.html',
+                     mock_response.url + '/link2.html'])
+    sites_collected = []
+    for new_request in pipeline_generator:
+        if isinstance(new_request, Request):
+            sites_collected.append(new_request.url)
+        else:
+            assert False
+
+    assert sites_expected == set(sites_collected)
+
+def test_savedcontent(spider):
+    """Ensure html, css, and javascript are saved correctly"""
+    # Look at items emitted after spider crawls a stub page to ensure that
+    # items for CSS, JS, and HTML are all emitted
+    assert False
+
+def test_useragents_downloader(spider):
+    """Ensure the downloader uses useragents given to it """
+    # Mock requests with different UAs and see the response UA is the same.
+    # This could be further tested with an actual web server that responds
+    # differently to different UAs
+    assert False
+
+def test_duplinks(spider):
+    """Ensure pages containing two of the same link only visit once / save 1"""
+    # The downloader will issue two responses to the spider, with the same link
+    # Ensure that we filter out the responses in the spider, since the scrapy
+    # core dupfilter is disabled.
+    assert False
