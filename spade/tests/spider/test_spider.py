@@ -26,7 +26,7 @@ def test_read_from_file(spider):
 
 def test_crawl_site(spider):
     """Ensure crawl gets kicked off and ends without failure"""
-    # STUB
+    #
     assert False
 
 def test_crawl_1level(spider):
