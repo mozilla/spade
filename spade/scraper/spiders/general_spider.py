@@ -135,8 +135,10 @@ class GeneralSpider(BaseSpider):
                 except TypeError:
                     hyperlinks = []
 
+                # Using a set removes duplicate links.
+                all_links = set(hyperlinks + js_links + css_links)
+
                 # Examine links, yield requests if they are valid
-                all_links = hyperlinks + js_links + css_links
                 for url in all_links:
 
                     if not url.startswith('http://'):
