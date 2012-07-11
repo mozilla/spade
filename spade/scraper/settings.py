@@ -29,8 +29,12 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Disable the default filtering middleware and enable our own which only allows
 # following internal links of a site (no offsite hyperlinks allowed!)
+# Also disable depth middleware and replace with our own which only applies to
+# HTML (not CSS or Javascripts)
 SPIDER_MIDDLEWARES = {
     'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware':None,
+    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware':None,
+    'spade.scraper.middlewares.CustomDepthMiddleware': 542,
     'spade.scraper.middlewares.CustomOffsiteMiddleware': 543,
 }
 
