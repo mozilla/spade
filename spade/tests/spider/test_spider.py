@@ -29,7 +29,7 @@ def pytest_funcarg__html_headers(request):
 
 def pytest_funcarg__scrape_request(request):
     # Create a mock request
-    mock_request = Request('http://thisdoesntmatter:12345')
+    mock_request = Request('http://test:12345')
     mock_request.meta['referrer'] = None
     mock_request.meta['sitescan'] = None
     mock_request.meta['user_agent'] = None
@@ -84,7 +84,7 @@ def test_useragents_spider(spider, scrape_request, html_headers,
     spider.user_agents = list(model.UserAgent.objects.all())
 
     # Generate a mock response
-    mock_response = Response('http://thisdoesntmatter:12345',
+    mock_response = Response('http://test:12345',
                              body=mock_html_nolinks)
     mock_response.request = scrape_request
     mock_response.headers = html_headers
@@ -117,7 +117,7 @@ def test_spider_crawls_links(spider, scrape_request, html_headers,
     spider.user_agents = list(model.UserAgent.objects.all())
 
     # Generate a mock response based on html containing two links
-    mock_response = Response('http://thisdoesntmatter:12345',
+    mock_response = Response('http://test:12345',
                              body=mock_html_twolinks)
     mock_response.request = scrape_request
     mock_response.headers = html_headers
@@ -142,22 +142,6 @@ def test_spider_crawls_links(spider, scrape_request, html_headers,
 
     assert sites_expected == set(sites_collected)
 
-def test_savedcontent(spider):
-    """Ensure html, css, and javascript are saved correctly"""
-    # Look at items emitted after spider crawls a stub page to ensure that
-    # items for CSS, JS, and HTML are all emitted
-    assert False
-
-def test_useragents_downloader(spider):
-    """Ensure the downloader uses useragents given to it """
-    # Mock requests with different UAs and see the response UA is the same.
-    # This could be further tested with an actual web server that responds
-    # differently to different UAs
-    assert False
-
-def test_duplinks(spider):
-    """Ensure pages containing two of the same link only visit once / save 1"""
-    # The downloader will issue two responses to the spider, with the same link
-    # Ensure that we filter out the responses in the spider, since the scrapy
-    # core dupfilter is disabled.
+def test_savedcontent(spider, scrape_request, html_headers):
+    """Ensure html, css, and javascript items are emitted correctly"""
     assert False
