@@ -38,15 +38,20 @@ class CustomOffsiteMiddleware(OffsiteMiddleware):
                 yield req
 
     def should_follow(self, response, request):
-        """Follow if not offsite link, with exception of .css and .js files"""
+        """
+        We shouldn't follow a link if it goes offsite, with exception of .css
+        and .js files because a lot of people use CDNs and the like to host
+        their js and stylesheets.
+        """
         req_domain = urlparse(response.url)
         res_domain = urlparse(request.url)
 
-        # Allow CSS and JS files
         extension = res_domain.path.split(".")[-1]
         if extension in ['css', 'js']:
+            # Allow CSS and JS files
             return True
 
+        # Otherwise, ensure that the domains share the same root origin
         return req_domain.netloc == res_domain.netloc
 
     def spider_opened(self, spider):
