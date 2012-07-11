@@ -85,14 +85,11 @@ class CustomDepthMiddleware(object):
 
                 content_type = request.meta['content_type'] or []
 
-                mimes_to_ignore = ['text/css',
-                                   'text/javascript',
-                                   'script/javascript']
-
-                # Allow inclusion of the correct depth of js/css
-                for mime in mimes_to_ignore:
-                    if mime in content_type:
-                        depth = response.request.meta['depth']
+                # Allow inclusion of the correct depth of js/css or other
+                # linked file up to 1 level deeper (this works by undoing the
+                # depth counter by 1 for non-html files)
+                if 'text/html' not in content_type:
+                    depth = response.request.meta['depth']
 
                 # Check if we need to filter
                 if self.prio:
