@@ -13,8 +13,6 @@ import spade.model.models as models
 import re
 import warnings
 
-
-
 # Define middleware here
 
 class CustomOffsiteMiddleware(OffsiteMiddleware):
