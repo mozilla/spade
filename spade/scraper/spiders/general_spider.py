@@ -64,7 +64,11 @@ class GeneralSpider(BaseSpider):
         if headers:
             for h, val in headers.items():
                 if h.lower().strip() == 'content-type':
-                    return val
+                    # As it turns out, content-type often appears with some
+                    # additional values e.g "text/css; charset=utf8" so we want
+                    # to turn that into a list, allowing us to access just
+                    # 'text/css' rather than the whole string
+                    return val[0].split(";")
 
         return ""
 
@@ -105,6 +109,7 @@ class GeneralSpider(BaseSpider):
                 new_request.meta['referrer'] = None
                 new_request.meta['sitescan'] = sitescan
                 new_request.meta['user_agent'] = ua
+                new_request.meta['content_type'] = content_type
                 new_request.dont_filter = True
 
                 yield new_request
@@ -130,8 +135,10 @@ class GeneralSpider(BaseSpider):
                 except TypeError:
                     hyperlinks = []
 
+                # Using a set removes duplicate links.
+                all_links = set(hyperlinks + js_links + css_links)
+
                 # Examine links, yield requests if they are valid
-                all_links = hyperlinks + js_links + css_links
                 for url in all_links:
 
                     if not url.startswith('http://'):
@@ -145,6 +152,7 @@ class GeneralSpider(BaseSpider):
                     request.meta['referrer'] = response.url
                     request.meta['sitescan'] = sitescan
                     request.meta['user_agent'] = None
+                    request.meta['content_type'] = None
                     request.dont_filter = True
 
                     yield request
