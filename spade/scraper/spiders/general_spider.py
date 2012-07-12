@@ -88,15 +88,7 @@ class GeneralSpider(BaseSpider):
                 # Duplicate URL in the text file, ignore this site
                 return
 
-        # URLScans should not be duplicated but we don't try to catch "created"
-        # here because different user agent strings are used on the same url
-        # at every pass.
-        urlscan, us_created = models.URLScan.objects.get_or_create(
-                                site_scan=sitescan,
-                                page_url_hash=sha256(response.url).hexdigest(),
-                                defaults={'page_url': response.url,
-                                          'timestamp': self.get_now_time()}
-                              )
+
 
         if response.meta.get('user_agent') == None:
             # Generate different UA requests for each UA
@@ -106,7 +98,7 @@ class GeneralSpider(BaseSpider):
                 # Generate new request
                 new_request = Request(response.url)
                 new_request.headers.setdefault('User-Agent', ua)
-                new_request.meta['referrer'] = None
+                new_request.meta['referrer'] = response.meta.get('referrer')
                 new_request.meta['sitescan'] = sitescan
                 new_request.meta['user_agent'] = ua
                 new_request.meta['content_type'] = content_type
@@ -158,6 +150,21 @@ class GeneralSpider(BaseSpider):
                     yield request
 
         else:
+            if 'text/html' not in self.get_content_type(response.headers):
+                # For linked content, find the urlscan it linked from
+                urlscan = models.URLScan.objects.get(
+                          site_scan=sitescan,
+                          page_url_hash=sha256(response.meta['referrer']).hexdigest())
+
+
+
+            else:
+                urlscan, us_created = models.URLScan.objects.get_or_create(
+                                site_scan=sitescan,
+                                page_url_hash=sha256(response.url).hexdigest(),
+                                defaults={'page_url': response.url,
+                                          'timestamp': self.get_now_time()})
+
             # The response contains a user agent, we should yield an item
             item = MarkupItem()
             item['content_type'] = self.get_content_type(response.headers)
@@ -169,4 +176,5 @@ class GeneralSpider(BaseSpider):
             item['urlscan'] = urlscan
             item['url'] = response.url
             item['user_agent'] = response.meta.get('user_agent')
+
             yield item

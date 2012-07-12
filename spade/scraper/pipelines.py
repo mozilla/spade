@@ -44,24 +44,31 @@ class ScraperPipeline(object):
             urlcontent.save()
 
         elif any(mime in item['content_type'] for mime in js_mimes):
-            linkedjs = model.LinkedJS.objects.create(url_scan=item['urlscan'])
+            #urlcontent = model.URLContent.objects.get(url_scan=item['urlscan'], user_agent=item['user_agent'])
+
+            linkedjs = model.LinkedJS.objects.create()
 
             # Store raw js
             file_content = ContentFile(item['raw_content'])
             linkedjs.raw_js.save(item['filename'],file_content)
             linkedjs.raw_js.close()
 
+            # Create relationship with url content
+            # linkedjs.linked_from.add(item['urlcontent'])
             linkedjs.save()
 
         elif 'text/css' in item['content_type']:
-            linkedcss = model.LinkedCSS.objects.create(
-                url_scan=item['urlscan'])
+            #urlcontent = model.URLContent.objects.get(url_scan=item['urlscan'], user_agent=item['user_agent'])
+
+            linkedcss = model.LinkedCSS.objects.create()
 
             # Store raw css
             file_content = ContentFile(item['raw_content'])
             linkedcss.raw_css.save(item['filename'],file_content)
             linkedcss.raw_css.close()
 
+            # Create relationship with url content
+            #linkedcss.linked_from.add(item['urlcontent'])
             linkedcss.save()
 
         return item

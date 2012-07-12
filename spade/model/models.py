@@ -7,10 +7,11 @@ from django.db import models
 from urlparse import urlparse
 
 # The following organizes a naming scheme for local filesystem
+# Takes a urlcontent instance and a filename
 def get_file_path_components(instance, filename):
     now = datetime.now()
     return [unicode(now.year), unicode(now.month), unicode(now.day),
-            urlparse(instance.url_scan.site_scan.site_url).netloc, filename]
+            unicode(now.hour), unicode(now.minute), filename]
 
 # Define file naming callables
 def html_filename(instance, filename):
