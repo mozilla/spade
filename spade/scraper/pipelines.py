@@ -44,32 +44,44 @@ class ScraperPipeline(object):
             urlcontent.save()
 
         elif any(mime in item['content_type'] for mime in js_mimes):
-            #urlcontent = model.URLContent.objects.get(url_scan=item['urlscan'], user_agent=item['user_agent'])
+            urlcontent = model.URLContent.objects.get(url_scan=item['urlscan'], user_agent=item['user_agent'])
 
-            linkedjs = model.LinkedJS.objects.create()
+            # TODO: Check if linkedjs with params already exists. If so, just add. Otherwise, create a new linkedjs
+            if True:
+                linkedjs = model.LinkedJS.objects.create()
 
-            # Store raw js
-            file_content = ContentFile(item['raw_content'])
-            linkedjs.raw_js.save(item['filename'],file_content)
-            linkedjs.raw_js.close()
+                # Store raw js
+                file_content = ContentFile(item['raw_content'])
+                linkedjs.raw_js.save(item['filename'],file_content)
+                linkedjs.raw_js.close()
+
+                linkedjs.save()
+            else:
+                # linkedjs =
+                pass
 
             # Create relationship with url content
-            # linkedjs.linked_from.add(item['urlcontent'])
-            linkedjs.save()
+            linkedjs.linked_from.add(urlcontent)
 
         elif 'text/css' in item['content_type']:
-            #urlcontent = model.URLContent.objects.get(url_scan=item['urlscan'], user_agent=item['user_agent'])
+            urlcontent = model.URLContent.objects.get(url_scan=item['urlscan'], user_agent=item['user_agent'])
 
-            linkedcss = model.LinkedCSS.objects.create()
+            # TODO: Check if linkedcss with params already exists. If so, just add. Otherwise, create a new linkedcss
+            if True:
+                linkedcss = model.LinkedCSS.objects.create()
 
-            # Store raw css
-            file_content = ContentFile(item['raw_content'])
-            linkedcss.raw_css.save(item['filename'],file_content)
-            linkedcss.raw_css.close()
+                # Store raw css
+                file_content = ContentFile(item['raw_content'])
+                linkedcss.raw_css.save(item['filename'],file_content)
+                linkedcss.raw_css.close()
+
+                linkedcss.save()
+            else:
+                # linkedcss =
+                pass
 
             # Create relationship with url content
-            #linkedcss.linked_from.add(item['urlcontent'])
-            linkedcss.save()
+            linkedcss.linked_from.add(urlcontent)
 
         return item
 
