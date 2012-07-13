@@ -64,7 +64,11 @@ class GeneralSpider(BaseSpider):
         if headers:
             for h, val in headers.items():
                 if h.lower().strip() == 'content-type':
-                    return val
+                    # As it turns out, content-type often appears with some
+                    # additional values e.g "text/css; charset=utf8" so we want
+                    # to turn that into a list, allowing us to access just
+                    # 'text/css' rather than the whole string
+                    return val[0].split(";")
 
         return ""
 
@@ -84,16 +88,6 @@ class GeneralSpider(BaseSpider):
                 # Duplicate URL in the text file, ignore this site
                 return
 
-        # URLScans should not be duplicated but we don't try to catch "created"
-        # here because different user agent strings are used on the same url
-        # at every pass.
-        urlscan, us_created = model.URLScan.objects.get_or_create(
-                                site_scan=sitescan,
-                                page_url_hash=sha256(response.url).hexdigest(),
-                                defaults={'page_url': response.url,
-                                          'timestamp': self.get_now_time()}
-                              )
-
         if response.meta.get('user_agent') == None:
             # Generate different UA requests for each UA
             for user_agent in self.user_agents:
@@ -102,9 +96,10 @@ class GeneralSpider(BaseSpider):
                 # Generate new request
                 new_request = Request(response.url)
                 new_request.headers.setdefault('User-Agent', ua)
-                new_request.meta['referrer'] = None
+                new_request.meta['referrer'] = response.meta.get('referrer')
                 new_request.meta['sitescan'] = sitescan
                 new_request.meta['user_agent'] = ua
+                new_request.meta['content_type'] = content_type
                 new_request.dont_filter = True
 
                 yield new_request
@@ -130,8 +125,10 @@ class GeneralSpider(BaseSpider):
                 except TypeError:
                     hyperlinks = []
 
+                # Using a set removes duplicate links.
+                all_links = set(hyperlinks + js_links + css_links)
+
                 # Examine links, yield requests if they are valid
-                all_links = hyperlinks + js_links + css_links
                 for url in all_links:
 
                     if not url.startswith('http://'):
@@ -145,11 +142,25 @@ class GeneralSpider(BaseSpider):
                     request.meta['referrer'] = response.url
                     request.meta['sitescan'] = sitescan
                     request.meta['user_agent'] = None
+                    request.meta['content_type'] = None
                     request.dont_filter = True
 
                     yield request
 
         else:
+            if 'text/html' not in self.get_content_type(response.headers):
+                # For linked content, find the urlscan it linked from
+                urlscan = models.URLScan.objects.get(
+                          site_scan=sitescan,
+                          page_url_hash=sha256(response.meta['referrer']).hexdigest())
+            else:
+                # Only create urlscans for text/html
+                urlscan, us_created = models.URLScan.objects.get_or_create(
+                                site_scan=sitescan,
+                                page_url_hash=sha256(response.url).hexdigest(),
+                                defaults={'page_url': response.url,
+                                          'timestamp': self.get_now_time()})
+
             # The response contains a user agent, we should yield an item
             item = MarkupItem()
             item['content_type'] = self.get_content_type(response.headers)
@@ -161,4 +172,5 @@ class GeneralSpider(BaseSpider):
             item['urlscan'] = urlscan
             item['url'] = response.url
             item['user_agent'] = response.meta.get('user_agent')
+
             yield item
