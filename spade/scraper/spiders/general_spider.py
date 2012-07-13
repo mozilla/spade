@@ -88,8 +88,6 @@ class GeneralSpider(BaseSpider):
                 # Duplicate URL in the text file, ignore this site
                 return
 
-
-
         if response.meta.get('user_agent') == None:
             # Generate different UA requests for each UA
             for user_agent in self.user_agents:
