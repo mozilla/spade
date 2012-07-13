@@ -150,12 +150,12 @@ class GeneralSpider(BaseSpider):
         else:
             if 'text/html' not in self.get_content_type(response.headers):
                 # For linked content, find the urlscan it linked from
-                urlscan = models.URLScan.objects.get(
+                urlscan = model.URLScan.objects.get(
                           site_scan=sitescan,
                           page_url_hash=sha256(response.meta['referrer']).hexdigest())
             else:
                 # Only create urlscans for text/html
-                urlscan, us_created = models.URLScan.objects.get_or_create(
+                urlscan, us_created = model.URLScan.objects.get_or_create(
                                 site_scan=sitescan,
                                 page_url_hash=sha256(response.url).hexdigest(),
                                 defaults={'page_url': response.url,
