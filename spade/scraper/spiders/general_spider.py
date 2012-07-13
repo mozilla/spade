@@ -153,10 +153,8 @@ class GeneralSpider(BaseSpider):
                 urlscan = models.URLScan.objects.get(
                           site_scan=sitescan,
                           page_url_hash=sha256(response.meta['referrer']).hexdigest())
-
-
-
             else:
+                # Only create urlscans for text/html
                 urlscan, us_created = models.URLScan.objects.get_or_create(
                                 site_scan=sitescan,
                                 page_url_hash=sha256(response.url).hexdigest(),

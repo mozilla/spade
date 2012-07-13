@@ -3,7 +3,7 @@ Item pipeline.
 
 """
 from django.core.files.base import ContentFile
-
+from hashlib import sha256
 from spade import model
 
 class ScraperPipeline(object):
@@ -44,11 +44,19 @@ class ScraperPipeline(object):
             urlcontent.save()
 
         elif any(mime in item['content_type'] for mime in js_mimes):
-            urlcontent = model.URLContent.objects.get(url_scan=item['urlscan'], user_agent=item['user_agent'])
+            urlcontent = model.URLContent.objects.get(url_scan=item['urlscan'],
+                                                 user_agent=item['user_agent'])
 
-            # TODO: Check if linkedjs with params already exists. If so, just add. Otherwise, create a new linkedjs
-            if True:
-                linkedjs = model.LinkedJS.objects.create()
+            # If the linked file already exists, don't save another copy
+            try:
+                linkedjs = model.LinkedJS.objects.get(
+                                      url_hash=sha256(item['url']).hexdigest())
+
+            except model.LinkedJS.DoesNotExist:
+                print "DNE"
+                # Create the item since it doesn't exist
+                linkedjs = model.LinkedJS.objects.create(url=item['url'],
+                                      url_hash=sha256(item['url']).hexdigest())
 
                 # Store raw js
                 file_content = ContentFile(item['raw_content'])
@@ -56,19 +64,24 @@ class ScraperPipeline(object):
                 linkedjs.raw_js.close()
 
                 linkedjs.save()
-            else:
-                # linkedjs =
-                pass
 
             # Create relationship with url content
             linkedjs.linked_from.add(urlcontent)
 
         elif 'text/css' in item['content_type']:
-            urlcontent = model.URLContent.objects.get(url_scan=item['urlscan'], user_agent=item['user_agent'])
+            urlcontent = model.URLContent.objects.get(url_scan=item['urlscan'],
+                                                 user_agent=item['user_agent'])
 
-            # TODO: Check if linkedcss with params already exists. If so, just add. Otherwise, create a new linkedcss
-            if True:
-                linkedcss = model.LinkedCSS.objects.create()
+            # If the linked file already exists, don't save another copy
+            try:
+                linkedcss = model.LinkedCSS.objects.get(
+                                      url_hash=sha256(item['url']).hexdigest())
+
+            except model.LinkedCSS.DoesNotExist:
+                print "DNE"
+                # Create the item since it doesn't exist
+                linkedcss = model.LinkedCSS.objects.create(url=item['url'],
+                                      url_hash=sha256(item['url']).hexdigest())
 
                 # Store raw css
                 file_content = ContentFile(item['raw_content'])
@@ -76,9 +89,6 @@ class ScraperPipeline(object):
                 linkedcss.raw_css.close()
 
                 linkedcss.save()
-            else:
-                # linkedcss =
-                pass
 
             # Create relationship with url content
             linkedcss.linked_from.add(urlcontent)
