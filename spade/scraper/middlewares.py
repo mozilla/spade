@@ -41,16 +41,16 @@ class CustomOffsiteMiddleware(OffsiteMiddleware):
         and .js files because a lot of people use CDNs and the like to host
         their js and stylesheets.
         """
-        req_domain = urlparse(response.url)
-        res_domain = urlparse(request.url)
+        res_url_data = urlparse(response.url)
+        req_url_data = urlparse(request.url)
 
-        extension = res_domain.path.split(".")[-1]
+        extension = req_url_data.path.split(".")[-1]
         if extension in ['css', 'js']:
             # Allow CSS and JS files
             return True
 
         # Otherwise, ensure that the domains share the same root origin
-        return req_domain.netloc == res_domain.netloc
+        return req_url_data.netloc == res_url_data.netloc
 
     def spider_opened(self, spider):
         """Scrapy signal catching function: spider open"""
