@@ -32,8 +32,6 @@ class GeneralSpider(BaseSpider):
 
     def __init__(self):
         """
-        Initialization
-
         Set URLs to traverse from
         """
         self.start_urls = self.get_start_urls()
@@ -65,7 +63,6 @@ class GeneralSpider(BaseSpider):
                     # to turn that into a list, allowing us to access just
                     # 'text/css' rather than the whole string
                     return val[0].split(";")
-
         return ""
 
     def parse(self, response):
