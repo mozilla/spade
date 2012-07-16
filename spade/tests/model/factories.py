@@ -3,9 +3,12 @@ import factory
 
 from datetime import datetime
 from django.utils.timezone import utc
+from hashlib import sha256
 from spade.model import models
 
 MOCK_DATE = datetime(2012, 6, 29, 21, 10, 24, 10848, tzinfo=utc)
+MOCK_CSS_URL = u"http://www.sammyliu.com/wp-content/themes/polaroid-perfect/style.css"
+MOCK_JS_URL = u"http://code.jquery.com/jquery-1.7.2.min.js"
 
 class BatchFactory(factory.Factory):
     FACTORY_FOR = models.Batch
@@ -25,6 +28,7 @@ class URLScanFactory(factory.Factory):
     site_scan = factory.SubFactory(SiteScanFactory)
     page_url = u"http://www.mozilla.com"
     timestamp = MOCK_DATE
+    page_url_hash = MOCK_PAGE_URL_HASH
 
 class UserAgentFactory(factory.Factory):
     FACTORY_FOR = models.UserAgent
@@ -42,11 +46,16 @@ class URLContentFactory(factory.Factory):
 class LinkedCSSFactory(factory.Factory):
     FACTORY_FOR = models.LinkedCSS
 
-    url_scan = factory.SubFactory(URLScanFactory)
+    linked_from.add(factory.SubFactory(URLContentFactory))
+    url = MOCK_CSS_URL
+    url_hash = sha256(MOCK_CSS_URL)
     raw_css = u"body{color:#000}"
 
 class LinkedJSFactory(factory.Factory):
     FACTORY_FOR = models.LinkedJS
 
-    url_scan = factory.SubFactory(URLScanFactory)
+    linked_from.add(factory.SubFactory(URLContentFactory))
+    url = MOCK_JS_URL
+    url_hash = sha256(MOCK_JS_URL)
     raw_js = u"document.write('hello world')"
+
