@@ -5,6 +5,7 @@ from datetime import datetime
 from django.utils.timezone import utc
 from spade.model.models import SiteScan, Batch
 
+
 def pytest_funcarg__sitescan(request):
     batch = Batch()
     mock_date = datetime(2012, 6, 29, 21, 10, 24, 10848, tzinfo=utc)
