@@ -12,5 +12,5 @@ def test_crawl_1level(downloadermiddleware):
 def test_crawl_linked_morelevels(downloadermiddleware):
     """Ensure all CSS/JS is downloaded on crawled html pages"""
     # This test needs to insert a request into the downloader middleware and
-    # ensure that no response comes out of the downloader
+    # ensure that a valid response comes out
     assert False

@@ -1,8 +1,13 @@
+from hashlib import sha256
 from scrapy.conf import settings
 from scrapy.http import Response, Request
 from spade.scraper.spiders.general_spider import GeneralSpider
 from spade import model
 from spade.scraper.items import MarkupItem
+from spade.tests.model import factories
+from urlparse import urlparse
+
+import os
 
 def pytest_funcarg__spider(request):
     """Use scrapy's overrides to start the spider w/ specific settings"""
@@ -19,13 +24,25 @@ def pytest_funcarg__spider(request):
     return spider
 
 def pytest_funcarg__html_headers(request):
-    html_headers = {'X-Powered-By': ['PHP/5.3.2-1ubuntu4.17'],
-                    'Vary': ['Accept-Encoding'],
-                    'Server': ['Apache/2.2.14 (Ubuntu)'],
-                    'Connection': ['close'],
+    """Mock HTML headers"""
+    html_headers = {'Vary': ['Accept-Encoding'],
                     'Date': ['Tue, 10 Jul 2012 21:52:28 GMT'],
                     'Content-Type': ['text/html']}
     return html_headers
+
+def pytest_funcarg__css_headers(request):
+    """Mock CSS headers"""
+    css_headers = { 'Vary': ['Accept-Encoding'],
+                    'Date': ['Tue, 10 Jul 2012 21:52:28 GMT'],
+                    'Content-Type': ['text/css']}
+    return css_headers
+
+def pytest_funcarg__js_headers(request):
+    """Mock JS headers"""
+    js_headers = { 'Vary': ['Accept-Encoding'],
+                    'Date': ['Tue, 10 Jul 2012 21:52:28 GMT'],
+                    'Content-Type': ['text/js']}
+    return js_headers
 
 def pytest_funcarg__scrape_request(request):
     # Create a mock request
@@ -36,6 +53,18 @@ def pytest_funcarg__scrape_request(request):
     mock_request.dont_filter = True
     return mock_request
 
+def pytest_funcarg__linked_css_request(request):
+    # Create a mock request
+    mock_request = Request('http://test:12345/default.css')
+    mock_request.meta['referrer'] = "http://test:12345/"
+    mock_request.meta['sitescan'] = factories.SiteScanFactory()
+    mock_request.meta['user_agent'] = "Firefox / 11.0"
+    mock_request.headers.setdefault('User-Agent', "Firefox / 11.0")
+    mock_request.meta['content_type'] = "text/css"
+    mock_request.dont_filter = True
+    return mock_request
+
+# Define mock markup and linked content
 def pytest_funcarg__mock_html_twolinks(request):
     mock_html = """
                 <html>
@@ -55,6 +84,21 @@ def pytest_funcarg__mock_html_nolinks(request):
                 </body></html>
                 """
     return mock_html
+
+def pytest_funcarg__mock_css(request):
+    mock_css = """
+                body{
+                    color:#fff;
+                    background: #000;
+                }
+                """
+    return mock_css
+
+def pytest_funcarg__mock_js(request):
+    mock_js = """
+              document.write('hello world');
+              """
+    return mock_js
 
 
 def test_spider_name(spider):
@@ -142,6 +186,50 @@ def test_spider_crawls_links(spider, scrape_request, html_headers,
 
     assert sites_expected == set(sites_collected)
 
-def test_savedcontent(spider, scrape_request, html_headers):
-    """Ensure html, css, and javascript items are emitted correctly"""
-    assert False
+def test_savedcontent(spider, linked_css_request, css_headers, mock_css):
+    """Ensure css, and javascript items are emitted correctly"""
+    # Use only 1 user agent for easier counting
+    ua1 = model.UserAgent()
+    ua1.ua_string = u'Firefox / 11.0'
+    ua1.save()
+    spider.user_agents = list(model.UserAgent.objects.all())
+
+    # Generate a mock response based on CSS
+    mock_response = Response('http://test:12345/default.css',
+                             body=mock_css)
+    mock_response.request = linked_css_request
+    mock_response.headers = css_headers
+    mock_response.status = 200
+    mock_response.encoding = u'ascii'
+    mock_response.flags = []
+
+    # Generate a fake urlscan to use in our item comparison
+    mock_urlscan = model.URLScan.objects.create(
+                        site_scan=linked_css_request.meta['sitescan'],
+                        page_url_hash=sha256("http://test:12345/").hexdigest(),
+                        page_url=mock_response.url,
+                        timestamp=spider.get_now_time())
+
+    # Send the mocks to the spider for processing
+    pipeline_generator = spider.parse(mock_response)
+
+    # Verify the item returned is what we expected
+    item_expected = MarkupItem()
+    item_expected['content_type'] = spider.get_content_type(css_headers)
+    item_expected['filename'] = os.path.basename(urlparse(mock_response.url).path)
+    item_expected['headers'] = unicode(css_headers)
+    item_expected['meta'] = mock_response.meta
+    item_expected['raw_content'] = mock_response.body
+    item_expected['sitescan'] = linked_css_request.meta['sitescan']
+    item_expected['urlscan'] = mock_urlscan
+    item_expected['url'] = mock_response.url
+    item_expected['user_agent'] = mock_response.meta.get('user_agent')
+
+    item_collected = None
+    for item in pipeline_generator:
+        if isinstance(item, MarkupItem):
+            item_collected = item
+        else:
+            assert False
+
+    assert item_expected == item_collected

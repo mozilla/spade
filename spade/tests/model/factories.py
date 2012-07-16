@@ -28,7 +28,7 @@ class URLScanFactory(factory.Factory):
     site_scan = factory.SubFactory(SiteScanFactory)
     page_url = u"http://www.mozilla.com"
     timestamp = MOCK_DATE
-    page_url_hash = MOCK_PAGE_URL_HASH
+    page_url_hash = sha256("http://www.mozilla.com")
 
 class UserAgentFactory(factory.Factory):
     FACTORY_FOR = models.UserAgent
@@ -46,7 +46,6 @@ class URLContentFactory(factory.Factory):
 class LinkedCSSFactory(factory.Factory):
     FACTORY_FOR = models.LinkedCSS
 
-    linked_from.add(factory.SubFactory(URLContentFactory))
     url = MOCK_CSS_URL
     url_hash = sha256(MOCK_CSS_URL)
     raw_css = u"body{color:#000}"
@@ -54,7 +53,6 @@ class LinkedCSSFactory(factory.Factory):
 class LinkedJSFactory(factory.Factory):
     FACTORY_FOR = models.LinkedJS
 
-    linked_from.add(factory.SubFactory(URLContentFactory))
     url = MOCK_JS_URL
     url_hash = sha256(MOCK_JS_URL)
     raw_js = u"document.write('hello world')"

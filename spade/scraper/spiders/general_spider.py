@@ -74,6 +74,10 @@ class GeneralSpider(BaseSpider):
 
 
     def parse(self, response):
+        """
+        Function called by the scrapy downloader after a site url has been
+        visited
+        """
         content_type = self.get_content_type(response.headers)
 
         sitescan = response.meta.get('sitescan')
@@ -150,9 +154,10 @@ class GeneralSpider(BaseSpider):
         else:
             if 'text/html' not in self.get_content_type(response.headers):
                 # For linked content, find the urlscan it linked from
+                referrer_hash = sha256(response.meta['referrer']).hexdigest()
                 urlscan = model.URLScan.objects.get(
                           site_scan=sitescan,
-                          page_url_hash=sha256(response.meta['referrer']).hexdigest())
+                          page_url_hash=referrer_hash)
             else:
                 # Only create urlscans for text/html
                 urlscan, us_created = model.URLScan.objects.get_or_create(
