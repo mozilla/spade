@@ -68,7 +68,7 @@ class GeneralSpider(BaseSpider):
                     # additional values e.g "text/css; charset=utf8" so we want
                     # to turn that into a list, allowing us to access just
                     # 'text/css' rather than the whole string
-                    return val[0].split(";")
+                    return val[0].split(";")[0]
 
         return ""
 
@@ -115,7 +115,7 @@ class GeneralSpider(BaseSpider):
                 yield new_request
 
             # Continue crawling
-            if 'text/html' in content_type:
+            if 'text/html' == content_type:
                 # Parse stylesheet links, scripts, and hyperlinks
                 hxs = HtmlXPathSelector(response)
 

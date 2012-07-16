@@ -26,7 +26,7 @@ class ScraperPipeline(object):
                     'application/javascript')
 
         # Parse each file based on what its MIME specifies
-        if 'text/html' in item['content_type']:
+        if 'text/html' == item['content_type']:
             # First save the request contents into a URLContent
             urlcontent = model.URLContent.objects.create(
                 url_scan=item['urlscan'], user_agent = item['user_agent'])
@@ -43,7 +43,7 @@ class ScraperPipeline(object):
 
             urlcontent.save()
 
-        elif any(mime in item['content_type'] for mime in js_mimes):
+        elif any(mime == item['content_type'] for mime in js_mimes):
             linkedjs = model.LinkedJS.objects.create(url_scan=item['urlscan'])
 
             # Store raw js
@@ -53,7 +53,7 @@ class ScraperPipeline(object):
 
             linkedjs.save()
 
-        elif 'text/css' in item['content_type']:
+        elif 'text/css' == item['content_type']:
             linkedcss = model.LinkedCSS.objects.create(
                 url_scan=item['urlscan'])
 
