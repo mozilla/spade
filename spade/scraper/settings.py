@@ -21,16 +21,19 @@ NEWSPIDER_MODULE = 'spade.scraper.spiders'
 
 ITEM_PIPELINES = ['spade.scraper.pipelines.ScraperPipeline']
 
-# Disable default user agent middleware, swap in our custom one which uses all
-# user agents listed in the database.
+# Disable default user agent middleware
 DOWNLOADER_MIDDLEWARES = {
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
 }
 
 # Disable the default filtering middleware and enable our own which only allows
 # following internal links of a site (no offsite hyperlinks allowed!)
+# Also disable depth middleware and replace with our own which only applies to
+# HTML (not CSS or Javascripts)
 SPIDER_MIDDLEWARES = {
     'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware':None,
+    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware':None,
+    'spade.scraper.middlewares.CustomDepthMiddleware': 542,
     'spade.scraper.middlewares.CustomOffsiteMiddleware': 543,
 }
 
