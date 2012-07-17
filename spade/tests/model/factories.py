@@ -7,8 +7,8 @@ from hashlib import sha256
 from spade.model import models
 
 MOCK_DATE = datetime(2012, 6, 29, 21, 10, 24, 10848, tzinfo=utc)
-MOCK_CSS_URL = (u"http://www.sammyliu.com/wp-content/themes/polaroid-perfect/",
-                u"style.css",)
+MOCK_CSS_URL = (u"http://www.sammyliu.com/wp-content/themes/polaroid-perfect/"
+                u"style.css")
 MOCK_JS_URL = u"http://code.jquery.com/jquery-1.7.2.min.js"
 
 
