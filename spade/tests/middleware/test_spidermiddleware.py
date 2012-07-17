@@ -9,12 +9,8 @@ from spade.scraper.spiders.general_spider import GeneralSpider
 
 
 def pytest_funcarg__spider(request):
-    """Use scrapy's overrides to start the spider w/ specific settings"""
-    settings.overrides['LOG_ENABLED'] = True
-    settings.overrides['URLS'] = u"spade/tests/sitelists/urls.txt"
+    """Initialize a dummy spider"""
     spider = GeneralSpider()
-
-    # Create initial batch
     now = spider.get_now_time()
     spider.batch = model.Batch.objects.create(
         kickoff_time=now, finish_time=now)
@@ -87,13 +83,14 @@ def test_offsitefilter(spider, offsite_middleware, mock_response):
     assert len(results) == 1
 
 
-#def test_crawl_1level(depth_middleware):
-#    """Ensure we only download 1 level of html"""
-#    # This test needs to insert a request into the downloader middleware and
-#    # ensure that no response comes out of the downloader
-#    assert False
-#
-#
+def test_crawl_1level(depth_middleware):
+    """Ensure we only download 1 level of html"""
+    depth_middleware.
+    # This test needs to insert a request into the downloader middleware and
+    # ensure that no response comes out of the downloader
+    assert False
+
+
 #def test_crawl_linked_morelevels(depth_middleware):
 #    """Ensure all CSS/JS is downloaded on crawled html pages"""
 #    # This test needs to insert a request into the downloader middleware and
