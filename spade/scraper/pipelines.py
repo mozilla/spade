@@ -14,7 +14,7 @@ class ScraperPipeline(object):
 
         if not self.user_agents:
             raise ValueError(
-                "No user agents; add some with 'manage.py useragent --add'")
+                "No user agents; add some with 'manage.py useragents --add'")
 
 
     def process_item(self, item, spider):
