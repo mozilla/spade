@@ -1,9 +1,7 @@
 """
 Tests for URLContent model
 """
-
 from . import factories
-from spade.model.models import URLContent
 
 
 def pytest_funcarg__urlcontent(request):
@@ -11,5 +9,6 @@ def pytest_funcarg__urlcontent(request):
 
 
 def test_unicode(urlcontent):
+    print "sup"
     default_string = u"'http://www.mozilla.com' scanned with 'Firefox / 5.0'"
     assert unicode(urlcontent) == default_string

@@ -75,7 +75,7 @@ class GeneralSpider(BaseSpider):
         sitescan = response.meta.get('sitescan')
         if sitescan is None:
             # This sitescan needs to be created
-            sitescan, ss_created = models.SiteScan.objects.get_or_create(
+            sitescan, ss_created = model.SiteScan.objects.get_or_create(
                 batch=self.batch,
                 site_url_hash=sha256(response.url).hexdigest(),
                 defaults={'site_url': response.url})
@@ -146,13 +146,13 @@ class GeneralSpider(BaseSpider):
         else:
             if 'text/html' not in self.get_content_type(response.headers):
                 # For linked content, find the urlscan it linked from
-                urlscan = models.URLScan.objects.get(
+                urlscan = model.URLScan.objects.get(
                     site_scan=sitescan,
                     page_url_hash=
                     sha256(response.meta['referrer']).hexdigest())
             else:
                 # Only create urlscans for text/html
-                urlscan, us_created = models.URLScan.objects.get_or_create(
+                urlscan, us_created = model.URLScan.objects.get_or_create(
                     site_scan=sitescan,
                     page_url_hash=sha256(response.url).hexdigest(),
                     defaults={'page_url': response.url,

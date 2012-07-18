@@ -58,11 +58,11 @@ class SiteScan(models.Model):
     # key constraint.
     site_url_hash = models.CharField(max_length=64)
 
-    class Meta:
-        unique_together = ("batch", "site_url_hash")
-
     def __unicode__(self):
         return self.site_url
+
+    class Meta:
+        unique_together = ("batch", "site_url_hash")
 
 
 class URLScan(models.Model):
@@ -81,11 +81,11 @@ class URLScan(models.Model):
     # See comment for site_url_hash -- same reason.
     page_url_hash = models.CharField(max_length=64)
 
-    class Meta:
-        unique_together = ("site_scan", "page_url_hash")
-
     def __unicode__(self):
         return self.page_url
+
+    class Meta:
+        unique_together = ("site_scan", "page_url_hash")
 
 
 class UserAgent(models.Model):
