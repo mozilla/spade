@@ -11,11 +11,7 @@ MOCK_DATE = datetime(2012, 6, 29, 21, 10, 24, 10848, tzinfo=utc)
 
 
 def pytest_funcarg__batch(request):
-    batch = factories.BatchFactory.build()
-    batch.kickoff_time = MOCK_DATE
-    batch.finish_time = MOCK_DATE
-    batch.save()
-
+    batch = factories.BatchFactory(kickoff_time=MOCK_DATE, finish_time=MOCK_DATE)
     return batch
 
 

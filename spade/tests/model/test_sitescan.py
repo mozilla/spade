@@ -7,28 +7,29 @@ from hashlib import sha256
 from django.db import IntegrityError
 
 
-def pytest_funcarg__sitescan(request):
-    return factories.SiteScanFactory()
-
-
-def test_unicode(sitescan):
+def test_unicode():
     """Unicode representation of sitescan gives URL."""
-    assert unicode(sitescan) == u"http://www.mozilla.com"
+    assert unicode(factories.SiteScanFactory()) == u"http://www.mozilla.com"
 
 
-def test_constraint(sitescan):
+def teardown_function(function):
+    model.SiteScan.objects.filter(site_url_hash=sha256("http://www.mozilla.com").hexdigest()).delete()
+
+
+def test_constraint():
     """
     Ensure that two entries with the same page hash+site scan object cannot
     be inserted
     """
+    test_batch = factories.BatchFactory()
     ss_created = model.SiteScan.objects.create(
-        batch=sitescan.batch,
+        batch=test_batch,
         site_url_hash=sha256("http://www.mozilla.com").hexdigest(),
-        site_url="http://www.mozilla.com")
+        site_url="http://www.somethingdifferent.com")
 
     try:
         ss_created = model.SiteScan.objects.create(
-            batch=sitescan.batch,
+            batch=test_batch,
             site_url_hash=sha256("http://www.mozilla.com").hexdigest(),
             site_url="http://www.somethingdifferent.com")
         assert False
