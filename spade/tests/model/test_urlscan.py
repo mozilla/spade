@@ -1,12 +1,16 @@
 """
 Test URLScan model
 """
-from . import factories
 from datetime import datetime
+from django.db import IntegrityError
 from django.utils.timezone import utc
 from hashlib import sha256
+import pytest
 from spade import model
-from django.db import IntegrityError
+
+from . import factories
+
+
 
 MOCK_DATE = datetime(2012, 6, 29, 21, 10, 24, 10848, tzinfo=utc)
 
@@ -18,26 +22,19 @@ def test_unicode(urlscan):
     assert unicode(urlscan) == u"http://www.mozilla.com"
 
 
-def test_constraint(urlscan):
+def test_constraint():
     """
     Ensure that two entries with the same page hash+site scan object cannot
     be inserted
     """
-    us_created = model.URLScan.objects.create(
-        site_scan=urlscan.site_scan,
+    urlscan = factories.URLScanFactory.create(
         page_url_hash=sha256(u"http://www.mozilla.com").hexdigest(),
         page_url=u"http://www.mozilla.com",
         timestamp=MOCK_DATE)
 
-    assert us_created
-
-    try:
-        us_created = model.URLScan.objects.create(
+    with pytest.raises(IntegrityError):
+        model.URLScan.objects.create(
             site_scan=urlscan.site_scan,
             page_url_hash=sha256(u"http://www.mozilla.com").hexdigest(),
             page_url=u"http://www.irrelevant.com",
             timestamp=datetime.now(tz=utc))
-        assert False
-
-    except IntegrityError:
-        assert True
