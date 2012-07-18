@@ -1,10 +1,12 @@
 """
 Tests for SiteScan model
 """
-from . import factories
-from spade import model
-from hashlib import sha256
 from django.db import IntegrityError
+from hashlib import sha256
+import pytest
+from spade import model
+
+from . import factories
 
 
 def test_unicode():
@@ -12,27 +14,18 @@ def test_unicode():
     assert unicode(factories.SiteScanFactory()) == u"http://www.mozilla.com"
 
 
-def teardown_function(function):
-    model.SiteScan.objects.filter(site_url_hash=sha256("http://www.mozilla.com").hexdigest()).delete()
-
-
 def test_constraint():
     """
     Ensure that two entries with the same page hash+site scan object cannot
     be inserted
     """
-    test_batch = factories.BatchFactory()
-    ss_created = model.SiteScan.objects.create(
-        batch=test_batch,
+
+    sitescan = factories.SiteScanFactory.create(
         site_url_hash=sha256("http://www.mozilla.com").hexdigest(),
         site_url="http://www.somethingdifferent.com")
 
-    try:
-        ss_created = model.SiteScan.objects.create(
-            batch=test_batch,
+    with pytest.raises(IntegrityError):
+        model.SiteScan.objects.create(
+            batch=sitescan.batch,
             site_url_hash=sha256("http://www.mozilla.com").hexdigest(),
             site_url="http://www.somethingdifferent.com")
-        assert False
-
-    except IntegrityError:
-        assert True
