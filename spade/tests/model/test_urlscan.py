@@ -1,24 +1,20 @@
 """
 Test URLScan model
 """
+import pytest
+
+from . import factories
 from datetime import datetime
 from django.db import IntegrityError
 from django.utils.timezone import utc
 from hashlib import sha256
-import pytest
 from spade import model
-
-from . import factories
-
-
 
 MOCK_DATE = datetime(2012, 6, 29, 21, 10, 24, 10848, tzinfo=utc)
 
-def pytest_funcarg__urlscan(request):
-    return factories.URLScanFactory.create()
 
-
-def test_unicode(urlscan):
+def test_unicode():
+    urlscan = factories.URLScanFactory.create()
     assert unicode(urlscan) == u"http://www.mozilla.com"
 
 
