@@ -11,7 +11,7 @@ from django.db import IntegrityError
 MOCK_DATE = datetime(2012, 6, 29, 21, 10, 24, 10848, tzinfo=utc)
 
 def pytest_funcarg__urlscan(request):
-    return factories.URLScanFactory()
+    return factories.URLScanFactory.create()
 
 
 def test_unicode(urlscan):

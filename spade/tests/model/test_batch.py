@@ -5,14 +5,13 @@ Tests for Batch model
 from . import factories
 from datetime import datetime
 from django.utils.timezone import utc
-from spade.model import models
 
 MOCK_DATE = datetime(2012, 6, 29, 21, 10, 24, 10848, tzinfo=utc)
 
 
 def pytest_funcarg__batch(request):
-    batch = factories.BatchFactory(kickoff_time=MOCK_DATE, finish_time=MOCK_DATE)
-    return batch
+    return factories.BatchFactory.create(
+        kickoff_time=MOCK_DATE, finish_time=MOCK_DATE)
 
 
 def test_unicode(batch):
