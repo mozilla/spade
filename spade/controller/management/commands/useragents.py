@@ -2,6 +2,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from spade.model.models import UserAgent
 
+
 class Command(BaseCommand):
     help = "Manage user agents to use in each crawl."
 
@@ -20,8 +21,7 @@ class Command(BaseCommand):
                     action='store',
                     dest='remove',
                     default=False,
-                    help='Remove useragent string from database')
-        )
+                    help='Remove useragent string from database'))
 
     def handle(self, *args, **options):
 
@@ -33,7 +33,7 @@ class Command(BaseCommand):
             self.stdout.write("=====================================\n")
 
             for agent in UserAgent.objects.all():
-                self.stdout.write(agent.ua_string+'\n')
+                self.stdout.write(agent.ua_string + '\n')
 
         elif new:
             new_ua = UserAgent()

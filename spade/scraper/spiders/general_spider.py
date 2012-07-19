@@ -17,8 +17,8 @@ from hashlib import sha256
 from urlparse import urljoin, urlparse
 import os
 
-# Django Models
-import spade.model.models as models
+# Django model
+from spade import model
 
 
 class GeneralSpider(BaseSpider):
@@ -60,19 +60,22 @@ class GeneralSpider(BaseSpider):
                 if h.lower().strip() == 'content-type':
                     # As it turns out, content-type often appears with some
                     # additional values e.g "text/css; charset=utf8" so we want
-                    # to turn that into a list, allowing us to access just
-                    # 'text/css' rather than the whole string
+                    # just 'text/css' rather than the whole string
                     return val[0].split(";")[0]
-
         return ""
 
     def parse(self, response):
+        """
+        Function called by the scrapy downloader after a site url has been
+        visited
+        """
         content_type = self.get_content_type(response.headers)
 
         sitescan = response.meta.get('sitescan')
         if sitescan is None:
             # This sitescan needs to be created
-            sitescan, ss_created = models.SiteScan.objects.get_or_create(
+            sitescan, ss_created = model.SiteScan.objects.get_or_create(
+
                 batch=self.batch,
                 site_url_hash=sha256(response.url).hexdigest(),
                 defaults={'site_url': response.url})
@@ -143,13 +146,15 @@ class GeneralSpider(BaseSpider):
         else:
             if 'text/html' not in self.get_content_type(response.headers):
                 # For linked content, find the urlscan it linked from
-                urlscan = models.URLScan.objects.get(
+                urlscan = model.URLScan.objects.get(
+
                     site_scan=sitescan,
                     page_url_hash=
                     sha256(response.meta['referrer']).hexdigest())
             else:
                 # Only create urlscans for text/html
-                urlscan, us_created = models.URLScan.objects.get_or_create(
+                urlscan, us_created = model.URLScan.objects.get_or_create(
+
                     site_scan=sitescan,
                     page_url_hash=sha256(response.url).hexdigest(),
                     defaults={'page_url': response.url,

@@ -23,7 +23,7 @@ class Command(BaseCommand):
             default.append(u"crawl")
             default.append(u"all")
             default.append(u"-s")
-            default.append(u"URLS="+unicode(args[0]))
+            default.append(u"URLS=" + unicode(args[0]))
 
             from scrapy.cmdline import execute
             execute(default)

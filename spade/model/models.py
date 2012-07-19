@@ -6,6 +6,7 @@ from datetime import datetime
 from django.db import models
 from urlparse import urlparse
 
+
 # The following organizes a naming scheme for local filesystem
 # Takes a urlcontent instance and a filename
 def get_file_path_components(instance, filename):
@@ -13,19 +14,22 @@ def get_file_path_components(instance, filename):
     return [unicode(now.year), unicode(now.month), unicode(now.day),
             unicode(now.hour), unicode(now.minute), filename]
 
+
 # Define file naming callables
 def html_filename(instance, filename):
     return '/'.join(
         ['html'] + get_file_path_components(
-            instance, filename or "index.html")
-        )
+            instance, filename or "index.html"))
+
 
 def css_filename(instance, filename):
     return '/'.join(['css'] + get_file_path_components(instance, filename))
 
+
 def headers_filename(instance, filename):
     return '/'.join(
         ['headers'] + get_file_path_components(instance, filename or "index"))
+
 
 def js_filename(instance, filename):
     return '/'.join(['js'] + get_file_path_components(instance, filename))
@@ -54,12 +58,11 @@ class SiteScan(models.Model):
     # key constraint.
     site_url_hash = models.CharField(max_length=64)
 
+    def __unicode__(self):
+        return self.site_url
 
     class Meta:
         unique_together = ("batch", "site_url_hash")
-
-    def __unicode__(self):
-        return self.site_url
 
 
 class URLScan(models.Model):
@@ -78,11 +81,11 @@ class URLScan(models.Model):
     # See comment for site_url_hash -- same reason.
     page_url_hash = models.CharField(max_length=64)
 
-    class Meta:
-        unique_together = ("site_scan", "page_url_hash")
-
     def __unicode__(self):
         return self.page_url
+
+    class Meta:
+        unique_together = ("site_scan", "page_url_hash")
 
 
 class UserAgent(models.Model):
