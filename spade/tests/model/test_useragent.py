@@ -8,12 +8,9 @@ from django.db import IntegrityError
 from spade.model.models import UserAgent
 
 
-def pytest_funcarg__ua(request):
-    return UserAgent(ua_string=u"Mozilla/5.0")
-
-
-def test_unicode(ua):
+def test_unicode():
     """Unicode representation of a user agent is the UA string."""
+    UserAgent(ua_string=u"Mozilla/5.0")
     assert unicode(ua) == u"Mozilla/5.0"
 
 

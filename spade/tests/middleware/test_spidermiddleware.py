@@ -21,7 +21,20 @@ def pytest_funcarg__spider(request):
     spider.batch = model.Batch.objects.create(
         kickoff_time=now, finish_time=now)
     spider.batch.save()
+
+    # Delete created batch from database when test is done
+    request.addfinalizer(lambda: spider.batch.delete())
     return spider
+
+
+def pytest_funcarg__offsite_middleware(request):
+    offsite_middleware = CustomOffsiteMiddleware()
+    return offsite_middleware
+
+
+def pytest_funcarg__depth_middleware(request):
+    depth_middleware = CustomDepthMiddleware(maxdepth=2)
+    return depth_middleware
 
 
 def pytest_funcarg__scrape_request(request):
@@ -101,15 +114,6 @@ def generate_crawl_js_and_css_requests():
     mock_request.meta['content_type'] = "text/css"
     mock_request.dont_filter = True
     yield mock_request
-
-def pytest_funcarg__offsite_middleware(request):
-    offsite_middleware = CustomOffsiteMiddleware()
-    return offsite_middleware
-
-
-def pytest_funcarg__depth_middleware(request):
-    depth_middleware = CustomDepthMiddleware(maxdepth=2)
-    return depth_middleware
 
 
 def test_offsitefilter(spider, offsite_middleware, mock_response):

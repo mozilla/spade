@@ -22,6 +22,9 @@ def pytest_funcarg__spider(request):
         kickoff_time=now, finish_time=now)
     spider.batch.save()
 
+    # Delete created batch from database when test is done
+    request.addfinalizer(lambda: spider.batch.delete())
+
     return spider
 
 
