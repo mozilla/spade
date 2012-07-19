@@ -28,27 +28,22 @@ class GeneralSpider(BaseSpider):
     Crawls CSS, HTML, JS up to 1 level of depth from a given domain. Domains
     outside of the list provided are not crawled.
     """
-    name="all"
+    name = "all"
 
     def __init__(self):
         """
-        Initialization
-
         Set URLs to traverse from
         """
         self.start_urls = self.get_start_urls()
-
 
     def get_now_time(self):
         """Gets a datetime"""
         # Convenience function for timezone-aware timestamps
         return datetime.utcnow().replace(tzinfo=utc)
 
-
     def log(self, msg):
         """Function for logging events"""
         log.msg(msg, level=log.DEBUG)
-
 
     def get_start_urls(self):
         """Extracts urls from a text file into the list of URLs to crawl"""
@@ -57,7 +52,6 @@ class GeneralSpider(BaseSpider):
 
         with open(settings.get('URLS')) as data:
             return [line.rstrip('\r\n') for line in data]
-
 
     def get_content_type(self, headers):
         """Gets a content type from the headers"""
@@ -72,7 +66,6 @@ class GeneralSpider(BaseSpider):
 
         return ""
 
-
     def parse(self, response):
         content_type = self.get_content_type(response.headers)
 
@@ -80,25 +73,15 @@ class GeneralSpider(BaseSpider):
         if sitescan is None:
             # This sitescan needs to be created
             sitescan, ss_created = models.SiteScan.objects.get_or_create(
-                           batch=self.batch,
-                           site_url_hash=sha256(response.url).hexdigest(),
-                           defaults={'site_url': response.url}
-                       )
-            if ss_created == False:
+                batch=self.batch,
+                site_url_hash=sha256(response.url).hexdigest(),
+                defaults={'site_url': response.url})
+
+            if not ss_created:
                 # Duplicate URL in the text file, ignore this site
                 return
 
-        # URLScans should not be duplicated but we don't try to catch "created"
-        # here because different user agent strings are used on the same url
-        # at every pass.
-        urlscan, us_created = models.URLScan.objects.get_or_create(
-                                site_scan=sitescan,
-                                page_url_hash=sha256(response.url).hexdigest(),
-                                defaults={'page_url': response.url,
-                                          'timestamp': self.get_now_time()}
-                              )
-
-        if response.meta.get('user_agent') == None:
+        if response.meta.get('user_agent') is None:
             # Generate different UA requests for each UA
             for user_agent in self.user_agents:
                 ua = user_agent.ua_string
@@ -106,7 +89,7 @@ class GeneralSpider(BaseSpider):
                 # Generate new request
                 new_request = Request(response.url)
                 new_request.headers.setdefault('User-Agent', ua)
-                new_request.meta['referrer'] = None
+                new_request.meta['referrer'] = response.meta.get('referrer')
                 new_request.meta['sitescan'] = sitescan
                 new_request.meta['user_agent'] = ua
                 new_request.meta['content_type'] = content_type
@@ -121,12 +104,12 @@ class GeneralSpider(BaseSpider):
 
                 # Extract other target links
                 try:
-                    css_links  = hxs.select('//link/@href').extract()
+                    css_links = hxs.select('//link/@href').extract()
                 except TypeError:
                     css_links = []
 
                 try:
-                    js_links   = hxs.select('//script/@src').extract()
+                    js_links = hxs.select('//script/@src').extract()
                 except TypeError:
                     js_links = []
 
@@ -146,7 +129,7 @@ class GeneralSpider(BaseSpider):
                         if url.startswith('javascript:'):
                             continue
                         else:
-                            url = urljoin(response.url,url)
+                            url = urljoin(response.url, url)
 
                     request = Request(url)
                     request.meta['referrer'] = response.url
@@ -158,6 +141,20 @@ class GeneralSpider(BaseSpider):
                     yield request
 
         else:
+            if 'text/html' not in self.get_content_type(response.headers):
+                # For linked content, find the urlscan it linked from
+                urlscan = models.URLScan.objects.get(
+                    site_scan=sitescan,
+                    page_url_hash=
+                    sha256(response.meta['referrer']).hexdigest())
+            else:
+                # Only create urlscans for text/html
+                urlscan, us_created = models.URLScan.objects.get_or_create(
+                    site_scan=sitescan,
+                    page_url_hash=sha256(response.url).hexdigest(),
+                    defaults={'page_url': response.url,
+                              'timestamp': self.get_now_time()})
+
             # The response contains a user agent, we should yield an item
             item = MarkupItem()
             item['content_type'] = self.get_content_type(response.headers)
@@ -169,4 +166,5 @@ class GeneralSpider(BaseSpider):
             item['urlscan'] = urlscan
             item['url'] = response.url
             item['user_agent'] = response.meta.get('user_agent')
+
             yield item

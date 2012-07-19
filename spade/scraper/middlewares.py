@@ -13,7 +13,6 @@ import spade.model.models as models
 import re
 import warnings
 
-# Define middleware here
 
 class CustomOffsiteMiddleware(OffsiteMiddleware):
     """
@@ -30,7 +29,9 @@ class CustomOffsiteMiddleware(OffsiteMiddleware):
                     domain = urlparse_cached(req).hostname
                     if domain and domain not in self.domains_seen[spider]:
                         log.msg("Filtered offsite request to %r: %s" % (domain, req),
-                            level=log.DEBUG, spider=spider)
+                                level=log.DEBUG, spider=spider)
+
+                        # Mark the domain as seen in the scrapy cache
                         self.domains_seen[spider].add(domain)
             else:
                 yield req
@@ -59,6 +60,7 @@ class CustomOffsiteMiddleware(OffsiteMiddleware):
     def spider_closed(self, spider):
         """Scrapy signal catching function: spider close"""
         del self.domains_seen[spider]
+
 
 class CustomDepthMiddleware(object):
 
@@ -98,8 +100,8 @@ class CustomDepthMiddleware(object):
                 if self.prio:
                     request.priority -= depth * self.prio
                 if self.maxdepth and depth > self.maxdepth:
-                    log.msg("Ignoring link (depth > %d): %s " % (self.maxdepth, request.url), \
-                        level=log.DEBUG, spider=spider)
+                    log.msg("Ignoring link (depth > %d): %s " % (self.maxdepth, request.url),
+                            level=log.DEBUG, spider=spider)
                     return False
                 elif self.stats:
                     if self.verbose_stats:

@@ -7,10 +7,11 @@ from django.db import models
 from urlparse import urlparse
 
 # The following organizes a naming scheme for local filesystem
+# Takes a urlcontent instance and a filename
 def get_file_path_components(instance, filename):
     now = datetime.now()
     return [unicode(now.year), unicode(now.month), unicode(now.day),
-            urlparse(instance.url_scan.site_scan.site_url).netloc, filename]
+            unicode(now.hour), unicode(now.minute), filename]
 
 # Define file naming callables
 def html_filename(instance, filename):
@@ -114,7 +115,9 @@ class URLContent(models.Model):
 
 class LinkedCSS(models.Model):
     """A single linked CSS file."""
-    url_scan = models.ForeignKey(URLScan)
+    linked_from = models.ManyToManyField(URLContent)
+    url = models.TextField()
+    url_hash = models.CharField(max_length=64)
     raw_css = models.FileField(
         max_length=500, upload_to=css_filename)
 
@@ -127,7 +130,9 @@ class LinkedCSS(models.Model):
 
 class LinkedJS(models.Model):
     """A single linked JS file."""
-    url_scan = models.ForeignKey(URLScan)
+    linked_from = models.ManyToManyField(URLContent)
+    url = models.TextField()
+    url_hash = models.CharField(max_length=64)
     raw_js = models.FileField(
         max_length=500, upload_to=js_filename)
 

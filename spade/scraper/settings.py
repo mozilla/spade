@@ -21,8 +21,7 @@ NEWSPIDER_MODULE = 'spade.scraper.spiders'
 
 ITEM_PIPELINES = ['spade.scraper.pipelines.ScraperPipeline']
 
-# Disable default user agent middleware, swap in our custom one which uses all
-# user agents listed in the database.
+# Disable default user agent middleware
 DOWNLOADER_MIDDLEWARES = {
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
 }

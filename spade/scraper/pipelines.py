@@ -3,8 +3,9 @@ Item pipeline.
 
 """
 from django.core.files.base import ContentFile
-
+from hashlib import sha256
 from spade import model
+
 
 class ScraperPipeline(object):
     def __init__(self):
@@ -15,7 +16,6 @@ class ScraperPipeline(object):
         if not self.user_agents:
             raise ValueError(
                 "No user agents; add some with 'manage.py useragents --add'")
-
 
     def process_item(self, item, spider):
         """Called whenever an item is yielded by the spider"""
@@ -29,40 +29,73 @@ class ScraperPipeline(object):
         if 'text/html' == item['content_type']:
             # First save the request contents into a URLContent
             urlcontent = model.URLContent.objects.create(
-                url_scan=item['urlscan'], user_agent = item['user_agent'])
+                url_scan=item['urlscan'], user_agent=item['user_agent'])
 
             # Store raw markup
             file_content = ContentFile(item['raw_content'])
-            urlcontent.raw_markup.save(item['filename'],file_content)
+            urlcontent.raw_markup.save(item['filename'], file_content)
             urlcontent.raw_markup.close()
 
             # Store raw headers
             file_content = ContentFile(item['headers'])
-            urlcontent.headers.save(item['filename'],file_content)
+            urlcontent.headers.save(item['filename'], file_content)
             urlcontent.headers.close()
 
             urlcontent.save()
 
         elif any(mime == item['content_type'] for mime in js_mimes):
-            linkedjs = model.LinkedJS.objects.create(url_scan=item['urlscan'])
+            urlcontent = model.URLContent.objects.get(
+                url_scan=item['urlscan'],
+                user_agent=item['user_agent'])
 
-            # Store raw js
-            file_content = ContentFile(item['raw_content'])
-            linkedjs.raw_js.save(item['filename'],file_content)
-            linkedjs.raw_js.close()
+            # If the linked file already exists, don't save another copy
+            try:
+                linkedjs = model.LinkedJS.objects.get(
+                    url_hash=sha256(item['url']).hexdigest())
 
-            linkedjs.save()
+            except model.LinkedJS.DoesNotExist:
+                print "DNE"
+                # Create the item since it doesn't exist
+                linkedjs = model.LinkedJS.objects.create(
+                    url=item['url'],
+                    url_hash=sha256(item['url']).hexdigest())
+
+                # Store raw js
+                file_content = ContentFile(item['raw_content'])
+                linkedjs.raw_js.save(item['filename'], file_content)
+                linkedjs.raw_js.close()
+
+                linkedjs.save()
+
+            # Create relationship with url content
+            linkedjs.linked_from.add(urlcontent)
 
         elif 'text/css' == item['content_type']:
-            linkedcss = model.LinkedCSS.objects.create(
-                url_scan=item['urlscan'])
+            urlcontent = model.URLContent.objects.get(
+                url_scan=item['urlscan'],
+                user_agent=item['user_agent'])
 
-            # Store raw css
-            file_content = ContentFile(item['raw_content'])
-            linkedcss.raw_css.save(item['filename'],file_content)
-            linkedcss.raw_css.close()
+            # If the linked file already exists, don't save another copy
+            try:
+                linkedcss = model.LinkedCSS.objects.get(
+                    url_hash=sha256(item['url']).hexdigest())
 
-            linkedcss.save()
+            except model.LinkedCSS.DoesNotExist:
+                print "DNE"
+                # Create the item since it doesn't exist
+                linkedcss = model.LinkedCSS.objects.create(
+                    url=item['url'],
+                    url_hash=sha256(item['url']).hexdigest())
+
+                # Store raw css
+                file_content = ContentFile(item['raw_content'])
+                linkedcss.raw_css.save(item['filename'], file_content)
+                linkedcss.raw_css.close()
+
+                linkedcss.save()
+
+            # Create relationship with url content
+            linkedcss.linked_from.add(urlcontent)
 
         return item
 
