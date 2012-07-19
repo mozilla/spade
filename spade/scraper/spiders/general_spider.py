@@ -60,9 +60,8 @@ class GeneralSpider(BaseSpider):
                 if h.lower().strip() == 'content-type':
                     # As it turns out, content-type often appears with some
                     # additional values e.g "text/css; charset=utf8" so we want
-                    # to turn that into a list, allowing us to access just
-                    # 'text/css' rather than the whole string
-                    return val[0].split(";")
+                    # just 'text/css' rather than the whole string
+                    return val[0].split(";")[0]
         return ""
 
     def parse(self, response):
@@ -76,6 +75,7 @@ class GeneralSpider(BaseSpider):
         if sitescan is None:
             # This sitescan needs to be created
             sitescan, ss_created = model.SiteScan.objects.get_or_create(
+
                 batch=self.batch,
                 site_url_hash=sha256(response.url).hexdigest(),
                 defaults={'site_url': response.url})
@@ -101,7 +101,7 @@ class GeneralSpider(BaseSpider):
                 yield new_request
 
             # Continue crawling
-            if 'text/html' in content_type:
+            if 'text/html' == content_type:
                 # Parse stylesheet links, scripts, and hyperlinks
                 hxs = HtmlXPathSelector(response)
 
@@ -147,12 +147,14 @@ class GeneralSpider(BaseSpider):
             if 'text/html' not in self.get_content_type(response.headers):
                 # For linked content, find the urlscan it linked from
                 urlscan = model.URLScan.objects.get(
+
                     site_scan=sitescan,
                     page_url_hash=
                     sha256(response.meta['referrer']).hexdigest())
             else:
                 # Only create urlscans for text/html
                 urlscan, us_created = model.URLScan.objects.get_or_create(
+
                     site_scan=sitescan,
                     page_url_hash=sha256(response.url).hexdigest(),
                     defaults={'page_url': response.url,

@@ -15,7 +15,7 @@ class ScraperPipeline(object):
 
         if not self.user_agents:
             raise ValueError(
-                "No user agents; add some with 'manage.py useragent --add'")
+                "No user agents; add some with 'manage.py useragents --add'")
 
     def process_item(self, item, spider):
         """Called whenever an item is yielded by the spider"""
@@ -26,7 +26,7 @@ class ScraperPipeline(object):
                     'application/javascript')
 
         # Parse each file based on what its MIME specifies
-        if 'text/html' in item['content_type']:
+        if 'text/html' == item['content_type']:
             # First save the request contents into a URLContent
             urlcontent = model.URLContent.objects.create(
                 url_scan=item['urlscan'], user_agent=item['user_agent'])
@@ -43,7 +43,7 @@ class ScraperPipeline(object):
 
             urlcontent.save()
 
-        elif any(mime in item['content_type'] for mime in js_mimes):
+        elif any(mime == item['content_type'] for mime in js_mimes):
             urlcontent = model.URLContent.objects.get(
                 url_scan=item['urlscan'],
                 user_agent=item['user_agent'])
@@ -70,7 +70,7 @@ class ScraperPipeline(object):
             # Create relationship with url content
             linkedjs.linked_from.add(urlcontent)
 
-        elif 'text/css' in item['content_type']:
+        elif 'text/css' == item['content_type']:
             urlcontent = model.URLContent.objects.get(
                 url_scan=item['urlscan'],
                 user_agent=item['user_agent'])
