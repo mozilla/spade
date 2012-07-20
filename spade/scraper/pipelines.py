@@ -54,7 +54,6 @@ class ScraperPipeline(object):
                     url_hash=sha256(item['url']).hexdigest())
 
             except model.LinkedJS.DoesNotExist:
-                print "DNE"
                 # Create the item since it doesn't exist
                 linkedjs = model.LinkedJS.objects.create(
                     url=item['url'],
@@ -81,7 +80,6 @@ class ScraperPipeline(object):
                     url_hash=sha256(item['url']).hexdigest())
 
             except model.LinkedCSS.DoesNotExist:
-                print "DNE"
                 # Create the item since it doesn't exist
                 linkedcss = model.LinkedCSS.objects.create(
                     url=item['url'],
@@ -104,14 +102,3 @@ class ScraperPipeline(object):
         # Update batch finish time, keep this last
         spider.batch.finish_time = spider.get_now_time()
         spider.batch.save()
-
-    def open_spider(self, spider):
-        """Executed on spider launch"""
-        now = spider.get_now_time()
-
-        # Create initial batch
-        spider.batch = model.Batch.objects.create(
-            kickoff_time=now, finish_time=now)
-        spider.batch.save()
-
-        spider.user_agents = self.user_agents

@@ -32,17 +32,13 @@ DOWNLOADER_MIDDLEWARES = {
 # HTML (not CSS or Javascripts)
 SPIDER_MIDDLEWARES = {
     'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware':None,
+    'spade.scraper.middlewares.CustomOffsiteMiddleware': 543,
     'scrapy.contrib.spidermiddleware.depth.DepthMiddleware':None,
     'spade.scraper.middlewares.CustomDepthMiddleware': 542,
-    'spade.scraper.middlewares.CustomOffsiteMiddleware': 543,
+    #'spade.scraper.middlewares.UARequestMiddleware': 544,
 }
 
-# Based on our modifications, depth_limit is x+1 because we use level 0 to
-# crawl the backbone of the site. Rescanning the same page with different user
-# agents is considered level 1, and we want to go down to level 2 (which is
-# really just 1 level deep).
-DEPTH_LIMIT = 2
-
+DEPTH_LIMIT = 1
 DOWNLOAD_DELAY = 0
 DOWNLOAD_TIMEOUT=20
 ENCODING_ALIASES = {'gb2312':'zh-cn', 'cp1251':'win-1251'}

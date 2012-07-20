@@ -1,4 +1,6 @@
-# General spider for retrieving site information
+"""
+General spider for retrieving site information
+"""
 
 # Django Imports
 from django.utils.timezone import utc
@@ -34,6 +36,14 @@ class GeneralSpider(BaseSpider):
         """
         Set URLs to traverse from
         """
+        now = self.get_now_time()
+
+        # Create initial batch
+        self.batch = model.Batch.objects.create(
+            kickoff_time=now, finish_time=now)
+        self.batch.save()
+
+        self.user_agents = list(model.UserAgent.objects.all())
         self.start_urls = self.get_start_urls()
 
     def get_now_time(self):
@@ -64,6 +74,29 @@ class GeneralSpider(BaseSpider):
                     return val[0].split(";")[0]
         return ""
 
+    def start_requests(self):
+        """Overrides a scrapy function to generate the requests array"""
+        reqs = []
+        for url in self.start_urls:
+            request_generator = self.make_requests_from_url(url)
+            for request in request_generator:
+                reqs.append(request)
+        return reqs
+
+    def make_requests_from_url(self, url):
+        """
+        Override a scrapy function to replace the initial request (no UA) with
+        many requests using different ua strings
+        """
+        for user_agent in list(model.UserAgent.objects.all()):
+            request = Request(url, dont_filter=True)
+            request.meta['referrer'] = None
+            request.meta['sitescan'] = None
+            request.meta['user_agent'] = user_agent
+            request.headers.setdefault('User-Agent', user_agent)
+
+            yield request
+
     def parse(self, response):
         """
         Function called by the scrapy downloader after a site url has been
@@ -75,7 +108,6 @@ class GeneralSpider(BaseSpider):
         if sitescan is None:
             # This sitescan needs to be created
             sitescan, ss_created = model.SiteScan.objects.get_or_create(
-
                 batch=self.batch,
                 site_url_hash=sha256(response.url).hexdigest(),
                 defaults={'site_url': response.url})
@@ -84,92 +116,71 @@ class GeneralSpider(BaseSpider):
                 # Duplicate URL in the text file, ignore this site
                 return
 
-        if response.meta.get('user_agent') is None:
-            # Generate different UA requests for each UA
-            for user_agent in self.user_agents:
-                ua = user_agent.ua_string
+        if 'text/html' == content_type:
+            # Parse stylesheet links, scripts, and hyperlinks
+            hxs = HtmlXPathSelector(response)
 
-                # Generate new request
-                new_request = Request(response.url)
-                new_request.headers.setdefault('User-Agent', ua)
-                new_request.meta['referrer'] = response.meta.get('referrer')
-                new_request.meta['sitescan'] = sitescan
-                new_request.meta['user_agent'] = ua
-                new_request.meta['content_type'] = content_type
-                new_request.dont_filter = True
+            # Extract other target links
+            try:
+                css_links = hxs.select('//link/@href').extract()
+            except TypeError:
+                css_links = []
 
-                yield new_request
+            try:
+                js_links = hxs.select('//script/@src').extract()
+            except TypeError:
+                js_links = []
 
-            # Continue crawling
-            if 'text/html' == content_type:
-                # Parse stylesheet links, scripts, and hyperlinks
-                hxs = HtmlXPathSelector(response)
+            try:
+                hyperlinks = hxs.select('//a/@href').extract()
+            except TypeError:
+                hyperlinks = []
 
-                # Extract other target links
-                try:
-                    css_links = hxs.select('//link/@href').extract()
-                except TypeError:
-                    css_links = []
+            # Using a set removes duplicate links.
+            all_links = set(hyperlinks + js_links + css_links)
 
-                try:
-                    js_links = hxs.select('//script/@src').extract()
-                except TypeError:
-                    js_links = []
+            # Ensure links are valid urls
+            for url in all_links:
 
-                try:
-                    hyperlinks = hxs.select('//a/@href').extract()
-                except TypeError:
-                    hyperlinks = []
+                if not url.startswith('http://'):
+                    # ensure that links are to real sites
+                    if url.startswith('javascript:'):
+                        continue
+                    else:
+                        url = urljoin(response.url, url)
 
-                # Using a set removes duplicate links.
-                all_links = set(hyperlinks + js_links + css_links)
+                # Generate requests for each new url found
+                request = Request(url)
+                request.meta['referrer'] = response.url
+                request.meta['sitescan'] = sitescan
+                request.meta['user_agent'] = response.meta.get('user_agent')
+                request.dont_filter = True
 
-                # Examine links, yield requests if they are valid
-                for url in all_links:
+                yield request
 
-                    if not url.startswith('http://'):
-                        # ensure that links are to real sites
-                        if url.startswith('javascript:'):
-                            continue
-                        else:
-                            url = urljoin(response.url, url)
-
-                    request = Request(url)
-                    request.meta['referrer'] = response.url
-                    request.meta['sitescan'] = sitescan
-                    request.meta['user_agent'] = None
-                    request.meta['content_type'] = None
-                    request.dont_filter = True
-
-                    yield request
-
+        if 'text/html' not in self.get_content_type(response.headers):
+            # For linked content, find the urlscan it linked from
+            urlscan = model.URLScan.objects.get(
+                site_scan=sitescan,
+                page_url_hash=sha256(response.meta['referrer']).hexdigest())
         else:
-            if 'text/html' not in self.get_content_type(response.headers):
-                # For linked content, find the urlscan it linked from
-                urlscan = model.URLScan.objects.get(
+            # Only create urlscans for text/html
+            urlscan, us_created = model.URLScan.objects.get_or_create(
 
-                    site_scan=sitescan,
-                    page_url_hash=
-                    sha256(response.meta['referrer']).hexdigest())
-            else:
-                # Only create urlscans for text/html
-                urlscan, us_created = model.URLScan.objects.get_or_create(
+                site_scan=sitescan,
+                page_url_hash=sha256(response.url).hexdigest(),
+                defaults={'page_url': response.url,
+                          'timestamp': self.get_now_time()})
 
-                    site_scan=sitescan,
-                    page_url_hash=sha256(response.url).hexdigest(),
-                    defaults={'page_url': response.url,
-                              'timestamp': self.get_now_time()})
+        item = MarkupItem()
+        item['content_type'] = self.get_content_type(response.headers)
+        item['filename'] = os.path.basename(urlparse(response.url).path)
+        item['headers'] = unicode(response.headers)
+        item['meta'] = response.meta
+        item['raw_content'] = response.body
+        item['sitescan'] = sitescan
+        item['urlscan'] = urlscan
+        item['url'] = response.url
+        item['user_agent'] = response.meta.get('user_agent')
 
-            # The response contains a user agent, we should yield an item
-            item = MarkupItem()
-            item['content_type'] = self.get_content_type(response.headers)
-            item['filename'] = os.path.basename(urlparse(response.url).path)
-            item['headers'] = unicode(response.headers)
-            item['meta'] = response.meta
-            item['raw_content'] = response.body
-            item['sitescan'] = sitescan
-            item['urlscan'] = urlscan
-            item['url'] = response.url
-            item['user_agent'] = response.meta.get('user_agent')
-
-            yield item
+        yield item

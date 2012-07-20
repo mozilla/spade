@@ -88,14 +88,6 @@ class CustomDepthMiddleware(object):
                 depth = response.request.meta['depth'] + 1
                 request.meta['depth'] = depth
 
-                content_type = request.meta['content_type'] or []
-
-                # Allow inclusion of the correct depth of js/css or other
-                # linked file up to 1 level deeper (this works by undoing the
-                # depth counter by 1 for non-html files)
-                if 'text/html' not in content_type:
-                    depth = response.request.meta['depth']
-
                 # Check if we need to filter
                 if self.prio:
                     request.priority -= depth * self.prio
@@ -116,3 +108,25 @@ class CustomDepthMiddleware(object):
                 self.stats.inc_value('request_depth_count/0', spider=spider)
 
         return (r for r in result or () if _filter(r))
+
+class UARequestMiddleware(object):
+    """
+    Spawn user agent requests.
+    """
+    def process_spider_output(self, response, result, spider):
+        def _request_generator(requests):
+            for request in requests:
+                # If it is a request, replace it with x user agent requests
+                if isinstance(request, Request):
+                    for user_agent in spider.user_agents:
+                        new_request = Request(request.url)
+                        new_request.meta['referrer'] = request.meta.get('referrer')
+                        new_request.meta['sitescan'] = request.meta.get('sitescan')
+                        new_request.meta['user_agent'] = user_agent
+                        new_request.headers.setdefault('User-Agent', user_agent)
+                        new_request.dont_filter = True
+                        yield new_request
+                # If it is an item being sent to the pipeline, just leave it be
+                yield request
+
+        return _request_generator(result)

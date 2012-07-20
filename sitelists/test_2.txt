@@ -1,2 +1,1 @@
-http://www.google.com
 http://www.mozilla.com
