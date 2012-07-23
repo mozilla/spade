@@ -88,27 +88,22 @@ class GeneralSpider(BaseSpider):
         Override a scrapy function to replace the initial request (no UA) with
         many requests using different ua strings
         """
-        for user_agent in list(model.UserAgent.objects.all()):
-            request = Request(url, dont_filter=True)
-            request.meta['referrer'] = None
-            request.meta['sitescan'] = None
-            request.meta['user_agent'] = user_agent
-            request.headers.setdefault('User-Agent', user_agent)
+        yield Request(url, dont_filter=True)
+        #for user_agent in list(model.UserAgent.objects.all()):
+        #    request = Request(url, dont_filter=True)
+        #    request.meta['referrer'] = None
+        #    request.meta['sitescan'] = None
+        #    request.meta['user_agent'] = user_agent
+        #    request.headers.setdefault('User-Agent', user_agent)
 
-            yield request
+        #    yield request
 
     def parse(self, response):
         """
         Function called by the scrapy downloader after a site url has been
         visited
         """
-        #depth = response.meta.get('depth') or 0
-        #if depth > 3:
-        #    print "stop!"
-        #    return
-
         content_type = self.get_content_type(response.headers)
-
         sitescan = response.meta.get('sitescan')
         if sitescan is None:
             # This sitescan needs to be created
@@ -117,11 +112,9 @@ class GeneralSpider(BaseSpider):
                 site_url_hash=sha256(response.url).hexdigest(),
                 defaults={'site_url': response.url})
 
-            if not ss_created:
-                # Duplicate URL in the text file, ignore this site
-                return
-
-        if 'text/html' == content_type:
+        user_agent = response.meta.get('user_agent')
+        if 'text/html' == content_type and user_agent == None:
+            print "whaddap"
             # Parse stylesheet links, scripts, and hyperlinks
             hxs = HtmlXPathSelector(response)
 
@@ -161,34 +154,38 @@ class GeneralSpider(BaseSpider):
                 request.meta['user_agent'] = response.meta.get('user_agent')
                 request.dont_filter = True
 
-                yield request
-
-        else:
-            content_type = self.get_content_type(response.headers)
-            linked_mimes = ['text/javascript', 'text/css', 'text/js', 'application/javascript']
-            if any(mime == content_type for mime in linked_mimes):
-                # For linked content, find the urlscan it linked from
-                print response.meta['referrer']
-                urlscan = model.URLScan.objects.get(
-                    site_scan=sitescan,
-                    page_url_hash=sha256(response.meta['referrer']).hexdigest())
-            elif self.get_content_type(response.headers) == 'text/html':
-                # Only create urlscans for text/html
+                # Create urlscan (ensure only one exists per hash+sitescan)
                 urlscan, us_created = model.URLScan.objects.get_or_create(
                     site_scan=sitescan,
                     page_url_hash=sha256(response.url).hexdigest(),
                     defaults={'page_url': response.url,
                               'timestamp': self.get_now_time()})
 
-        item = MarkupItem()
-        item['content_type'] = self.get_content_type(response.headers)
-        item['filename'] = os.path.basename(urlparse(response.url).path)
-        item['headers'] = unicode(response.headers)
-        item['meta'] = response.meta
-        item['raw_content'] = response.body
-        item['sitescan'] = sitescan
-        item['urlscan'] = urlscan
-        item['url'] = response.url
-        item['user_agent'] = response.meta.get('user_agent')
+                yield request
 
-        yield item
+        # We only save content if there's a user agent
+        if user_agent:
+            linked_mimes = ['text/javascript', 'text/css', 'text/js', 'application/javascript', 'text/stylesheet']
+            if any(mime == content_type for mime in linked_mimes):
+                # For linked content, find the urlscan it linked from
+                urlscan = model.URLScan.objects.get(
+                    site_scan=sitescan,
+                    page_url_hash=sha256(response.meta['referrer']).hexdigest())
+            else:
+                urlscan = model.URLScan.objects.get(
+                    site_scan=sitescan,
+                    page_url_hash=sha256(response.url).hexdigest())
+
+            item = MarkupItem()
+            item['content_type'] = self.get_content_type(response.headers)
+            item['filename'] = os.path.basename(urlparse(response.url).path)
+            item['headers'] = unicode(response.headers)
+            item['meta'] = response.meta
+            item['raw_content'] = response.body
+            item['sitescan'] = sitescan
+            item['urlscan'] = urlscan
+            item['url'] = response.url
+            item['user_agent'] = user_agent
+            item['depth'] = response.meta.get('depth')
+
+            yield item

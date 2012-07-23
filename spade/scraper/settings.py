@@ -35,7 +35,7 @@ SPIDER_MIDDLEWARES = {
     'spade.scraper.middlewares.CustomOffsiteMiddleware': 543,
     'scrapy.contrib.spidermiddleware.depth.DepthMiddleware':None,
     'spade.scraper.middlewares.CustomDepthMiddleware': 542,
-    #'spade.scraper.middlewares.UARequestMiddleware': 544,
+    'spade.scraper.middlewares.UARequestMiddleware': 544,
 }
 
 DEPTH_LIMIT = 1
@@ -44,8 +44,11 @@ DOWNLOAD_TIMEOUT=20
 ENCODING_ALIASES = {'gb2312':'zh-cn', 'cp1251':'win-1251'}
 CONCURRENT_REQUESTS = 64
 CONCURRENT_REQUESTS_PER_DOMAIN = 16
-LOG_LEVEL='INFO'
+# LOG_LEVEL='INFO'
+# debug mode
+LOG_LEVEL='DEBUG'
 DEPTH_PRIORITY = 1
+DISABLE_COOKIES=True
 
 #Obey robots.txt
 ROBOTSTXT_OBEY=True

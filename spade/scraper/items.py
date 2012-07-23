@@ -7,6 +7,7 @@ from scrapy.item import Item, Field
 
 class MarkupItem(Item):
     content_type = Field()
+    depth = Field()
     filename = Field()
     headers = Field()
     meta = Field()

@@ -83,6 +83,20 @@ class CustomDepthMiddleware(object):
         return cls(maxdepth, stats, verbose, prio)
 
     def process_spider_output(self, response, result, spider):
+        """Filter requests that are too deep"""
+        def _notlinkedcontent(request):
+            """
+            Private method to determine is a request is for
+            linked content
+            """
+            req_url_data = urlparse(request.url)
+            extension = req_url_data.path.split(".")[-1]
+
+            if extension in ['css', 'js']:
+                # Allow CSS and JS files
+                return False
+            return True
+
         def _filter(request):
             if isinstance(request, Request):
                 depth = response.request.meta['depth'] + 1
@@ -91,7 +105,7 @@ class CustomDepthMiddleware(object):
                 # Check if we need to filter
                 if self.prio:
                     request.priority -= depth * self.prio
-                if self.maxdepth and depth > self.maxdepth:
+                if self.maxdepth and depth > self.maxdepth and _notlinkedcontent(request):
                     log.msg("Ignoring link (depth > %d): %s " % (self.maxdepth, request.url),
                             level=log.DEBUG, spider=spider)
                     return False
