@@ -69,6 +69,11 @@ class GeneralSpider(BaseSpider):
         Function called by the scrapy downloader after a site url has been
         visited
         """
+        #depth = response.meta.get('depth') or 0
+        #if depth > 3:
+        #    print "stop!"
+        #    return
+
         content_type = self.get_content_type(response.headers)
 
         sitescan = response.meta.get('sitescan')
@@ -144,14 +149,15 @@ class GeneralSpider(BaseSpider):
                     yield request
 
         else:
-            if 'text/html' not in self.get_content_type(response.headers):
+            content_type = self.get_content_type(response.headers)
+            linked_mimes = ['text/javascript', 'text/css', 'text/js', 'application/javascript']
+            if any(mime == content_type for mime in linked_mimes):
                 # For linked content, find the urlscan it linked from
                 urlscan = model.URLScan.objects.get(
-
                     site_scan=sitescan,
                     page_url_hash=
                     sha256(response.meta['referrer']).hexdigest())
-            else:
+            elif self.get_content_type(response.headers) == 'text/html':
                 # Only create urlscans for text/html
                 urlscan, us_created = model.URLScan.objects.get_or_create(
 
