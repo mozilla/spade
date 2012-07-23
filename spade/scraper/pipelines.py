@@ -54,7 +54,6 @@ class ScraperPipeline(object):
                     url_hash=sha256(item['url']).hexdigest())
 
             except model.LinkedJS.DoesNotExist:
-                print "DNE"
                 # Create the item since it doesn't exist
                 linkedjs = model.LinkedJS.objects.create(
                     url=item['url'],
@@ -81,7 +80,6 @@ class ScraperPipeline(object):
                     url_hash=sha256(item['url']).hexdigest())
 
             except model.LinkedCSS.DoesNotExist:
-                print "DNE"
                 # Create the item since it doesn't exist
                 linkedcss = model.LinkedCSS.objects.create(
                     url=item['url'],

@@ -153,20 +153,18 @@ class GeneralSpider(BaseSpider):
             linked_mimes = ['text/javascript', 'text/css', 'text/js', 'application/javascript']
             if any(mime == content_type for mime in linked_mimes):
                 # For linked content, find the urlscan it linked from
+                print response.meta['referrer']
                 urlscan = model.URLScan.objects.get(
                     site_scan=sitescan,
-                    page_url_hash=
-                    sha256(response.meta['referrer']).hexdigest())
+                    page_url_hash=sha256(response.meta['referrer']).hexdigest())
             elif self.get_content_type(response.headers) == 'text/html':
                 # Only create urlscans for text/html
                 urlscan, us_created = model.URLScan.objects.get_or_create(
-
                     site_scan=sitescan,
                     page_url_hash=sha256(response.url).hexdigest(),
                     defaults={'page_url': response.url,
                               'timestamp': self.get_now_time()})
 
-            # The response contains a user agent, we should yield an item
             item = MarkupItem()
             item['content_type'] = self.get_content_type(response.headers)
             item['filename'] = os.path.basename(urlparse(response.url).path)
