@@ -34,5 +34,8 @@ spade/settings/local.py
 #Scrapy stuff
 .scrapy
 
+# Sam's testing script
+reset_test
+
 # generated files from storage
 media/*
