@@ -28,13 +28,8 @@ class ScraperPipeline(object):
         # Parse each file based on what its MIME specifies
         if 'text/html' == item['content_type']:
             # First save the request contents into a URLContent
-            print "new urlcontent: "
-            print item['urlscan']
-            print item['user_agent']
             urlcontent = model.URLContent.objects.create(
                 url_scan=item['urlscan'], user_agent=item['user_agent'])
-            print "new urlscan: " + str(item['urlscan'])
-            print "new user agent: " + str(item['user_agent'])
 
             # Store raw markup
             file_content = ContentFile(item['raw_content'])
@@ -49,8 +44,6 @@ class ScraperPipeline(object):
             urlcontent.save()
 
         elif any(mime == item['content_type'] for mime in js_mimes):
-            print "looking for urlscan: " + str(item['urlscan'])
-            print "looking for user agent: " + str(item['user_agent'])
             urlcontent = model.URLContent.objects.get(
                 url_scan=item['urlscan'],
                 user_agent=item['user_agent'])
@@ -77,8 +70,6 @@ class ScraperPipeline(object):
             linkedjs.linked_from.add(urlcontent)
 
         elif 'text/css' == item['content_type']:
-            print "looking for urlscan:" + str(item['urlscan'])
-            print "looking for user agent: " + str(item['user_agent'])
             urlcontent = model.URLContent.objects.get(
                 url_scan=item['urlscan'],
                 user_agent=item['user_agent'])
