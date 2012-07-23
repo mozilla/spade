@@ -29,7 +29,7 @@ class ScraperPipeline(object):
         if 'text/html' == item['content_type']:
             # First save the request contents into a URLContent
             urlcontent = model.URLContent.objects.create(
-                url_scan=item['urlscan'], user_agent=item['user_agent'])
+                url_scan=item['urlscan'], user_agent=item['user_agent'].id)
 
             # Store raw markup
             file_content = ContentFile(item['raw_content'])
@@ -46,7 +46,7 @@ class ScraperPipeline(object):
         elif any(mime == item['content_type'] for mime in js_mimes):
             urlcontent = model.URLContent.objects.get(
                 url_scan=item['urlscan'],
-                user_agent=item['user_agent'])
+                user_agent=item['user_agent'].id)
 
             # If the linked file already exists, don't save another copy
             try:
@@ -72,7 +72,7 @@ class ScraperPipeline(object):
         elif 'text/css' == item['content_type']:
             urlcontent = model.URLContent.objects.get(
                 url_scan=item['urlscan'],
-                user_agent=item['user_agent'])
+                user_agent=item['user_agent'].id)
 
             # If the linked file already exists, don't save another copy
             try:

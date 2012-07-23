@@ -133,12 +133,9 @@ class UARequestMiddleware(object):
                 # If it is a request, replace it with x user agent requests
                 if isinstance(request, Request):
                     for user_agent in spider.user_agents:
-                        new_request = Request(request.url)
-                        new_request.meta['referrer'] = request.meta.get('referrer')
-                        new_request.meta['sitescan'] = request.meta.get('sitescan')
+                        new_request = request.copy()
                         new_request.meta['user_agent'] = user_agent
                         new_request.headers.setdefault('User-Agent', user_agent)
-                        new_request.dont_filter = True
                         yield new_request
                 # If it is an item being sent to the pipeline, just leave it be
                 yield request

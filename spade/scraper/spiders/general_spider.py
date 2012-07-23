@@ -114,7 +114,6 @@ class GeneralSpider(BaseSpider):
 
         user_agent = response.meta.get('user_agent')
         if 'text/html' == content_type and user_agent == None:
-            print "whaddap"
             # Parse stylesheet links, scripts, and hyperlinks
             hxs = HtmlXPathSelector(response)
 
