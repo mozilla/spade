@@ -38,7 +38,7 @@ SPIDER_MIDDLEWARES = {
     'spade.scraper.middlewares.UARequestMiddleware': 544,
 }
 
-DEPTH_LIMIT = 1
+DEPTH_LIMIT = 2
 DOWNLOAD_DELAY = 0
 DOWNLOAD_TIMEOUT=20
 ENCODING_ALIASES = {'gb2312':'zh-cn', 'cp1251':'win-1251'}

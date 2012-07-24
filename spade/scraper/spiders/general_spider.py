@@ -113,7 +113,7 @@ class GeneralSpider(BaseSpider):
                 defaults={'site_url': response.url})
 
         user_agent = response.meta.get('user_agent')
-        if 'text/html' == content_type and user_agent == None:
+        if 'text/html' == content_type and user_agent==None:
             # Parse stylesheet links, scripts, and hyperlinks
             hxs = HtmlXPathSelector(response)
 
@@ -150,7 +150,7 @@ class GeneralSpider(BaseSpider):
                 request = Request(url)
                 request.meta['referrer'] = response.url
                 request.meta['sitescan'] = sitescan
-                request.meta['user_agent'] = response.meta.get('user_agent')
+                request.meta['user_agent'] = None
                 request.dont_filter = True
 
                 # Create urlscan (ensure only one exists per hash+sitescan)
