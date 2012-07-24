@@ -8,7 +8,6 @@
 
 # Allow scrapy to access django models
 import os
-import imp
 
 BOT_NAME = 'scraper'
 BOT_VERSION = '1.0'

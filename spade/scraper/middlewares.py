@@ -2,16 +2,11 @@
 Custom middleware for scrapy
 """
 from scrapy.contrib.spidermiddleware.offsite import OffsiteMiddleware
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy import log
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy import log
 from urlparse import urlparse
 
-import spade.model.models as models
-import re
-import warnings
 
 
 class CustomOffsiteMiddleware(OffsiteMiddleware):
