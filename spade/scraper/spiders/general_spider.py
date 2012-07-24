@@ -96,7 +96,6 @@ class GeneralSpider(BaseSpider):
                 new_request.meta['sitescan'] = sitescan
                 new_request.meta['user_agent'] = ua
                 new_request.meta['content_type'] = content_type
-                new_request.dont_filter = True
 
                 yield new_request
 
@@ -139,7 +138,6 @@ class GeneralSpider(BaseSpider):
                     request.meta['sitescan'] = sitescan
                     request.meta['user_agent'] = None
                     request.meta['content_type'] = None
-                    request.dont_filter = True
 
                     yield request
 

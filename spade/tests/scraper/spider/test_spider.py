@@ -58,7 +58,6 @@ def pytest_funcarg__scrape_request(request):
     mock_request.meta['referrer'] = None
     mock_request.meta['sitescan'] = None
     mock_request.meta['user_agent'] = None
-    mock_request.dont_filter = True
     return mock_request
 
 
@@ -70,7 +69,6 @@ def pytest_funcarg__linked_css_request(request):
     mock_request.meta['user_agent'] = "Firefox / 11.0"
     mock_request.headers.setdefault('User-Agent', "Firefox / 11.0")
     mock_request.meta['content_type'] = "text/css"
-    mock_request.dont_filter = True
     return mock_request
 
 
@@ -82,7 +80,6 @@ def pytest_funcarg__linked_js_request(request):
     mock_request.meta['user_agent'] = "Firefox / 11.0"
     mock_request.headers.setdefault('User-Agent', "Firefox / 11.0")
     mock_request.meta['content_type'] = "text/js"
-    mock_request.dont_filter = True
     return mock_request
 
 

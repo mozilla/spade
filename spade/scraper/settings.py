@@ -52,3 +52,5 @@ DEPTH_PRIORITY = 1
 
 #Obey robots.txt
 ROBOTSTXT_OBEY=True
+
+DUPEFILTER_CLASS = "spade.scraper.dupefilter.MultipleUADupeFilter"

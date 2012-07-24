@@ -2,7 +2,6 @@ from scrapy.conf import settings
 from scrapy.http import Response, Request
 
 from spade import model
-from spade.tests.model import factories
 from spade.scraper.middlewares import CustomDepthMiddleware
 from spade.scraper.middlewares import CustomOffsiteMiddleware
 from spade.scraper.spiders.general_spider import GeneralSpider
@@ -43,7 +42,6 @@ def pytest_funcarg__scrape_request(request):
     mock_request.meta['referrer'] = None
     mock_request.meta['sitescan'] = None
     mock_request.meta['user_agent'] = None
-    mock_request.dont_filter = True
     return mock_request
 
 
@@ -81,13 +79,11 @@ def generate_offsite_testing_requests():
     # This should be filtered
     mock_request = Request('http://google.com/')
     mock_request.meta['referrer'] = 'http://test.com'
-    mock_request.dont_filter = True
     yield mock_request
 
     # This shouldn't be filtered
     mock_request = Request('http://test.com/hello.html')
     mock_request.meta['referrer'] = 'http://test.com'
-    mock_request.dont_filter = True
     yield mock_request
 
 def generate_crawl_html_requests():
@@ -95,7 +91,6 @@ def generate_crawl_html_requests():
     mock_request = Request('http://test.com/hello.html')
     mock_request.meta['referrer'] = 'http://test.com'
     mock_request.meta['content_type'] = "text/html"
-    mock_request.dont_filter = True
     yield mock_request
 
 
@@ -105,14 +100,12 @@ def generate_crawl_js_and_css_requests():
     mock_request = Request('http://test.com/jquery.js')
     mock_request.meta['referrer'] = 'http://test.com'
     mock_request.meta['content_type'] = "text/javascript"
-    mock_request.dont_filter = True
     yield mock_request
 
     # CSS Request
     mock_request = Request('http://test.com/styles/style.css')
     mock_request.meta['referrer'] = 'http://test.com'
     mock_request.meta['content_type'] = "text/css"
-    mock_request.dont_filter = True
     yield mock_request
 
 
