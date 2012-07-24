@@ -2,8 +2,8 @@ from scrapy.conf import settings
 from scrapy.http import Response, Request
 
 from spade import model
-from spade.scraper.middlewares import CustomDepthMiddleware
-from spade.scraper.middlewares import CustomOffsiteMiddleware
+from spade.scraper.middlewares import DepthMiddleware
+from spade.scraper.middlewares import OffsiteMiddleware
 from spade.scraper.spiders.general_spider import GeneralSpider
 
 
@@ -27,12 +27,12 @@ def pytest_funcarg__spider(request):
 
 
 def pytest_funcarg__offsite_middleware(request):
-    offsite_middleware = CustomOffsiteMiddleware()
+    offsite_middleware = OffsiteMiddleware()
     return offsite_middleware
 
 
 def pytest_funcarg__depth_middleware(request):
-    depth_middleware = CustomDepthMiddleware(maxdepth=2)
+    depth_middleware = DepthMiddleware(maxdepth=2)
     return depth_middleware
 
 
