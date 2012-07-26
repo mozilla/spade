@@ -144,3 +144,15 @@ class LinkedJS(models.Model):
 
     class Meta:
         verbose_name_plural = "Linked JS"
+
+class CSSRule(models.Model):
+    """A CSS element rule"""
+    sitescan = models.ForeignKey(SiteScan)
+    selector = models.CharField(max_length=50)
+
+class CSSProperty(models.Model):
+    """A CSS property belonging to a rule"""
+    rule = models.ForeignKey(CSSRule)
+    prefix = models.CharField(max_length=10)
+    name = models.CharField(max_length=50)
+    value = models.CharField(max_length=50)
