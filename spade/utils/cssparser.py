@@ -13,10 +13,23 @@ cssutils.log.setLevel(logging.FATAL)
 
 
 class CSSParser(object):
-    def __init__(self, raw_css, sitescan=None):
+    def __init__(self, raw_css, sitescan=None, ff_prop_list="properties.txt"):
         """ Initialize a cssutils parser """
         self.css = cssutils.parseString(raw_css).cssRules
         self.sitescan = sitescan
+
+        supported_list = open(ff_prop_list)
+        # Generate lookup dictionary for CSS properties
+        properties = []
+        for line in supported_list.readlines():
+            properties.append(property_dictline.lower().strip())
+
+        self.supported_properties = set(properties)
+
+    def property_has_ff_support(self, property_name):
+        """ Checks if the most recent FF supports the given property name """
+        property_name = "".join(property_name.split('-')).lower()
+        return property_name in self.supported_properties
 
     def get_properties(self, rule):
         """
@@ -62,7 +75,7 @@ class CSSParser(object):
         for rule in self.css:
             selectors.append(rule.selectorText)
         return selectors
-
+                                                                                       "".join(property_name.split('-')).lower()
     def is_comment(self, rule):
         """ Returns whether a rule a comment """
         return rule.typeString == "COMMENT"
