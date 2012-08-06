@@ -1,1 +1,86 @@
 {% extends "base.html" %}
+
+{% block content %}
+<div class="left-column">
+    <!-- This div holds the logo -->
+    <a href="#" style="border:none;"><div class="logo"></div></a>
+
+    <!-- Actual leftside content -->
+    <div class="left-content">
+
+        <!-- We can easily add sections to display more scan statistics -->
+        <div class="section">
+            <label class="nav-label">http://www.google.com</label>
+            <ul class="summary">
+                <!-- Site stats -->
+                <li>Scanned on <span class="statistic">07-22-2012</span></li>
+                <li><span class="good">453</span> pages scanned from here</li>
+                <li><span class="good">5</span> user agents used:</li>
+                <ul>
+                    <li class="">Firefox / 11.0</li>
+                    <li class="">Webkit / 4.0</li>
+                    <li class="bad">Firefox / 11.0 (Fennec)</li>
+                    <li class="good">Firefox / 11.0 (iPhone)</li>
+                </ul>
+                <br/>
+                <li><span class="bad">24</span> CSS issues</li>
+                <li><span class="bad">No</span> UA sniffing for fennec</li>
+            </ul>
+        </div>
+
+    </div>
+</div>
+<div class="right-column">
+    <div class="right-content">
+
+        <h2 class="content-title">Google.com Statistics</h2>
+         <form class="sort-by-useragent">
+            <label class="filter-dropdown-label">Filter by user agents:</label>
+            <select>
+                <option default>Combined View</option>
+                <option>Firefox / 11.0</option>
+                <option>Webkit / 4.0</option>
+                <option>Firefox / 11.0 (Fennec)</option>
+                <option>Firefox / 11.0 (iPhone)</option>
+            </select>
+        </form>
+        <div class="content">
+            <!-- Put table here -->
+            <div class="info-table" style="margin-top:20px;">
+                <table class="site-table">
+                    <tr>
+                        <th>Property used</th>
+                        <th>-moz</th>
+                        <th>-webkit</th>
+                        <th>no prefix</th>
+                    </tr>
+                    <tr class="bad">
+                        <td >box-shadow</td>
+                        <td>0</td>
+                        <td>23</td>
+                        <td>0</td>
+                    </tr>
+                    <tr class="good">
+                        <td>border-radius</td>
+                        <td>23</td>
+                        <td>23</td>
+                        <td>0</td>
+                    </tr>
+                    <tr class="good">
+                        <td>canvas</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>1</td>
+                    </tr>
+
+                </table>
+                <div class="pagination">« Prev | 1 | 2 | 3 | 4 | Next »</div>
+            </div>
+
+        <!-- End content -->
+        </div>
+    <!-- End rightside content-->
+    </div>
+<!-- End right column-->
+</div>
+{% endblock content %}
