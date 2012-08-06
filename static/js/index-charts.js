@@ -1,16 +1,16 @@
 // Plot demo graph 1
 
-var dummyData1 = {[
-    {'2012-07-3': 100},
-    {'2012-07-3': 97},
-    {'2012-07-3': 84},
-    {'2012-07-3': 73},
-    {'2012-07-3': 87},
-    {'2012-07-3': 72},
-    {'2012-07-3': 51},
-    {'2012-07-3': 31},
-    {'2012-07-3': 33}
-    ]}
+var dummyData1 = {
+    '2012-07-03': 100,
+    '2012-07-04': 97,
+    '2012-07-05': 84,
+    '2012-07-06': 73,
+    '2012-07-07': 87,
+    '2012-07-08': 72,
+    '2012-07-09': 51,
+    '2012-07-10': 31,
+    '2012-07-11': 33,
+    };
 
 $(function () {
     var options = {
@@ -20,16 +20,13 @@ $(function () {
         }
     };
     var d1 = [];
-    for (var i = 0; i<dummyData1.length; i += 1){
-        var d = new Date(2012, 07, 4+i);
-        d1.push([d, Math.sin(i)]);
+
+    // Parse dummy data into graph
+    for(date in dummyData1){
+        var d = new Date(date);
+        d1.push([d, dummyData1[date]]);
+        console.log(d)
     }
-
-    // a null signifies separate line segments
-    // var d3 = [[0, 12], [7, 12], null, [7, 2.5], [12, 2.5]];
-
-
-
 
     $.plot($("#ua-sniff-chart"), [ d1 ], options);
 });
