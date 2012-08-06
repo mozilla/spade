@@ -10,6 +10,7 @@ from spade.model import models
 # Ensure that warnings for CSS properties are disabled: cssutils throws
 # warnings when properties are not recognized. It also only recognizes up to
 # CSS2, and a few CSS3 properties. Most prefixed properties will cause warnings
+# We're only using cssutils to iterate over rules, so this is fine
 cssutils.log.setLevel(logging.FATAL)
 
 
@@ -18,15 +19,6 @@ class CSSParser(object):
         """ Initialize a cssutils parser """
         self.css = cssutils.parseString(raw_css).cssRules
         self.sitescan = sitescan
-
-        #ff_prop_list="./properties.txt"
-        #with open(ff_prop_list) as supported_list:
-        #    # Generate lookup dictionary for CSS properties
-        #    properties = []
-        #    for line in supported_list.readlines():
-        #        properties.append(line.lower().strip())
-
-        #    self.supported_properties = set(properties)
 
     def property_has_ff_support(self, property_name):
         """ Checks if the most recent FF supports the given property name """
@@ -101,14 +93,14 @@ class CSSParser(object):
             current_rule.save()
 
             for property_name in properties[selector]:
-                property_prefix = properties[selector][property_name][0].strip()
-                property_value = properties[selector][property_name][1].strip()
+                prefix = properties[selector][property_name][0].strip()
+                value = properties[selector][property_name][1].strip()
 
                 # Create CSSProperty object for each property
                 new_property = models.CSSProperty(rule=current_rule)
-                new_property.prefix = property_prefix
+                new_property.prefix = prefix
                 new_property.name = property_name
-                new_property.value = property_value
+                new_property.value = value
                 new_property.save()
 
         return True
