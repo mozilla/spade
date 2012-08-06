@@ -26,4 +26,3 @@ admin.site.register(
 admin.site.register(models.LinkedCSS)
 admin.site.register(models.LinkedJS)
 admin.site.register(models.UserAgent)
-admin.site.register(models.CrawlList)

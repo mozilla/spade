@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block pagetitle %}
+{% endblock pagetitle %}
+
+{% block htmlhead %}
+{% endblock htmlhead %}
+
+{% block content %}
+<a href="#" style="border:none;"><div class="logo"></div></a>
+<div class="primary-column">
+    <div class="primary-content" style="margin-top:0px">
+    <!-- Begin rightside content -->
+        <div class="content">
+            <!-- Begin content -->
+            <!-- Display regression stuff-->
+            <div class="content-box">
+                <h4>Regression Analysis</h4>
+                <div class="charts">
+                    <div class="chart">
+                        <strong>UA Sniffing Chart</strong>
+                        <div class="chart-container" id="ua-sniff-chart">
+                        </div>
+                    </div>
+                    <div class="chart" >
+                        <strong>Prefixed CSS Usage</strong>
+                        <div class="chart-container" id="prefixed-feature-chart">
+                        </div>
+                    </div>
+                </div>
+                <br style="clear:both"/>
+            </div>
+            <script src="./static/js/index-charts.js" type="text/javascript"></script>
+
+            <!-- Display table with scans -->
+            <div class="content-box">
+                <h4>Available Scans</h4>
+                <table class="data-display">
+                    <tr class="table-header">
+                        <th class="id">Batch</th>
+                        <th>Date completed</th>
+                        <th>UA issue %</th>
+                        <th>CSS issue %</th>
+                        <th>UA issues fixed</th>
+                        <th>UA issues regressed</th>
+                        <th>CSS use fixed</th>
+                        <th>CSS use regressed</th>
+                    </tr>
+                    <tr>
+                        <td class="id">1</td>
+                        <td><a href="scanreport.html">07-23-2012 21:11:01</a></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="id">2</td>
+                        <td><a href="#">07-23-2012 21:11:01</a></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                     <tr>
+                        <td class="id">3</td>
+                        <td><a href="#">07-23-2012 21:11:01</a></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="id">4</td>
+                        <td><a href="#">07-23-2012 21:11:01</a></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+                <div class="pagination">« Prev | 1 | 2 | 3 | 4 | Next »</div>
+            </div>
+        <!-- End content -->
+        </div>
+    <!-- End primary-content-->
+    </div>
+<!-- End primary-column-->
+</div>
+{% endblock content %}

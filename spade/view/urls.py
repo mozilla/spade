@@ -6,8 +6,9 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-    # Examples:
-    url(r'^$', 'spade.view.views.home', name='home'),
+    url(r'^$', 'spade.view.views.dashboard', name='dashboard'),
+    url(r'^batch/(?P<batch_id>\d+)/$', 'spade.view.views.batch_report', name='batch_report'),
+    url(r'^site/(?P<site_id>\d+)/$', 'spade.view.views.site_report', name='site_report'),
 
     url(r'^admin/', include(admin.site.urls)),
 
