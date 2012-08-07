@@ -91,4 +91,4 @@ def test_diff_different():
     u"""</html>""")
 
     similarity = diff_util.compare(html1, html2)
-    assert 0 < similarity < 1.0
+    assert similarity < 0.9
