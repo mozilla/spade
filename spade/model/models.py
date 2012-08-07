@@ -4,7 +4,6 @@ Spade models.
 """
 from datetime import datetime
 from django.db import models
-from urlparse import urlparse
 
 
 # The following organizes a naming scheme for local filesystem
