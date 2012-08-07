@@ -15,53 +15,43 @@ cssutils.log.setLevel(logging.FATAL)
 
 
 class CSSParser(object):
-    def __init__(self, raw_css, sitescan=None):
+    def __init__(self, raw_css):
         """ Initialize a cssutils parser """
-        self.css = cssutils.parseString(raw_css).cssRules
-        self.sitescan = sitescan
+        self.parse(raw_css)
 
-    def property_has_ff_support(self, property_name):
-        """ Checks if the most recent FF supports the given property name """
-        property_name = "".join(property_name.split('-')).lower()
-        return property_name in self.supported_properties
+    def parse(self, css):
+        self.css = cssutils.parseString(css).cssRules
 
-    def get_properties(self, rule):
+    def parse_rule(self, rule):
         """
-        Returns dictionary of properties and their values & prefixes from rule
+        Returns a tuple containing the rule's selector and parsed properties
+        Example: (selector, { property: (prefix, unprefixed_name, value), })
         """
-        selector_string = ""
-        for selector in rule.selectorList:
-            selector_string = selector_string + selector.selectorText
+        selector_string = " ".join([s.selectorText for s in rule.selectorList])
 
         # Get property strings
-        split_rule = rule.cssText.split('{')
-        split_rule = split_rule[1].split('}')
-        property_strings = split_rule[0].split(';')
+        properties = []
+        for property in rule.style:
+            properties.append((property.name, property.value))
 
-        # Separate property names from values
-        property_tuples = []
-        for data_string in property_strings:
-            prop = data_string.split(':')
-            property_tuples.append((prop[0], prop[1]))
-
-        # Create tuples which contain prefixes and values & map these to props
-        property_dict = {}
-        for property_tuple in property_tuples:
-            prop = property_tuple[0].strip()
-            val = property_tuple[1]
-            if '-moz-' in prop:
-                prop = prop.split('-moz-')[1]
-                property_dict[prop] = ('-moz-', val)
-            elif '-webkit-' in prop:
-                prop = prop.split('-webkit-')[1]
-                property_dict[prop] = ('-webkit-', val)
-            elif '-ms-' in prop:
-                prop = prop.split('-ms-')[1]
-                property_dict[prop] = ('-ms-', val)
+        # Create the dictionary that gives us easy access to the components of
+        # the property
+        properties_dict = {}
+        for (name, val) in properties:
+            if name.startswith('-moz-'):
+                unprefixed_name = name.split('-moz-')[1]
+                properties_dict[name] = ('-moz-', unprefixed_name, val)
+            elif name.startswith('-webkit-'):
+                unprefixed_name = name.split('-webkit-')[1]
+                properties_dict[name] = ('-webkit-', unprefixed_name, val)
+            elif name.startswith('-ms-'):
+                unprefixed_name = name.split('-ms-')[1]
+                properties_dict[name] = ('-ms-', unprefixed_name, val)
             else:
-                property_dict[prop] = ("", val)
+                # The name is already unprefixed
+                properties_dict[name] = ("", name, val)
 
-        return {selector_string: property_dict}
+        return (selector_string, properties_dict)
 
     def get_selector_list(self):
         """ Retrieve CSS selectors """
@@ -74,7 +64,7 @@ class CSSParser(object):
         """ Returns whether a rule a comment """
         return rule.typeString == "COMMENT"
 
-    def store(self, sitescan):
+    def store_css(self, sitescan):
         """
         Calls parse on the internal CSS, stores css properties into db model
         """
@@ -83,24 +73,24 @@ class CSSParser(object):
                 # Ignore Comments
                 continue
 
-            # Get properties from rule
-            properties = self.get_properties(rule)
-            for key in properties.keys():
-                selector = key
+            # Get selector and properties from rule
+            rule = self.parse_rule(rule)
+            selector = rule[0]
+            properties = rule[1]
 
             # Create CSS rule in model
-            current_rule = models.CSSRule(sitescan=sitescan, selector=selector)
-            current_rule.save()
+            current_rule = models.CSSRule.objects.create(sitescan=sitescan,
+                                                         selector=selector)
 
-            for property_name in properties[selector]:
-                prefix = properties[selector][property_name][0].strip()
-                value = properties[selector][property_name][1].strip()
+            for property in properties:
+                prefix = properties[property][0]
+                unprefixed_name = properties[property][1]
+                value = properties[property][2]
 
-                # Create CSSProperty object for each property
-                new_property = models.CSSProperty(rule=current_rule)
-                new_property.prefix = prefix
-                new_property.name = property_name
-                new_property.value = value
-                new_property.save()
+                # Create CSSProperty object for each property belonging to the
+                # rule
+                new_property = models.CSSProperty.objects.create(
+                    rule=current_rule, prefix=prefix, name=unprefixed_name,
+                    value=value)
 
         return True

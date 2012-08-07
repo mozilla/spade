@@ -1,9 +1,0 @@
-To get a relevant list of CSS properties
-
-1) Start up the browser you want properties for (e.g ff13)
-2) Use console to execute this javascript
-for(property in document.body.style){
-    document.write(property+"\n");
-}
-
-Copy and paste the result into a text file.
