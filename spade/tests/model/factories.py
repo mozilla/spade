@@ -65,3 +65,19 @@ class LinkedJSFactory(factory.Factory):
     url = MOCK_JS_URL
     url_hash = sha256(MOCK_JS_URL).hexdigest()
     raw_js = u"document.write('hello world')"
+
+
+class CSSRuleFactory(factory.Factory):
+    """CSS Rule model factory"""
+    FACTORY_FOR = models.CSSRule
+    linkedcss = factory.SubFactory(LinkedCSSFactory)
+    selector = "body"
+
+
+class CSSPropertyFactory(factory.Factory):
+    """CSS Property model factory"""
+    FACTORY_FOR = models.CSSProperty
+    rule = factory.SubFactory(CSSRuleFactory)
+    prefix = ""
+    name = "text-decoration"
+    value = "none"
