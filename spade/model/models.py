@@ -147,7 +147,7 @@ class LinkedJS(models.Model):
 
 class CSSRule(models.Model):
     """A CSS element rule"""
-    sitescan = models.ForeignKey(SiteScan)
+    linkedcss = models.ForeignKey(LinkedCSS)
     selector = models.CharField(max_length=50)
 
 class CSSProperty(models.Model):

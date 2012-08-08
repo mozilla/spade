@@ -70,7 +70,7 @@ class LinkedJSFactory(factory.Factory):
 class CSSRuleFactory(factory.Factory):
     """CSS Rule model factory"""
     FACTORY_FOR = models.CSSRule
-    site = "http://www.mozilla.com"
+    linkedcss = factory.SubFactory(LinkedCSSFactory)
     selector = "body"
 
 

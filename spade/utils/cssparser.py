@@ -64,7 +64,7 @@ class CSSParser(object):
         """ Returns whether a rule a comment """
         return rule.typeString == "COMMENT"
 
-    def store_css(self, sitescan):
+    def store_css(self, linkedcss):
         """
         Calls parse on the internal CSS, stores css properties into db model
         """
@@ -79,7 +79,7 @@ class CSSParser(object):
             properties = rule[1]
 
             # Create CSS rule in model
-            current_rule = models.CSSRule.objects.create(sitescan=sitescan,
+            current_rule = models.CSSRule.objects.create(linkedcss=linkedcss,
                                                          selector=selector)
 
             for property in properties:

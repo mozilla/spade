@@ -4,11 +4,9 @@ Tests for css parsing util
 from spade.utils import cssparser
 from spade.model import models
 
-from spade.tests.model.factories import SiteScanFactory
+from spade.tests.model.factories import LinkedCSSFactory
 
-
-def pytest_funcarg__parser(request):
-    css = (u"html body{\n"
+RAW_CSS = (u"html body{\n"
            u"color:#000;\n"
            u"margin:0 auto;\n"
            u"-moz-box-shadow: 10px 10px 5px #888;\n"
@@ -17,7 +15,10 @@ def pytest_funcarg__parser(request):
            u"color:#000;\n"
            u"-moz-box-shadow: 10px 10px 5px #888;\n"
            u"-webkit-something: something else\n}")
-    return cssparser.CSSParser(css)
+
+
+def pytest_funcarg__parser(request):
+    return cssparser.CSSParser(RAW_CSS)
 
 
 def test_extract_rules(parser):
@@ -29,12 +30,11 @@ def test_extract_rules(parser):
 
 def test_store_css(parser):
     """Make sure CSS rules are saved correctly"""
-    sitescan = SiteScanFactory.create(site_url_hash="testhash",
-                                      site_url="http://test.com")
-    parser.store_css(sitescan)
+    linkedcss = LinkedCSSFactory.create(raw_css=RAW_CSS)
+    parser.store_css(linkedcss)
 
     # The rule for "html body" should be saved
-    find_rule = models.CSSRule.objects.filter(sitescan=sitescan,
+    find_rule = models.CSSRule.objects.filter(linkedcss=linkedcss,
                                               selector="html body")
     assert find_rule.count() == 1
 
@@ -51,15 +51,14 @@ def test_store_prefixed_properties(parser):
     Ensure that when the same rule has both prefixed and unprefixed versions of
     the same property, the CSS is stored correctly
     """
-    sitescan = SiteScanFactory.create(site_url_hash="testhash",
-                                      site_url="http://test.com")
-
     css = (u"html body{\n"
            u"box-shadow: 10px 10px 5px #888;\n}"
            u"a:visited a:hover{\n"
            u"-moz-box-shadow: 10px 10px 5px #000;\n}")
     parser.parse(css)
-    parser.store_css(sitescan)
+
+    linkedcss = LinkedCSSFactory.create(raw_css=css)
+    parser.store_css(linkedcss)
 
     # Check to see that we saved the prefixed property -moz-box-shadow
     prefixed_property = models.CSSProperty.objects.filter(prefix="-moz-",
@@ -81,9 +80,6 @@ def test_comments_dont_break_parser(parser):
     """
     Ensure comments between properties and rules don't break our parsing of CSS
     """
-    sitescan = SiteScanFactory.create(site_url_hash="testhash",
-                                      site_url="http://test.com")
-
     # Place comments between various elements to see that they're successfully
     # ignored by the parser
     commented_css = (u"html body{ /* comment inline */\n"
@@ -95,15 +91,17 @@ def test_comments_dont_break_parser(parser):
                      u"-moz-box-shadow: 10px 10px 5px #000;"
                      "/* comment inline */\n}")
     parser.parse(commented_css)
-    parser.store_css(sitescan)
+
+    linkedcss = LinkedCSSFactory.create(raw_css=commented_css)
+    parser.store_css(linkedcss)
 
     # Check to see that expected rules were saved
-    rule1 = models.CSSRule.objects.filter(sitescan=sitescan,
+    rule1 = models.CSSRule.objects.filter(linkedcss=linkedcss,
                                           selector="html body")
 
     assert rule1.count() == 1
 
-    rule2 = models.CSSRule.objects.filter(sitescan=sitescan,
+    rule2 = models.CSSRule.objects.filter(linkedcss=linkedcss,
                                           selector="a:visited a:hover")
     assert rule2.count() == 1
 
