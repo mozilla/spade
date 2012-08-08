@@ -21,6 +21,32 @@ def pytest_funcarg__parser(request):
     return cssparser.CSSParser(RAW_CSS)
 
 
+def test_arbitrary_prefix(parser):
+    """ Make sure that unknown prefixes get saved """
+    test_css = (u"body{\n"
+                u"-testing-testprop: testval\n}")
+    parser.parse(test_css)
+
+    linkedcss = LinkedCSSFactory.create(raw_css=test_css)
+    parser.store_css(linkedcss)
+
+    find_property = models.CSSProperty.objects.filter(prefix="-testing-",
+                                                      name="testprop",
+                                                      value="testval")
+    assert find_property.count() == 1
+
+
+def test_unknown_property(parser):
+    """ Make sure that unknown properties get saved """
+    linkedcss = LinkedCSSFactory.create(raw_css=RAW_CSS)
+    parser.store_css(linkedcss)
+
+    find_property = models.CSSProperty.objects.filter(prefix="-webkit-",
+                                                      name="something",
+                                                      value="something else")
+    assert find_property.count() == 1
+
+
 def test_extract_rules(parser):
     """Make sure we get all rules supplied in CSS"""
     # Check to see that we have the correct selectors

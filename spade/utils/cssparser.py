@@ -4,6 +4,7 @@ Utility to parse and save CSS
 import cssutils
 import logging
 import os
+import re
 from urllib import urlopen
 from spade.model import models
 
@@ -37,16 +38,13 @@ class CSSParser(object):
         # Create the dictionary that gives us easy access to the components of
         # the property
         properties_dict = {}
+        regex = re.compile("^-[a-zA-Z]+\-")
         for (name, val) in properties:
-            if name.startswith('-moz-'):
-                unprefixed_name = name.split('-moz-')[1]
-                properties_dict[name] = ('-moz-', unprefixed_name, val)
-            elif name.startswith('-webkit-'):
-                unprefixed_name = name.split('-webkit-')[1]
-                properties_dict[name] = ('-webkit-', unprefixed_name, val)
-            elif name.startswith('-ms-'):
-                unprefixed_name = name.split('-ms-')[1]
-                properties_dict[name] = ('-ms-', unprefixed_name, val)
+            result = regex.match(name)
+            if result:
+                prefix = result.group()
+                unprefixed_name = name.split(prefix)[1]
+                properties_dict[name] = (prefix, unprefixed_name, val)
             else:
                 # The name is already unprefixed
                 properties_dict[name] = ("", name, val)
