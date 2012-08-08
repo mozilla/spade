@@ -53,7 +53,7 @@ class BatchUserAgent(models.Model):
     ua_string = models.CharField(max_length=250, unique=True)
 
     def __unicode(self):
-        return "ua_string: " + ua_string + ">"
+        return "ua_string: " + ua_string
 
 
 class SiteScan(models.Model):
