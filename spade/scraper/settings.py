@@ -32,7 +32,7 @@ DOWNLOADER_MIDDLEWARES = {
 SPIDER_MIDDLEWARES = {
     'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware':None,
     'scrapy.contrib.spidermiddleware.depth.DepthMiddleware':None,
-    'spade.scraper.middlewares.CustomDepthMiddleware': 542,
+    'spade.scraper.middlewares.DepthMiddleware': 542,
     'spade.scraper.middlewares.OffsiteMiddleware': 543,
 }
 
