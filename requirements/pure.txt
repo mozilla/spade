@@ -5,5 +5,4 @@ Scrapy==0.14.4
 w3lib==1.2
 zope.interface==4.0.1
 argparse==1.2.1
-lxml==2.3.4
 cssutils==0.9.10b1
