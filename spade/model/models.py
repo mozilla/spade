@@ -47,6 +47,15 @@ class Batch(models.Model):
         verbose_name_plural = u"Batches"
 
 
+class BatchUserAgent(models.Model):
+    """ A user agent from a given batch """
+    batch = models.ForeignKey(Batch, db_index=True)
+    ua_string = models.CharField(max_length=250, unique=True)
+
+    def __unicode(self):
+        return "ua_string: " + ua_string + ">"
+
+
 class SiteScan(models.Model):
     """An individual site scanned."""
     batch = models.ForeignKey(Batch, db_index=True)
@@ -105,7 +114,7 @@ class URLContent(models.Model):
 
     """
     url_scan = models.ForeignKey(URLScan)
-    user_agent = models.CharField(max_length=250, db_index=True)
+    user_agent = models.ForeignKey(BatchUserAgent)
     raw_markup = models.FileField(
         max_length=500, upload_to=html_filename)
     headers = models.FileField(
