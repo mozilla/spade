@@ -97,7 +97,6 @@ class ScraperPipeline(object):
 
     def close_spider(self, spider):
         """ Executed on spider completion """
-        spider.batch_user_agents = []
 
         # Update batch finish time, keep this last
         spider.batch.finish_time = spider.get_now_time()
@@ -105,16 +104,14 @@ class ScraperPipeline(object):
 
     def open_spider(self, spider):
         """ Executed on spider launch """
-        if not user_agents:
-            raise ValueError(
-                "No user agents; add some with 'manage.py useragents --add'")
-
         now = spider.get_now_time()
 
         # Create initial batch
         spider.batch = model.Batch.objects.create(
             kickoff_time=now, finish_time=now)
         spider.batch.save()
+
+        spider.batch_user_agents = []
 
         # Give the spider a set of batch user agents, which preserve historical
         # user agent data
@@ -123,3 +120,6 @@ class ScraperPipeline(object):
                 batch=spider.batch, ua_string=ua.ua_string)
             spider.batch_user_agents.append(batch_user_agent)
 
+        if not self.batch_user_agents:
+            raise ValueError(
+                "No user agents; add some with 'manage.py useragents --add'")
