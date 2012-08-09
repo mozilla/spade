@@ -12,6 +12,7 @@ import os
 
 def pytest_funcarg__spider(request):
     """Use scrapy's overrides to start the spider w/ specific settings"""
+
     settings.overrides['LOG_ENABLED'] = True
     settings.overrides['URLS'] = u"spade/tests/sitelists/urls.txt"
     spider = GeneralSpider()
@@ -22,9 +23,19 @@ def pytest_funcarg__spider(request):
         kickoff_time=now, finish_time=now)
     spider.batch.save()
 
+    # Generate two user agents to use in tests
+    ua1 = factories.UserAgentFactory.build(ua_string="Firefox / 11.0")
+    ua2 = factories.UserAgentFactory.build(ua_string="Chrome / 20.0")
+
+    # Set spider batch_user_agents
+    spider.batch_user_agents = []
+    for ua in list(model.UserAgent.objects.all()):
+        batch_user_agent = factories.BatchUserAgentFactory.create(
+            batch=spider.batch, ua_string=ua.ua_string)
+        spider.batch_user_agents.append(batch_user_agent)
+
     # Delete created batch from database when test is done
     request.addfinalizer(lambda: spider.batch.delete())
-
     return spider
 
 
@@ -53,7 +64,7 @@ def pytest_funcarg__js_headers(request):
 
 
 def pytest_funcarg__scrape_request(request):
-    # Create a mock html scraping request
+    """ Create a mock html scraping request """
     mock_request = Request('http://test:12345')
     mock_request.meta['referrer'] = None
     mock_request.meta['sitescan'] = None
@@ -63,11 +74,11 @@ def pytest_funcarg__scrape_request(request):
 
 
 def pytest_funcarg__linked_css_request(request):
-    # Create a mock css item request
+    """ Create a mock css item request """
     mock_request = Request('http://test:12345/default.css')
     mock_request.meta['referrer'] = "http://test:12345/"
     mock_request.meta['sitescan'] = factories.SiteScanFactory()
-    mock_request.meta['user_agent'] = "Firefox / 11.0"
+    mock_request.meta['user_agent'] = factories.BatchUserAgentFactory.build(ua_string='Firefox / 11.0')
     mock_request.headers.setdefault('User-Agent', "Firefox / 11.0")
     mock_request.meta['content_type'] = "text/css"
     mock_request.dont_filter = True
@@ -75,11 +86,11 @@ def pytest_funcarg__linked_css_request(request):
 
 
 def pytest_funcarg__linked_js_request(request):
-    # Create a mock js item request
+    """ Create a mock js item request """
     mock_request = Request('http://test:12345/default.js')
     mock_request.meta['referrer'] = "http://test:12345/"
     mock_request.meta['sitescan'] = factories.SiteScanFactory()
-    mock_request.meta['user_agent'] = "Firefox / 11.0"
+    mock_request.meta['user_agent'] = factories.BatchUserAgentFactory.build(ua_string='Firefox / 11.0')
     mock_request.headers.setdefault('User-Agent', "Firefox / 11.0")
     mock_request.meta['content_type'] = "text/js"
     mock_request.dont_filter = True
@@ -88,6 +99,7 @@ def pytest_funcarg__linked_js_request(request):
 
 # Define mock markup and linked content
 def pytest_funcarg__mock_html_twolinks(request):
+    """ Fake HTML page for testing with two hyperlinks """
     mock_html = """
                 <html>
                 <head></head>
@@ -100,6 +112,7 @@ def pytest_funcarg__mock_html_twolinks(request):
 
 
 def pytest_funcarg__mock_html_nolinks(request):
+    """ Fake HTML page for testing with no hyperlinks """
     mock_html = """
                 <html>
                 <head></head>
@@ -110,6 +123,7 @@ def pytest_funcarg__mock_html_nolinks(request):
 
 
 def pytest_funcarg__mock_css(request):
+    """ Fake CSS with two properties """
     mock_css = """
                 body{
                     color:#fff;
@@ -120,6 +134,7 @@ def pytest_funcarg__mock_css(request):
 
 
 def pytest_funcarg__mock_js(request):
+    """ Fake javascript that writes hello world"""
     mock_js = """
               document.write('hello world');
               """
@@ -144,15 +159,9 @@ def test_spider_read_from_file(spider):
 def test_useragents_spider(spider, scrape_request, html_headers,
                            mock_html_nolinks):
     """Ensure multiple requests with different user agent strings emitted"""
-    # Create 2 useragents
-    ua1 = model.UserAgent()
-    ua1.ua_string = u'Firefox / 11.0'
-    ua1.save()
-
-    ua2 = model.UserAgent()
-    ua2.ua_string = u'Chrome / 20.0'
-    ua2.save()
-    spider.user_agents = list(model.UserAgent.objects.all())
+    ua1 = factories.BatchUserAgentFactory.build(ua_string='Firefox / 11.0')
+    ua2 = factories.BatchUserAgentFactory.build(ua_string='Chrome / 20.0')
+    spider.batch_user_agents = [ua1, ua2]
 
     # Generate a mock response
     mock_response = Response('http://test:12345',
@@ -160,7 +169,7 @@ def test_useragents_spider(spider, scrape_request, html_headers,
     mock_response.request = scrape_request
     mock_response.headers = html_headers
     mock_response.status = 200
-    mock_response.encoding = u'ascii'
+    mock_response.encoding = u'utf-8'
     mock_response.flags = []
 
     # Call the spider on the mock response
@@ -171,7 +180,7 @@ def test_useragents_spider(spider, scrape_request, html_headers,
     request_uas = []
     for new_request in pipeline_generator:
         if isinstance(new_request, Request):
-            request_uas.append(new_request.meta['user_agent'])
+            request_uas.append(new_request.meta['user_agent'].ua_string)
         else:
             # We're not expecting anything other than Requests
             assert False
@@ -183,10 +192,8 @@ def test_spider_crawls_links(spider, scrape_request, html_headers,
                              mock_html_twolinks):
     """Ensure spider always picks up relevant links to HTML pages"""
     # Use only 1 user agent for easier counting
-    ua1 = model.UserAgent()
-    ua1.ua_string = u'Firefox / 11.0'
-    ua1.save()
-    spider.user_agents = list(model.UserAgent.objects.all())
+    ua = factories.BatchUserAgentFactory.build(ua_string='Firefox / 11.0')
+    spider.batch_user_agents = [ua]
 
     # Generate a mock response based on html containing two links
     mock_response = Response('http://test:12345',
@@ -194,7 +201,7 @@ def test_spider_crawls_links(spider, scrape_request, html_headers,
     mock_response.request = scrape_request
     mock_response.headers = html_headers
     mock_response.status = 200
-    mock_response.encoding = u'ascii'
+    mock_response.encoding = u'utf-8'
     mock_response.flags = []
 
     # Call spider on the mock response
@@ -218,10 +225,8 @@ def test_spider_crawls_links(spider, scrape_request, html_headers,
 def test_css_item_emission(spider, linked_css_request, css_headers, mock_css):
     """CSS items are emitted correctly"""
     # Use only 1 user agent for easier counting
-    ua1 = model.UserAgent()
-    ua1.ua_string = u'Firefox / 11.0'
-    ua1.save()
-    spider.user_agents = list(model.UserAgent.objects.all())
+    ua1 = factories.BatchUserAgentFactory(ua_string='Firefox / 11.0')
+    spider.user_agents = [ua1]
 
     # Generate a mock response based on CSS
     mock_url = 'http://test:12345/default.css'
@@ -253,7 +258,7 @@ def test_css_item_emission(spider, linked_css_request, css_headers, mock_css):
     item_expected['sitescan'] = linked_css_request.meta['sitescan']
     item_expected['urlscan'] = mock_urlscan
     item_expected['url'] = mock_response.url
-    item_expected['user_agent'] = mock_response.meta.get('user_agent')
+    item_expected['user_agent'] = mock_response.meta['user_agent']
 
     item_collected = None
     for item in pipeline_generator:
@@ -267,12 +272,6 @@ def test_css_item_emission(spider, linked_css_request, css_headers, mock_css):
 
 def test_js_item_emission(spider, linked_js_request, js_headers, mock_js):
     """JS items are emitted correctly"""
-    # Use only 1 user agent for easier counting
-    ua1 = model.UserAgent()
-    ua1.ua_string = u'Firefox / 11.0'
-    ua1.save()
-    spider.user_agents = list(model.UserAgent.objects.all())
-
     # Generate a mock response based on JS
     mock_url = 'http://test:12345/default.js'
     mock_response = Response(mock_url,
@@ -303,7 +302,7 @@ def test_js_item_emission(spider, linked_js_request, js_headers, mock_js):
     item_expected['sitescan'] = linked_js_request.meta['sitescan']
     item_expected['urlscan'] = mock_urlscan
     item_expected['url'] = mock_response.url
-    item_expected['user_agent'] = mock_response.meta.get('user_agent')
+    item_expected['user_agent'] = mock_response.meta['user_agent']
 
     item_collected = None
     for item in pipeline_generator:
