@@ -272,10 +272,6 @@ def test_css_item_emission(spider, linked_css_request, css_headers, mock_css):
 
 def test_js_item_emission(spider, linked_js_request, js_headers, mock_js):
     """JS items are emitted correctly"""
-    # Use only 1 user agent for easier counting
-    #ua1 = factories.BatchUserAgentFactory.create(ua_string='Firefox / 11.0')
-    #spider.batch_user_agents = [ua1]
-
     # Generate a mock response based on JS
     mock_url = 'http://test:12345/default.js'
     mock_response = Response(mock_url,
