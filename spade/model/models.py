@@ -52,8 +52,8 @@ class BatchUserAgent(models.Model):
     batch = models.ForeignKey(Batch, db_index=True)
     ua_string = models.CharField(max_length=250, unique=True)
 
-    def __unicode(self):
-        return "ua_string: " + ua_string
+    def __unicode__(self):
+        return self.ua_string
 
 
 class SiteScan(models.Model):
@@ -122,7 +122,7 @@ class URLContent(models.Model):
 
     def __unicode__(self):
         return u"'{0}' scanned with '{1}'".format(
-            self.url_scan, self.user_agent)
+            self.url_scan, self.user_agent.ua_string)
 
 
 class LinkedCSS(models.Model):
