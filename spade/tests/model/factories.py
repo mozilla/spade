@@ -13,7 +13,7 @@ MOCK_JS_URL = u"http://code.jquery.com/jquery-1.7.2.min.js"
 
 
 class BatchFactory(factory.Factory):
-    """Batch model factory"""
+    """ Batch model factory """
     FACTORY_FOR = models.Batch
     kickoff_time = datetime.now(utc)
     finish_time = datetime.now(utc)
@@ -27,7 +27,7 @@ class BatchUserAgentFactory(factory.Factory):
 
 
 class SiteScanFactory(factory.Factory):
-    """Site scan model factory"""
+    """ Site scan model factory """
     FACTORY_FOR = models.SiteScan
     batch = factory.SubFactory(BatchFactory)
     site_url = u"http://www.mozilla.com"
@@ -35,7 +35,7 @@ class SiteScanFactory(factory.Factory):
 
 
 class URLScanFactory(factory.Factory):
-    """URL scan model factory"""
+    """ URL scan model factory """
     FACTORY_FOR = models.URLScan
     site_scan = factory.SubFactory(SiteScanFactory)
     page_url = u"http://www.mozilla.com"
@@ -44,13 +44,13 @@ class URLScanFactory(factory.Factory):
 
 
 class UserAgentFactory(factory.Factory):
-    """User agent model factory"""
+    """ User agent model factory """
     FACTORY_FOR = models.UserAgent
     ua_string = u"Firefox / 5.0"
 
 
 class URLContentFactory(factory.Factory):
-    """URL Content model factory"""
+    """ URL Content model factory """
     FACTORY_FOR = models.URLContent
     url_scan = factory.SubFactory(URLScanFactory)
     user_agent = factory.SubFactory(BatchUserAgentFactory)
@@ -59,7 +59,7 @@ class URLContentFactory(factory.Factory):
 
 
 class LinkedCSSFactory(factory.Factory):
-    """Linked CSS model factory"""
+    """ Linked CSS model factory """
     FACTORY_FOR = models.LinkedCSS
     url = MOCK_CSS_URL
     url_hash = sha256(MOCK_CSS_URL).hexdigest()
@@ -67,7 +67,7 @@ class LinkedCSSFactory(factory.Factory):
 
 
 class LinkedJSFactory(factory.Factory):
-    """Linked JS model factory"""
+    """ Linked JS model factory """
     FACTORY_FOR = models.LinkedJS
     url = MOCK_JS_URL
     url_hash = sha256(MOCK_JS_URL).hexdigest()
@@ -75,16 +75,46 @@ class LinkedJSFactory(factory.Factory):
 
 
 class CSSRuleFactory(factory.Factory):
-    """CSS Rule model factory"""
+    """ CSS Rule model factory """
     FACTORY_FOR = models.CSSRule
     linkedcss = factory.SubFactory(LinkedCSSFactory)
     selector = "body"
 
 
 class CSSPropertyFactory(factory.Factory):
-    """CSS Property model factory"""
+    """ CSS Property model factory """
     FACTORY_FOR = models.CSSProperty
     rule = factory.SubFactory(CSSRuleFactory)
     prefix = ""
     name = "text-decoration"
     value = "none"
+
+
+class BatchDataFactory(factory.Factory):
+    """ Factory for batch data """
+    FACTORY_FOR = models.BatchData
+    batch = factory.SubFactory(BatchFactory)
+
+
+class SiteScanDataFactory(factory.Factory):
+    """ Factory for sitescan data """
+    FACTORY_FOR = models.SiteScanData
+    sitescan = factory.SubFactory(SiteScan)
+
+
+class URLScanDataFactory(factory.Factory):
+    """ Factory for urlscan data """
+    FACTORY_FOR = models.URLScanData
+    urlscan = factory.SubFactory(URLScan)
+
+
+class URLContentDataFactory(factory.Factory):
+    """ Factory for urlcontent data """
+    FACTORY_FOR = models.URLContentData
+    urlcontent = factory.SubFactory(URLContent)
+
+
+class LinkedCSSDataFactory(factory.Factory):
+    """ Factory for LinkedCSS data """
+    FACTORY_FOR = models.LinkedCSSData
+    linked_css = factory.SubFactory(LinkedCSS)

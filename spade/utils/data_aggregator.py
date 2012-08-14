@@ -30,17 +30,20 @@ class DataAggregator(object):
     def aggregate():
         """
         For each relevant batch, traverse the scan tree and aggregate data
+        Takes 
         """
 
         # Identify the relevant batches:
         if self.selection == "new":
-            batches =
+            batches = model.Batch.objects.filter(data_aggregated=False)
         elif self.selection == "all":
-            batches =
+            batches = model.Batch.objects.all()
         elif self.selection == "single":
-            batches =
+            batches = [self.batch]
         else:
             batches = []
 
         for batch in batches:
-            aggregate_batch(batch)
+            self.aggregate_batch(batch)
+
+        
