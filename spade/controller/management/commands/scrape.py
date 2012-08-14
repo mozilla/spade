@@ -5,6 +5,7 @@ Just a thin wrapper around scrapy, so we can run it as a management command.
 from __future__ import absolute_import
 
 from django.core.management.base import BaseCommand, CommandError
+from spade.
 
 
 class Command(BaseCommand):
@@ -27,3 +28,6 @@ class Command(BaseCommand):
 
             from scrapy.cmdline import execute
             execute(default)
+
+            # Call data aggregation step here
+            # aggregate_data
