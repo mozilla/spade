@@ -95,26 +95,57 @@ class BatchDataFactory(factory.Factory):
     FACTORY_FOR = models.BatchData
     batch = factory.SubFactory(BatchFactory)
 
+    # Dummy metric numbers
+    num_rules = 5
+    num_properties = 10
+    scanned_pages = 1
+    css_issues = 3
+    ua_issues = 1
+
 
 class SiteScanDataFactory(factory.Factory):
     """ Factory for sitescan data """
     FACTORY_FOR = models.SiteScanData
-    sitescan = factory.SubFactory(SiteScan)
+    sitescan = factory.SubFactory(SiteScanFactory)
+
+    # Dummy metric numbers
+    num_rules = 5
+    num_properties = 10
+    scanned_pages = 1
+    css_issues = 3
+    ua_issues = 1
 
 
 class URLScanDataFactory(factory.Factory):
     """ Factory for urlscan data """
     FACTORY_FOR = models.URLScanData
-    urlscan = factory.SubFactory(URLScan)
+    urlscan = factory.SubFactory(URLScanFactory)
+
+    # Dummy metric numbers
+    num_rules = 5
+    num_properties = 10
+    scanned_pages = 1
+    css_issues = 3
+    ua_issues = 1
 
 
 class URLContentDataFactory(factory.Factory):
     """ Factory for urlcontent data """
     FACTORY_FOR = models.URLContentData
-    urlcontent = factory.SubFactory(URLContent)
+    urlcontent = factory.SubFactory(URLContentFactory)
+
+    # Dummy metric numbers
+    num_rules = 3
+    num_properties = 10
+    css_issues = 3
 
 
 class LinkedCSSDataFactory(factory.Factory):
     """ Factory for LinkedCSS data """
     FACTORY_FOR = models.LinkedCSSData
-    linked_css = factory.SubFactory(LinkedCSS)
+    linked_css = factory.SubFactory(LinkedCSSFactory)
+
+    # Dummy metric numbers
+    num_rules = 3
+    num_properties = 10
+    css_issues = 3

@@ -214,6 +214,7 @@ class BatchData(models.Model):
     # Other metrics
     num_rules = models.IntegerField(max_length=50)
     num_properties = models.IntegerField(max_length=50)
+    scanned_pages = models.IntegerField(max_length=50)
 
     # Aggregate number of css issues from all scans in all user agents
     css_issues = models.IntegerField(max_length=50)
@@ -222,7 +223,7 @@ class BatchData(models.Model):
     ua_issues = models.IntegerField(max_length=50)
 
     def __unicode__(self):
-        return u"'Scan batch has '{0}' issues".format(self.css_issues)
+        return u"'Scan batch has ({0}) css issues and ({1}) ua issues".format(self.css_issues, self.ua_issues)
 
 
 class SiteScanData(models.Model):
@@ -232,6 +233,7 @@ class SiteScanData(models.Model):
     # Other metrics
     num_rules = models.IntegerField(max_length=50)
     num_properties = models.IntegerField(max_length=50)
+    scanned_pages = models.IntegerField(max_length=50)
 
     # Aggregate number of css issues from all scans in all user agents
     css_issues = models.IntegerField(max_length=50)
@@ -239,11 +241,9 @@ class SiteScanData(models.Model):
     # Aggregate number of sniffing issues detected in this site scan
     ua_issues = models.IntegerField(max_length=50)
 
-    # Number of pages scanned in this particular sitescan
-    scanned_pages = models.IntegerField(max_length=50)
 
     def __unicode__(self):
-        return u"'Site scanned has '{0}' issues".format(self.css_issues)
+        return u"'Site scanned has ({0}) css issues and ({1}) ua issues".format(self.css_issues, self.ua_issues)
 
 
 class URLScanData(models.Model):
@@ -256,16 +256,17 @@ class URLScanData(models.Model):
     # Other metrics
     num_rules = models.IntegerField(max_length=50)
     num_properties = models.IntegerField(max_length=50)
+    scanned_pages = models.IntegerField(max_length=50)
 
     # Aggregate css_issues from all linked css stylesheets
     css_issues = models.IntegerField(max_length=50)
 
     # If the url scan had a user agent issue (recognized non-primary mobile ua
     # but not the primary mobile ua)
-    ua_issue = models.BooleanField(default=False)
+    ua_issues = models.BooleanField(default=False)
 
     def __unicode__(self):
-        return u"'URL scanned has '{0}' issues".format(self.css_issues)
+        return u"'URL scanned has ({0}) css issues and ({1}) ua issues".format(self.css_issues, self.ua_issues)
 
 
 class URLContentData(models.Model):
@@ -283,8 +284,8 @@ class URLContentData(models.Model):
     css_issues = models.IntegerField(max_length=50)
 
     def __unicode__(self):
-        return u"'Page scanned with user agent '{0}', has '{1}' issues".format(
-            self.css_issues, urlcontent.user_agent)
+        return u"'Page scanned with user agent '{0}' has ({1}) css issues".format(
+            self.urlcontent.user_agent, self.css_issues)
 
 
 class LinkedCSSData(models.Model):
@@ -299,5 +300,5 @@ class LinkedCSSData(models.Model):
     css_issues = models.IntegerField(max_length=50)
 
     def __unicode__(self):
-        return u"'Linked CSS stylesheet has '{0}' issues".format(
+        return u"'Linked CSS stylesheet has ({0}) css issues".format(
             self.css_issues)

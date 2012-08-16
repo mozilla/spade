@@ -20,17 +20,48 @@ class DataAggregator(object):
         Given a urlscan, look at the different user agents used and determine
         whether there is a UA sniffing issue
         """
+        urlcontents = model.URLContent.objects.filter(url_scan=urlscan)
+        
+        # Prepare some storage for the urlcontents' user agent
+        desktop_uas = []
+        mobile_uas = []
+        primary_ua = None
+
+        for urlcontent in urlcontents:
+            if urlcontent.user_agent.ua_type == 'desktop'
+            if urlcontent.user_agent.primary_ua
+            
+
         pass
 
     def aggregate_batch(batch):
         """
-        Given a particular batch,
+        Given a particular batch, aggregate the statistics from its children
         """
+
+    def aggregate_sitescan(sitescan):
+        """
+        """
+        pass
+
+    def aggregate_urlscan(urlscan):
+        """
+        """
+        pass
+
+    def aggregate_urlcontent(urlcontent):
+        """
+        """
+        pass
+
+    def aggregate__linkedcss(linkedcss):
+        """
+        """
+        pass
 
     def aggregate():
         """
         For each relevant batch, traverse the scan tree and aggregate data
-        Takes 
         """
 
         # Identify the relevant batches:
@@ -44,6 +75,9 @@ class DataAggregator(object):
             batches = []
 
         for batch in batches:
+            # Set off chain reaction for aggregation
             self.aggregate_batch(batch)
 
-        
+
+
+
