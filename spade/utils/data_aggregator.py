@@ -2,9 +2,12 @@
 Class to perform data aggregation for completed scans
 
 """
-from spade import model
-from spade.utils import htmldiff
+from spade.model import models
+from spade.utils.html_diff import HTMLDiff
 
+
+class AggregationError(Exception):
+    pass
 
 class DataAggregator(object):
     def __init__(self, selection="new", batch=None):
@@ -20,18 +23,55 @@ class DataAggregator(object):
         Given a urlscan, look at the different user agents used and determine
         whether there is a UA sniffing issue
         """
-        urlcontents = model.URLContent.objects.filter(url_scan=urlscan)
+        diff_util = HTMLDiff()
+        urlcontents = models.URLContent.objects.filter(url_scan=urlscan)
 
-        ## Prepare some storage for the urlcontents' user agent
-        #desktop_uas = []
-        #mobile_uas = []
-        #primary_ua = None
+        # Sort scanned pages by mobile / desktop user agents and find the
+        # "primary ua" (the one of interest, the one we want to see was sniffed
+        urls_with_desktop_ua = []
+        urls_with_mobile_ua = []
+        primary_page = None
 
-        #for urlcontent in urlcontents:
-        #    if urlcontent.user_agent.ua_type == 'desktop'
-        #    if urlcontent.user_agent.primary_ua
+        for urlcontent in urlcontents:
+            if urlcontent.user_agent.primary_ua:
+                primary_page = urlcontent
+            elif urlcontent.user_agent.ua_type == models.BatchUserAgent.DESKTOP:
+                urls_with_desktop_ua.append(urlcontent)
+            elif urlcontent.user_agent.ua_type == models.BatchUserAgent.MOBILE:
+                urls_with_mobile_ua.append(urlcontent)
 
-        return False
+        # Ensure we successfully scanned / saved the page with the right user
+        # agents before continuing
+        if primary_page is None:
+            raise AggregationError("No primary user agent found!")
+        elif len(urls_with_mobile_ua) < 1:
+            raise AggregationError("Need to define other mobile user agents!")
+        elif len(urls_with_desktop_ua) < 1:
+            raise AggregationError("No desktop user agents found!")
+
+        # Determine if mobile sniffing happens for other mobile UAs
+        mobile_sniff = False
+        for mobile_page in urls_with_mobile_ua:
+            for desktop_page in urls_with_desktop_ua:
+                similarity = diff_util.compare(mobile_page.raw_markup,
+                    desktop_page.raw_markup)
+                if similarity < 0.9:
+                    mobile_sniff = True
+
+        primary_sniff = False
+        if mobile_sniff:
+            # If other mobile UAs are sniffed, we want to ensure that we are
+            # being sniffed too.
+            for desktop_page in urls_with_desktop_ua:
+                similarity = diff_util.compare(primary_page.raw_markup,
+                    desktop_page.raw_markup)
+                if similarity < 0.9:
+                    primary_sniff = True
+        else:
+            # No issue if other mobiles aren't sniffed
+            return False
+
+        return not primary_sniff
 
     def aggregate_batch(self, batch):
         """
@@ -70,9 +110,9 @@ class DataAggregator(object):
 
         # Identify the relevant batches:
         if self.selection == "new":
-            batches = model.Batch.objects.filter(data_aggregated=False)
+            batches = models.Batch.objects.filter(data_aggregated=False)
         elif self.selection == "all":
-            batches = model.Batch.objects.all()
+            batches = models.Batch.objects.all()
         elif self.selection == "single":
             batches = [self.batch]
         else:
