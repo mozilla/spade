@@ -5,6 +5,10 @@ Class to perform data aggregation for completed scans
 from spade.model import models
 from spade.utils.html_diff import HTMLDiff
 
+# This constant determines the lowest similarity bound for two pages to still
+# be considered the same content.
+SIMILARITY_CONSTANT = 0.9
+
 
 class AggregationError(Exception):
     pass
@@ -55,7 +59,7 @@ class DataAggregator(object):
             for desktop_page in urls_with_desktop_ua:
                 similarity = diff_util.compare(mobile_page.raw_markup,
                     desktop_page.raw_markup)
-                if similarity < 0.9:
+                if similarity < SIMILARITY_CONSTANT:
                     mobile_sniff = True
 
         primary_sniff = False
@@ -65,7 +69,7 @@ class DataAggregator(object):
             for desktop_page in urls_with_desktop_ua:
                 similarity = diff_util.compare(primary_page.raw_markup,
                     desktop_page.raw_markup)
-                if similarity < 0.9:
+                if similarity < SIMILARITY_CONSTANT:
                     primary_sniff = True
         else:
             # No issue if other mobiles aren't sniffed
