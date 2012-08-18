@@ -3,11 +3,11 @@ Class to perform data aggregation for completed scans
 
 """
 from spade import model
+from spade.utils import htmldiff
 
 
 class DataAggregator(object):
-
-    def __init__(selection="new", batch=None):
+    def __init__(self, selection="new", batch=None):
         """
         Initialize aggregator object. Takes a selection type, and a batch only
         if being initialized with a single batch in mind (vs a set of batches)
@@ -15,51 +15,55 @@ class DataAggregator(object):
         self.selection = selection
         self.batch = batch
 
-    def detect_ua_issue(urlscan):
+    def detect_ua_issue(self, urlscan):
         """
         Given a urlscan, look at the different user agents used and determine
         whether there is a UA sniffing issue
         """
         urlcontents = model.URLContent.objects.filter(url_scan=urlscan)
-        
-        # Prepare some storage for the urlcontents' user agent
-        desktop_uas = []
-        mobile_uas = []
-        primary_ua = None
 
-        for urlcontent in urlcontents:
-            if urlcontent.user_agent.ua_type == 'desktop'
-            if urlcontent.user_agent.primary_ua
-            
+        ## Prepare some storage for the urlcontents' user agent
+        #desktop_uas = []
+        #mobile_uas = []
+        #primary_ua = None
 
-        pass
+        #for urlcontent in urlcontents:
+        #    if urlcontent.user_agent.ua_type == 'desktop'
+        #    if urlcontent.user_agent.primary_ua
 
-    def aggregate_batch(batch):
+        return False
+
+    def aggregate_batch(self, batch):
         """
-        Given a particular batch, aggregate the statistics from its children
-        """
-
-    def aggregate_sitescan(sitescan):
-        """
+        Given a particular batch, aggregate the stats from its children
         """
         pass
 
-    def aggregate_urlscan(urlscan):
+    def aggregate_sitescan(self, sitescan):
         """
-        """
-        pass
-
-    def aggregate_urlcontent(urlcontent):
-        """
+        Given a particular sitescan, aggregate the stats from its children
         """
         pass
 
-    def aggregate__linkedcss(linkedcss):
+    def aggregate_urlscan(self, urlscan):
         """
+        Given a particular urlscan, aggregate the stats from its children
         """
         pass
 
-    def aggregate():
+    def aggregate_urlcontent(self, urlcontent):
+        """
+        Given a particular urlcontent, aggregate the stats from its children
+        """
+        pass
+
+    def aggregate__linkedcss(self, linkedcss):
+        """
+        Given a particular linkedcss, aggregate the stats from its children
+        """
+        pass
+
+    def aggregate(self):
         """
         For each relevant batch, traverse the scan tree and aggregate data
         """
