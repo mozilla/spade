@@ -29,7 +29,7 @@ class DataAggregator(object):
         self.selection = selection
         self.batch = batch
 
-        # Optional, used by the aggregate_urlcontent step
+        # Optional, used by the aggregate_urlscan step
         self.user_agent = user_agent
 
     def detect_ua_issue(self, urlscan):
@@ -171,8 +171,7 @@ class DataAggregator(object):
         total_ua_issues = 0
 
         # TODO: determine # pages scanned by counting urlcontents belonging to
-        #       this urlscan divided by the number of batchuseragents in this
-        #       batch
+        #       this urlscan belonging to a single ua? or all? how??
 
         #total_pages_scanned =
 
@@ -182,6 +181,8 @@ class DataAggregator(object):
             total_ua_issues += 1
 
         # Aggregate data for each urlcontent
+        # TODO: add a filter that uses user_agent so that we can aggregate
+        #       data to only particular user agents rather than all user agents
         for urlcontent in urlcontents:
             urlcontent_data = aggregate_urlcontent(urlcontent)
             total_rules += urlcontent_data.num_rules
@@ -203,8 +204,6 @@ class DataAggregator(object):
         Given a particular urlcontent, aggregate the stats from its children
         into the data model and return it
         """
-        # TODO: add a filter that uses user_agent so that we can aggregate
-        #       data to only particular user agents rather than all user agents
         linkedstyles = models.LinkedCSS.objects.filter(linked_from=urlcontent)
 
         # Initialize counters
