@@ -13,14 +13,24 @@ SIMILARITY_CONSTANT = 0.9
 class AggregationError(Exception):
     pass
 
+
 class DataAggregator(object):
-    def __init__(self, selection="new", batch=None):
+    def __init__(self, selection="new", batch=None, user_agent=None):
         """
         Initialize aggregator object. Takes a selection type, and a batch only
-        if being initialized with a single batch in mind (vs a set of batches)
+        if being initialized with a single batch in mind (vs a set of batches).
+
+        Also takes an optional user agent, which prevents it from aggregating
+        data from other user agents. E.g there are 3 urlcontents from
+        mysite.com/index.html being scanned with 3 batchuseragents
+        (ie/mozilla/webkit) If we give mozilla's user agent here, only the
+        urlcontent that has user_agent="some mozilla / useragent" will be used.
         """
         self.selection = selection
         self.batch = batch
+
+        # Optional, used by the aggregate_urlcontent step
+        self.user_agent = user_agent
 
     def detect_ua_issue(self, urlscan):
         """
@@ -79,33 +89,164 @@ class DataAggregator(object):
 
     def aggregate_batch(self, batch):
         """
-        Given a particular batch, aggregate the stats from its children
+        Given a particular batch, aggregate the stats from its children into
+        the data model and return it
         """
-        pass
+        sitescans = models.SiteScan.objects.filter(batch=batch)
+
+        # Initialize counters
+        total_rules = 0
+        total_properties = 0
+        total_pages_scanned = 0
+        total_css_issues = 0
+        total_ua_issues = 0
+
+        # Aggregate data for each sitescan
+        for sitescan in sitescans:
+            sitescan_data = aggregate_sitescan(sitescan)
+            total_rules += sitescan_data.num_rules
+            total_properties += sitescan_data.num_properties
+            total_pages_scanned += sitescan_data.scanned_pages
+            total_css_issues += sitescan_data.css_issues
+            total_ua_issues += sitescan_data.ua_issues
+
+        # Actually update the batchdata field
+        batchdata = models.BatchData.objects.create(batch=batch)
+        batchdata.num_rules = total_rules
+        batchdata.num_properties = total_properties
+        batchdata.scanned_pages = total_pages_scanned
+        batchdata.css_issues = total_css_issues
+        batchdata.ua_issues = total_ua_issues
+        batchdata.save()
+
+        # Mark the batch complete
+        batch.data_aggregated = True
+        batch.save()
 
     def aggregate_sitescan(self, sitescan):
         """
-        Given a particular sitescan, aggregate the stats from its children
+        Given a particular sitescan, aggregate the stats from its children into
+        the data model and return it
         """
-        pass
+        urlscans = models.URLScan.objects.filter(sitescan=sitescan)
+
+        # Initialize counters
+        total_rules = 0
+        total_properties = 0
+        total_pages_scanned = 0
+        total_css_issues = 0
+        total_ua_issues = 0
+
+        # Aggregate data for each urlscan
+        for urlscan in urlscans:
+            urlscan_data = aggregate_urlscan(urlscan)
+            total_rules += urlscan_data.num_rules
+            total_properties += urlscan_data.num_properties
+            total_pages_scanned += urlscan_data.scanned_pages
+            total_css_issues += urlscan_data.css_issues
+            total_ua_issues += urlscan_data.ua_issues
+
+        # Actually update the sitescan field
+        sitescandata = models.SiteScanData.objects.create(sitescan=sitescan)
+        sitescandata.num_rules = total_rules
+        sitescandata.num_properties = total_properties
+        sitescandata.scanned_pages = total_pages_scanned
+        sitescandata.css_issues = total_css_issues
+        sitescandata.ua_issues = total_ua_issues
+        sitescandata.save()
+        return sitescandata
 
     def aggregate_urlscan(self, urlscan):
         """
-        Given a particular urlscan, aggregate the stats from its children
+        Given a particular urlscan, aggregate the stats from its children into
+        the data model and return it
         """
-        pass
+        urlcontents = models.URLContent.objects.filter(url_scan=urlscan)
+
+        # Initialize counters
+        total_rules = 0
+        total_properties = 0
+        total_pages_scanned = 0
+        total_css_issues = 0
+        total_ua_issues = 0
+
+        # TODO: determine # pages scanned by counting urlcontents belonging to
+        #       this urlscan divided by the number of batchuseragents in this
+        #       batch
+
+        #total_pages_scanned =
+
+
+        # Detect user agent sniffing issues via the class function
+        if self.detect_ua_issue(urlscan):
+            total_ua_issues += 1
+
+        # Aggregate data for each urlcontent
+        for urlcontent in urlcontents:
+            urlcontent_data = aggregate_urlcontent(urlcontent)
+            total_rules += urlcontent_data.num_rules
+            total_properties += urlcontent_data.num_properties
+            total_css_issues += urlcontent_data.css_issues
+
+        # Update this urlscan's data model
+        urlscandata = models.URLScanData.objects.create(urlscan=urlscan)
+        urlscandata.num_rules = total_rules
+        urlscandata.num_properties = total_properties
+        urlscandata.scanned_pages = total_pages_scanned
+        urlscandata.css_issues = total_css_issues
+        urlscandata.ua_issues = total_ua_issues
+        urlscandata.save()
+        return urlscandata
 
     def aggregate_urlcontent(self, urlcontent):
         """
         Given a particular urlcontent, aggregate the stats from its children
+        into the data model and return it
         """
-        pass
+        # TODO: add a filter that uses user_agent so that we can aggregate
+        #       data to only particular user agents rather than all user agents
+        linkedstyles = models.LinkedCSS.objects.filter(linked_from=urlcontent)
 
-    def aggregate__linkedcss(self, linkedcss):
+        # Initialize counters
+        total_rules = 0
+        total_properties = 0
+        total_css_issues = 0
+
+        # Aggregate data for each linked css stylesheet
+        for linkedcss in linkedstyles:
+            linkedcss_data = aggregate_linkedcss(linkedcss)
+            total_rules += linkedcss_data.num_rules
+            total_properties += linkedcss_data.num_properties
+            total_css_issues += linkedcss_data.css_issues
+
+        # Update this urlcontent's data model
+        urlcontentdata = models.URLContentData.objects.create(
+            urlcontent=urlcontent)
+        urlcontentdata.num_rules = total_rules
+        urlcontentdata.num_properties = total_properties
+        urlcontentdata.css_issues = total_css_issues
+        urlcontentdata.save()
+        return urlcontentdata
+
+    def aggregate_linkedcss(self, linkedcss):
         """
         Given a particular linkedcss, aggregate the stats from its children
+        into the data model and return it
         """
-        pass
+        # Initialize counters
+        total_rules = 0
+        total_properties = 0
+        total_css_issues = 0
+
+        # TODO: Detect how many rules, properties, and css issues exist.
+
+        # Update this linkedcss's data model
+        linkedcssdata = models.LinkedCSSData.objects.create(urlscan=urlscan)
+        linkedcssdata.num_rules = total_rules
+        linkedcssdata.num_properties = total_properties
+        linkedcssdata.css_issues = total_css_issues
+        linkedcssdata.save()
+        return linkedcssdata
 
     def aggregate(self):
         """
@@ -114,18 +255,12 @@ class DataAggregator(object):
 
         # Identify the relevant batches:
         if self.selection == "new":
-            batches = models.Batch.objects.filter(data_aggregated=False)
-        elif self.selection == "all":
-            batches = models.Batch.objects.all()
+            batches = models.Batch.objects.create(data_aggregated=False)
         elif self.selection == "single":
             batches = [self.batch]
         else:
-            batches = []
+            batches = models.Batch.objects.all()
 
         for batch in batches:
             # Set off chain reaction for aggregation
             self.aggregate_batch(batch)
-
-
-
-
