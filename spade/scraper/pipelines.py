@@ -120,6 +120,6 @@ class ScraperPipeline(object):
                 batch=spider.batch, ua_string=ua.ua_string)
             spider.batch_user_agents.append(batch_user_agent)
 
-        if not self.batch_user_agents:
+        if not spider.batch_user_agents:
             raise ValueError(
                 "No user agents; add some with 'manage.py useragents --add'")
