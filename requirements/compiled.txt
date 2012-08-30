@@ -1,5 +1,6 @@
 # These requirements are not included in the bundled ``vendor/`` lib, and must
 # be installed on target machines via system package managers (or pip).
+# Note that lxml will require gcc, libxml2-dev and libxslt1-dev
 
 MySQL-python
 lxml
