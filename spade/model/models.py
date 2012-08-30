@@ -48,11 +48,14 @@ class Batch(models.Model):
 
 class BatchUserAgent(models.Model):
     """ A user agent from a given batch """
-    batch = models.ForeignKey(Batch, db_index=True)
-    ua_string = models.CharField(max_length=250, unique=True)
+    batch = models.ForeignKey(Batch)
+    ua_string = models.CharField(max_length=250)
 
     def __unicode__(self):
         return self.ua_string
+
+    class Meta:
+        unique_together = [("batch", "ua_string")]
 
 
 class SiteScan(models.Model):

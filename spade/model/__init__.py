@@ -1,2 +1,3 @@
 from .models import (
-    Batch, SiteScan, URLScan, UserAgent, URLContent, LinkedJS, LinkedCSS)
+    Batch, SiteScan, URLScan, UserAgent, BatchUserAgent,
+    URLContent, LinkedJS, LinkedCSS)
