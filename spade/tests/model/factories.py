@@ -19,6 +19,13 @@ class BatchFactory(factory.Factory):
     finish_time = datetime.now(utc)
 
 
+class BatchUserAgentFactory(factory.Factory):
+    """ Batch user agent factory """
+    FACTORY_FOR = models.BatchUserAgent
+    batch = factory.SubFactory(BatchFactory)
+    ua_string = "Firefox / 5.0"
+
+
 class SiteScanFactory(factory.Factory):
     """Site scan model factory"""
     FACTORY_FOR = models.SiteScan
@@ -46,7 +53,7 @@ class URLContentFactory(factory.Factory):
     """URL Content model factory"""
     FACTORY_FOR = models.URLContent
     url_scan = factory.SubFactory(URLScanFactory)
-    user_agent = u"Firefox / 5.0"
+    user_agent = factory.SubFactory(BatchUserAgentFactory)
     raw_markup = u"<html>hello world</html>"
     headers = u""
 

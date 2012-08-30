@@ -1,6 +1,11 @@
 # These requirements are not included in the bundled ``vendor/`` lib, and must
 # be installed on target machines via system package managers (or pip).
 
+# Installing from source via pip requires gcc. In addition, lxml will require
+# libxml2-dev and libxslt1-dev; MySQL-python will require libmysqlclient-dev,
+# and pyOpenSSL will require libssl-dev (package names may vary on a
+# non-Debian-based system).
+
 MySQL-python
 lxml
 Twisted>=2.5

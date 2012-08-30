@@ -86,12 +86,12 @@ class GeneralSpider(BaseSpider):
 
         if response.meta.get('user_agent') is None:
             # Generate different UA requests for each UA
-            for user_agent in self.user_agents:
-                ua = user_agent.ua_string
+            for batch_user_agent in self.batch_user_agents:
+                ua = batch_user_agent
 
                 # Generate new request
                 new_request = Request(response.url)
-                new_request.headers.setdefault('User-Agent', ua)
+                new_request.headers.setdefault('User-Agent', ua.ua_string)
                 new_request.meta['referrer'] = response.meta.get('referrer')
                 new_request.meta['sitescan'] = sitescan
                 new_request.meta['user_agent'] = ua

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+
+    <!-- Not too important headers -->
+    <title>Mozilla Spade - Sleuthing the mobile web</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Statistics on css usage and user agent sniffing across the web">
+
+    <!-- Font -->
+    <link href="http://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet" type="text/css">
+
+    <!-- JQuery-->
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+
+    <!-- Primary Stylesheet -->
+    <link type="text/css" rel="stylesheet" media="screen" href="assets/css/style.css">
+
+    <!-- Javascript for our column layout-->
+    <script type="text/javascript" src="assets/js/columns.js"></script>
+
+
+    <!-- Flot library for charts -->
+    <script type="text/javascript" src="assets/js/flot/jquery.flot.js"></script>
+
+    <!-- Javascript for our page menus -->
+    <script src="assets/js/underscore-min.js"></script>
+    <script type="text/javascript" src="assets/js/backbone-min.js"></script>
+
+    <!--
+    <script src="/src/application.js"></script>
+    <script src="/src/modules/mymodule.js"></script>
+    -->
+
+</head>
+<body>
+    <div class="wrapper">
+        <div class="header"></div>
+        <div class="container">
+<!-- BEGIN REPLACABLE CONTENT -->
+
+            <a href="index.html#" style="border:none;"><div class="logo"></div></a>
+            <div class="primary-column">
+                <div class="primary-content" style="margin-top:0px">
+                <!-- Begin rightside content -->
+                    <div class="content">
+                        <!-- Begin content -->
+                        <!-- Display regression stuff-->
+                        <div class="content-box">
+                            <h4>Regression Analysis</h4>
+                            <div class="charts">
+                                <div class="chart">
+                                    <strong>UA Sniffing Chart</strong>
+                                    <div class="chart-container" id="ua-sniff-chart">
+                                    </div>
+                                </div>
+                                <div class="chart" >
+                                    <strong>Prefixed CSS Usage</strong>
+                                    <div class="chart-container" id="prefixed-feature-chart">
+                                    </div>
+                                </div>
+                            </div>
+                            <br style="clear:both"/>
+                        </div>
+                        <script src="assets/js/index-charts.js" type="text/javascript"></script>
+
+                        <!-- Display table with scans -->
+                        <div class="content-box">
+                            <h4>Available Scans</h4>
+                            <table class="data-display">
+                                <tr class="table-header">
+                                    <th class="id">Batch</th>
+                                    <th>Date completed</th>
+                                    <th>UA issue %</th>
+                                    <th>CSS issue %</th>
+                                    <th>UA issues fixed</th>
+                                    <th>UA issues regressed</th>
+                                    <th>CSS use fixed</th>
+                                    <th>CSS use regressed</th>
+                                </tr>
+                                <tr>
+                                    <td class="id">1</td>
+                                    <td><a href="scanreport.html">07-23-2012 21:11:01</a></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="id">2</td>
+                                    <td><a href="index.html#">07-23-2012 21:11:01</a></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                                 <tr>
+                                    <td class="id">3</td>
+                                    <td><a href="index.html#">07-23-2012 21:11:01</a></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="id">4</td>
+                                    <td><a href="index.html#">07-23-2012 21:11:01</a></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            </table>
+                            <div class="pagination">« Prev | 1 | 2 | 3 | 4 | Next »</div>
+                        </div>
+
+
+
+                    <!-- End content -->
+                    </div>
+                <!-- End primary content-->
+                </div>
+            <!-- End primary column-->
+            </div>
+        <!-- End main container-->
+        </div>
+        <!-- Div to push footer -->
+        <div class="push"></div>
+    </div>
+    <div class="footer"></div>
+
+
+</body>
+</html>
