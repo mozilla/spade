@@ -129,6 +129,7 @@ class URLContent(models.Model):
 
 class LinkedCSS(models.Model):
     """A single linked CSS file."""
+    batch = models.ForeignKey(Batch)
     linked_from = models.ManyToManyField(URLContent)
     url = models.TextField()
     url_hash = models.CharField(max_length=64)
@@ -144,6 +145,7 @@ class LinkedCSS(models.Model):
 
 class LinkedJS(models.Model):
     """A single linked JS file."""
+    batch = models.ForeignKey(Batch)
     linked_from = models.ManyToManyField(URLContent)
     url = models.TextField()
     url_hash = models.CharField(max_length=64)
@@ -156,10 +158,12 @@ class LinkedJS(models.Model):
     class Meta:
         verbose_name_plural = "Linked JS"
 
+
 class CSSRule(models.Model):
     """A CSS element rule"""
     linkedcss = models.ForeignKey(LinkedCSS)
     selector = models.CharField(max_length=50)
+
 
 class CSSProperty(models.Model):
     """A CSS property belonging to a rule"""

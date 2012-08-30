@@ -99,8 +99,25 @@ class GeneralSpider(BaseSpider):
 
                 yield new_request
 
-            # Continue crawling
-            if 'text/html' == content_type:
+
+        else:
+            if 'text/html' not in self.get_content_type(response.headers):
+                # For linked content, find the urlscan it linked from
+                urlscan = model.URLScan.objects.get(
+
+                    site_scan=sitescan,
+                    page_url_hash=
+                    sha256(response.meta['referrer']).hexdigest())
+            else:
+                # Only create urlscans for text/html
+                urlscan, us_created = model.URLScan.objects.get_or_create(
+
+                    site_scan=sitescan,
+                    page_url_hash=sha256(response.url).hexdigest(),
+                    defaults={'page_url': response.url,
+                              'timestamp': self.get_now_time()})
+
+                # Continue crawling
                 # Parse stylesheet links, scripts, and hyperlinks
                 hxs = HtmlXPathSelector(response)
 
@@ -136,27 +153,11 @@ class GeneralSpider(BaseSpider):
                     request = Request(url)
                     request.meta['referrer'] = response.url
                     request.meta['sitescan'] = sitescan
-                    request.meta['user_agent'] = None
+                    request.meta['user_agent'] = response.meta['user_agent']
                     request.meta['content_type'] = None
 
                     yield request
 
-        else:
-            if 'text/html' not in self.get_content_type(response.headers):
-                # For linked content, find the urlscan it linked from
-                urlscan = model.URLScan.objects.get(
-
-                    site_scan=sitescan,
-                    page_url_hash=
-                    sha256(response.meta['referrer']).hexdigest())
-            else:
-                # Only create urlscans for text/html
-                urlscan, us_created = model.URLScan.objects.get_or_create(
-
-                    site_scan=sitescan,
-                    page_url_hash=sha256(response.url).hexdigest(),
-                    defaults={'page_url': response.url,
-                              'timestamp': self.get_now_time()})
 
             # The response contains a user agent, we should yield an item
             item = MarkupItem()

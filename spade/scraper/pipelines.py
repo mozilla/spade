@@ -47,12 +47,14 @@ class ScraperPipeline(object):
             # If the linked file already exists, don't save another copy
             try:
                 linkedjs = model.LinkedJS.objects.get(
+                    batch=spider.batch,
                     url_hash=sha256(item['url']).hexdigest())
 
             except model.LinkedJS.DoesNotExist:
                 print "DNE"
                 # Create the item since it doesn't exist
                 linkedjs = model.LinkedJS.objects.create(
+                    batch=spider.batch,
                     url=item['url'],
                     url_hash=sha256(item['url']).hexdigest())
 
@@ -74,12 +76,14 @@ class ScraperPipeline(object):
             # If the linked file already exists, don't save another copy
             try:
                 linkedcss = model.LinkedCSS.objects.get(
+                    batch = spider.batch,
                     url_hash=sha256(item['url']).hexdigest())
 
             except model.LinkedCSS.DoesNotExist:
                 print "DNE"
                 # Create the item since it doesn't exist
                 linkedcss = model.LinkedCSS.objects.create(
+                    batch=spider.batch,
                     url=item['url'],
                     url_hash=sha256(item['url']).hexdigest())
 

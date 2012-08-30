@@ -36,7 +36,7 @@ SPIDER_MIDDLEWARES = {
     'spade.scraper.middlewares.OffsiteMiddleware': 543,
 }
 
-DEPTH_LIMIT = 1
+DEPTH_LIMIT = 2
 
 DOWNLOAD_DELAY = 0
 DOWNLOAD_TIMEOUT=20
