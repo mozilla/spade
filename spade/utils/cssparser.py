@@ -44,21 +44,13 @@ class CSSParser(object):
         return (selector_string, properties_dict)
 
 
-    def is_comment(self, rule):
-        """ Returns whether a rule a comment """
-        return rule.typeString == "COMMENT"
-
-
     def parse(self, linkedcss):
         """
         Calls parse on the internal CSS, stores css properties into db model
         """
         css = linkedcss.raw_css.read()
-        for rule in cssutils.parseString(css).cssRules:
-            if self.is_comment(rule):
-                # Ignore Comments
-                continue
-
+        for rule in cssutils.parseString(css).cssRules.rulesOfType(
+                cssutils.css.CSSRule.STYLE_RULE):
             # Get selector and properties from rule
             rule = self.parse_rule(rule)
             selector = rule[0]
