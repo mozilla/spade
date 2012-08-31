@@ -14,5 +14,5 @@ def test_unicode():
     urlcontent_data = factories.URLContentDataFactory.create(
         urlcontent=urlcontent, css_issues=3)
 
-    assert unicode(urlcontent_data) == (u"'Page scanned with user agent "
-                                        u"'Mozilla / 5.0' has (3) css issues")
+    assert unicode(urlcontent_data) == (
+        u"'http://www.mozilla.com' scanned with 'Mozilla / 5.0' has (3) css issues")

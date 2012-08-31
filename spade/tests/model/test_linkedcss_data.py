@@ -12,5 +12,5 @@ def test_unicode():
     linkedcss_data = factories.LinkedCSSDataFactory.create(
         linked_css=linkedcss, css_issues=3)
 
-    assert unicode(linkedcss_data) == u"'Linked CSS stylesheet has (3) css issues"
+    assert unicode(linkedcss_data) == u"'http://example.com/test.css' has (3) css issues"
 

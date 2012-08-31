@@ -13,5 +13,5 @@ def test_unicode():
                                                          css_issues=3,
                                                          ua_issues=4)
 
-    assert unicode(sitescan_data) == (u"'Site scanned has (3) css issues and"
-                                     u" (4) ua issues")
+    assert unicode(sitescan_data) == (
+        u"'http://www.mozilla.com' has (3) css issues and (4) ua issues")

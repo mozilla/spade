@@ -1,15 +1,16 @@
 # Factories for testing objects
+from datetime import datetime
+from hashlib import sha256
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils.timezone import utc
 import factory
 
-from datetime import datetime
-from django.utils.timezone import utc
-from hashlib import sha256
 from spade.model import models
 
 MOCK_DATE = datetime(2012, 6, 29, 21, 10, 24, 10848, tzinfo=utc)
-MOCK_CSS_URL = (u"http://www.sammyliu.com/wp-content/themes/polaroid-perfect/"
-                u"style.css")
-MOCK_JS_URL = u"http://code.jquery.com/jquery-1.7.2.min.js"
+MOCK_CSS_URL = u"http://example.com/test.css"
+MOCK_JS_URL = u"http://example.com/test.js"
 
 
 class BatchFactory(factory.Factory):
@@ -54,7 +55,8 @@ class URLContentFactory(factory.Factory):
     FACTORY_FOR = models.URLContent
     url_scan = factory.SubFactory(URLScanFactory)
     user_agent = factory.SubFactory(BatchUserAgentFactory)
-    raw_markup = u"<html>hello world</html>"
+    raw_markup = SimpleUploadedFile(
+        "test.html", "<html>hello world</html>", "text/html")
     headers = u""
 
 
@@ -64,7 +66,7 @@ class LinkedCSSFactory(factory.Factory):
     batch = factory.SubFactory(BatchFactory)
     url = MOCK_CSS_URL
     url_hash = sha256(MOCK_CSS_URL).hexdigest()
-    raw_css = u"body{color:#000}"
+    raw_css = SimpleUploadedFile("test.css", "body{color:#000}", "text/css")
 
 
 class LinkedJSFactory(factory.Factory):
@@ -73,7 +75,8 @@ class LinkedJSFactory(factory.Factory):
     batch = factory.SubFactory(BatchFactory)
     url = MOCK_JS_URL
     url_hash = sha256(MOCK_JS_URL).hexdigest()
-    raw_js = u"document.write('hello world')"
+    raw_js = SimpleUploadedFile(
+        "test.js", "document.write('hello world')", "application/javascript")
 
 
 class CSSRuleFactory(factory.Factory):
@@ -128,7 +131,7 @@ class URLScanDataFactory(factory.Factory):
     num_properties = 10
     scanned_pages = 1
     css_issues = 3
-    ua_issues = 1
+    ua_issue = True
 
 
 class URLContentDataFactory(factory.Factory):

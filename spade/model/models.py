@@ -3,6 +3,7 @@ Spade models.
 
 """
 from datetime import datetime
+
 from django.db import models
 
 
@@ -38,8 +39,8 @@ def js_filename(instance, filename):
 """ Models for scraper """
 
 
-class UserAgent(models.Model):
-    """ A user-agent string we will use for scanning. """
+class BaseUserAgent(models.Model):
+    """Base common class for UserAgent and BatchUserAgent."""
     DESKTOP = 0
     MOBILE = 1
     UA_TYPE_CHOICES = (
@@ -55,6 +56,14 @@ class UserAgent(models.Model):
 
     def __unicode__(self):
         return self.ua_string
+
+    class Meta:
+        abstract = True
+
+
+class UserAgent(BaseUserAgent):
+    """ A user-agent string we will use for scanning. """
+    pass
 
 
 class Batch(models.Model):
@@ -75,27 +84,16 @@ class Batch(models.Model):
         verbose_name_plural = u"Batches"
 
 
-class BatchUserAgent(models.Model):
-    """ A user agent from a given batch """
+class BatchUserAgent(BaseUserAgent):
+    """
+    A user agent from a given batch.
+
+    Clones the UserAgent model, so that we can retain history for scan UAs
+    while allowing the user to add/remove/modify user agents for future
+    batches.
+
+    """
     batch = models.ForeignKey(Batch)
-
-    # The following clones the UserAgent model, so that we can retain history
-    # for scan UAs while allowing the user to add/remove/modify user agents
-    DESKTOP = 0
-    MOBILE = 1
-    UA_TYPE_CHOICES = (
-        (DESKTOP, 'desktop'),
-        (MOBILE, 'mobile'),
-    )
-
-    ua_string = models.CharField(max_length=250)
-    ua_type = models.IntegerField(max_length=1,
-                                  choices=UA_TYPE_CHOICES,
-                                  default=DESKTOP)
-    primary_ua = models.BooleanField(default=False)
-
-    def __unicode__(self):
-        return self.ua_string
 
     class Meta:
         unique_together = [("batch", "ua_string")]
@@ -172,7 +170,7 @@ class LinkedCSS(models.Model):
         max_length=500, upload_to=css_filename)
 
     def __unicode__(self):
-        return self.raw_css.name
+        return self.url
 
     class Meta:
         verbose_name_plural = "Linked CSS"
@@ -188,7 +186,7 @@ class LinkedJS(models.Model):
         max_length=500, upload_to=js_filename)
 
     def __unicode__(self):
-        return self.raw_js.name
+        return self.url
 
     class Meta:
         verbose_name_plural = "Linked JS"
@@ -225,18 +223,19 @@ class BatchData(models.Model):
     batch = models.OneToOneField(Batch)
 
     # Other metrics
-    num_rules = models.IntegerField(max_length=50)
-    num_properties = models.IntegerField(max_length=50)
-    scanned_pages = models.IntegerField(max_length=50)
+    num_rules = models.IntegerField()
+    num_properties = models.IntegerField()
+    scanned_pages = models.IntegerField()
 
     # Aggregate number of css issues from all scans in all user agents
-    css_issues = models.IntegerField(max_length=50)
+    css_issues = models.IntegerField()
 
     # Aggregate number of UA issues in this batch
-    ua_issues = models.IntegerField(max_length=50)
+    ua_issues = models.IntegerField()
 
     def __unicode__(self):
-        return u"'Scan batch has ({0}) css issues and ({1}) ua issues".format(self.css_issues, self.ua_issues)
+        return u"'{0}' has ({1}) css issues and ({2}) ua issues".format(
+            self.batch, self.css_issues, self.ua_issues)
 
 
 class SiteScanData(models.Model):
@@ -244,19 +243,20 @@ class SiteScanData(models.Model):
     sitescan = models.OneToOneField(SiteScan)
 
     # Other metrics
-    num_rules = models.IntegerField(max_length=50)
-    num_properties = models.IntegerField(max_length=50)
-    scanned_pages = models.IntegerField(max_length=50)
+    num_rules = models.IntegerField()
+    num_properties = models.IntegerField()
+    scanned_pages = models.IntegerField()
 
     # Aggregate number of css issues from all scans in all user agents
-    css_issues = models.IntegerField(max_length=50)
+    css_issues = models.IntegerField()
 
     # Aggregate number of sniffing issues detected in this site scan
-    ua_issues = models.IntegerField(max_length=50)
+    ua_issues = models.IntegerField()
 
 
     def __unicode__(self):
-        return u"'Site scanned has ({0}) css issues and ({1}) ua issues".format(self.css_issues, self.ua_issues)
+        return u"'{0}' has ({1}) css issues and ({2}) ua issues".format(
+            self.sitescan, self.css_issues, self.ua_issues)
 
 
 class URLScanData(models.Model):
@@ -267,19 +267,20 @@ class URLScanData(models.Model):
     urlscan = models.OneToOneField(URLScan)
 
     # Other metrics
-    num_rules = models.IntegerField(max_length=50)
-    num_properties = models.IntegerField(max_length=50)
-    scanned_pages = models.IntegerField(max_length=50)
+    num_rules = models.IntegerField()
+    num_properties = models.IntegerField()
+    scanned_pages = models.IntegerField()
 
     # Aggregate css_issues from all linked css stylesheets
-    css_issues = models.IntegerField(max_length=50)
+    css_issues = models.IntegerField()
 
     # If the url scan had a user agent issue (recognized non-primary mobile ua
     # but not the primary mobile ua)
-    ua_issues = models.BooleanField(default=False)
+    ua_issue = models.BooleanField(default=False)
 
     def __unicode__(self):
-        return u"'URL scanned has ({0}) css issues and ({1}) ua issues".format(self.css_issues, self.ua_issues)
+        return u"'{0}' has ({1}) css issues".format(
+            self.urlscan, self.css_issues)
 
 
 class URLContentData(models.Model):
@@ -290,15 +291,15 @@ class URLContentData(models.Model):
     urlcontent = models.OneToOneField(URLContent)
 
     # Other metrics
-    num_rules = models.IntegerField(max_length=50)
-    num_properties = models.IntegerField(max_length=50)
+    num_rules = models.IntegerField()
+    num_properties = models.IntegerField()
 
     # Aggregate css_issues from all linked css stylesheets
     css_issues = models.IntegerField(max_length=50)
 
     def __unicode__(self):
-        return u"'Page scanned with user agent '{0}' has ({1}) css issues".format(
-            self.urlcontent.user_agent, self.css_issues)
+        return u"{0} has ({1}) css issues".format(
+            self.urlcontent, self.css_issues)
 
 
 class LinkedCSSData(models.Model):
@@ -306,12 +307,12 @@ class LinkedCSSData(models.Model):
     linked_css = models.OneToOneField(LinkedCSS)
 
     # These seem to be useful statistics to collect that we can drill down to
-    num_rules = models.IntegerField(max_length=50)
-    num_properties = models.IntegerField(max_length=50)
+    num_rules = models.IntegerField()
+    num_properties = models.IntegerField()
 
     # Number of places where a rule used a prefixed property but no moz prefix
-    css_issues = models.IntegerField(max_length=50)
+    css_issues = models.IntegerField()
 
     def __unicode__(self):
-        return u"'Linked CSS stylesheet has ({0}) css issues".format(
-            self.css_issues)
+        return u"'{0}' has ({1}) css issues".format(
+            self.linked_css, self.css_issues)

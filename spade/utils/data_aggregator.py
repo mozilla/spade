@@ -103,7 +103,7 @@ class DataAggregator(object):
 
         # Aggregate data for each sitescan
         for sitescan in sitescans:
-            sitescan_data = aggregate_sitescan(sitescan)
+            sitescan_data = self.aggregate_sitescan(sitescan)
             total_rules += sitescan_data.num_rules
             total_properties += sitescan_data.num_properties
             total_pages_scanned += sitescan_data.scanned_pages
@@ -139,12 +139,13 @@ class DataAggregator(object):
 
         # Aggregate data for each urlscan
         for urlscan in urlscans:
-            urlscan_data = aggregate_urlscan(urlscan)
+            urlscan_data = self.aggregate_urlscan(urlscan)
             total_rules += urlscan_data.num_rules
             total_properties += urlscan_data.num_properties
             total_pages_scanned += urlscan_data.scanned_pages
             total_css_issues += urlscan_data.css_issues
-            total_ua_issues += urlscan_data.ua_issues
+            if urlscan_data.ua_issue:
+                total_ua_issues += 1
 
         # Actually update the sitescan field
         sitescandata = models.SiteScanData.objects.create(sitescan=sitescan)
@@ -168,7 +169,7 @@ class DataAggregator(object):
         total_properties = 0
         total_pages_scanned = 0
         total_css_issues = 0
-        total_ua_issues = 0
+        ua_issue = False
 
         # TODO: determine # pages scanned by counting urlcontents belonging to
         #       this urlscan belonging to a single ua? or all? how??
@@ -178,13 +179,13 @@ class DataAggregator(object):
 
         # Detect user agent sniffing issues via the class function
         if self.detect_ua_issue(urlscan):
-            total_ua_issues += 1
+            ua_issue = True
 
         # Aggregate data for each urlcontent
         # TODO: add a filter that uses user_agent so that we can aggregate
         #       data to only particular user agents rather than all user agents
         for urlcontent in urlcontents:
-            urlcontent_data = aggregate_urlcontent(urlcontent)
+            urlcontent_data = self.aggregate_urlcontent(urlcontent)
             total_rules += urlcontent_data.num_rules
             total_properties += urlcontent_data.num_properties
             total_css_issues += urlcontent_data.css_issues
@@ -195,7 +196,7 @@ class DataAggregator(object):
         urlscandata.num_properties = total_properties
         urlscandata.scanned_pages = total_pages_scanned
         urlscandata.css_issues = total_css_issues
-        urlscandata.ua_issues = total_ua_issues
+        urlscandata.ua_issue = ua_issue
         urlscandata.save()
         return urlscandata
 
@@ -213,7 +214,7 @@ class DataAggregator(object):
 
         # Aggregate data for each linked css stylesheet
         for linkedcss in linkedstyles:
-            linkedcss_data = aggregate_linkedcss(linkedcss)
+            linkedcss_data = self.aggregate_linkedcss(linkedcss)
             total_rules += linkedcss_data.num_rules
             total_properties += linkedcss_data.num_properties
             total_css_issues += linkedcss_data.css_issues
@@ -240,7 +241,8 @@ class DataAggregator(object):
         # TODO: Detect how many rules, properties, and css issues exist.
 
         # Update this linkedcss's data model
-        linkedcssdata = models.LinkedCSSData.objects.create(urlscan=urlscan)
+        linkedcssdata = models.LinkedCSSData.objects.create(
+            linked_css=linkedcss)
         linkedcssdata.num_rules = total_rules
         linkedcssdata.num_properties = total_properties
         linkedcssdata.css_issues = total_css_issues
