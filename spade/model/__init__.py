@@ -1,3 +1,3 @@
 from .models import (
     Batch, SiteScan, URLScan, UserAgent, BatchUserAgent,
-    URLContent, LinkedJS, LinkedCSS)
+    URLContent, LinkedJS, LinkedCSS, CSSRule, CSSProperty)
