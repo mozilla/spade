@@ -15,23 +15,6 @@ class AggregationError(Exception):
 
 
 class DataAggregator(object):
-    def __init__(self, selection="new", batch=None, user_agent=None):
-        """
-        Initialize aggregator object. Takes a selection type, and a batch only
-        if being initialized with a single batch in mind (vs a set of batches).
-
-        Also takes an optional user agent, which prevents it from aggregating
-        data from other user agents. E.g there are 3 urlcontents from
-        mysite.com/index.html being scanned with 3 batchuseragents
-        (ie/mozilla/webkit) If we give mozilla's user agent here, only the
-        urlcontent that has user_agent="some mozilla / useragent" will be used.
-        """
-        self.selection = selection
-        self.batch = batch
-
-        # Optional, used by the aggregate_urlscan step
-        self.user_agent = user_agent
-
     def detect_ua_issue(self, urlscan):
         """
         Given a urlscan, look at the different user agents used and determine
@@ -57,20 +40,20 @@ class DataAggregator(object):
         # Ensure we successfully scanned / saved the page with the right user
         # agents before continuing
         if primary_page is None:
-            raise AggregationError("No primary user agent found!")
+            raise AggregationError("No primary mobile user agent!")
         elif len(urls_with_mobile_ua) < 1:
-            raise AggregationError("Need to define other mobile user agents!")
+            raise AggregationError("No non-primary mobile user agents!")
         elif len(urls_with_desktop_ua) < 1:
-            raise AggregationError("No desktop user agents found!")
+            raise AggregationError("No desktop user agent!")
 
         # Determine if mobile sniffing happens for other mobile UAs
-        mobile_sniff = False
+        mobile_sniff = True
         for mobile_page in urls_with_mobile_ua:
             for desktop_page in urls_with_desktop_ua:
                 similarity = diff_util.compare(mobile_page.raw_markup,
                     desktop_page.raw_markup)
-                if similarity < SIMILARITY_CONSTANT:
-                    mobile_sniff = True
+                if similarity > SIMILARITY_CONSTANT:
+                    mobile_sniff = False
 
         primary_sniff = False
         if mobile_sniff:
@@ -177,13 +160,15 @@ class DataAggregator(object):
         #total_pages_scanned =
 
 
-        # Detect user agent sniffing issues via the class function
-        if self.detect_ua_issue(urlscan):
-            ua_issue = True
+        # Detect user agent sniffing issues
+        try:
+            if self.detect_ua_issue(urlscan):
+                ua_issue = True
+        except AggregationError as e:
+            print "Unable to detect UA-sniffing issues for '%s': %s" % (
+                urlscan, e)
 
         # Aggregate data for each urlcontent
-        # TODO: add a filter that uses user_agent so that we can aggregate
-        #       data to only particular user agents rather than all user agents
         for urlcontent in urlcontents:
             urlcontent_data = self.aggregate_urlcontent(urlcontent)
             total_rules += urlcontent_data.num_rules
@@ -248,20 +233,3 @@ class DataAggregator(object):
         linkedcssdata.css_issues = total_css_issues
         linkedcssdata.save()
         return linkedcssdata
-
-    def aggregate(self):
-        """
-        For each relevant batch, traverse the scan tree and aggregate data
-        """
-
-        # Identify the relevant batches:
-        if self.selection == "new":
-            batches = models.Batch.objects.create(data_aggregated=False)
-        elif self.selection == "single":
-            batches = [self.batch]
-        else:
-            batches = models.Batch.objects.all()
-
-        for batch in batches:
-            # Set off chain reaction for aggregation
-            self.aggregate_batch(batch)

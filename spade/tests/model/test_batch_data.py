@@ -17,4 +17,4 @@ def test_unicode():
     batchdata = factories.BatchDataFactory.create(
         batch=batch, num_rules=1, num_properties=2, css_issues=3, ua_issues=4)
 
-    assert unicode(batchdata) == u"''Batch started at 2012-06-29 21:10:24.010848+00:00' has (3) css issues and (4) ua issues"
+    assert unicode(batchdata) == u"'Batch started at 2012-06-29 21:10:24.010848+00:00' has (3) css issues and (4) ua issues"

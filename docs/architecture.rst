@@ -46,6 +46,9 @@ When the contents of a ``LinkedCSS`` file are parsed by
 CSS rule in the file, and a ``CSSProperty`` object for every property in every
 rule.
 
+The various ``*Data`` models contain aggregated data about issues detected in
+the scan.
+
 
 ``spade.scraper``
 -----------------

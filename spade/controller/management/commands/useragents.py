@@ -21,7 +21,13 @@ class Command(BaseCommand):
                     action='store',
                     dest='remove',
                     default=False,
-                    help='Remove useragent string from database'))
+                    help='Remove useragent string from database'),
+        make_option('--primary',
+                    action='store_true',
+                    dest='primary',
+                    default=False,
+                    help='Added user-agent will be primary mobile UA'),
+        )
 
     def handle(self, *args, **options):
 
