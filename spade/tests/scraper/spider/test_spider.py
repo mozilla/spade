@@ -24,8 +24,8 @@ def pytest_funcarg__spider(request):
     spider.batch.save()
 
     # Generate two user agents to use in tests
-    ua1 = factories.UserAgentFactory.build(ua_string="Firefox / 11.0")
-    ua2 = factories.UserAgentFactory.build(ua_string="Chrome / 20.0")
+    factories.UserAgentFactory.build(ua_string="Firefox / 11.0")
+    factories.UserAgentFactory.build(ua_string="Chrome / 20.0")
 
     # Set spider batch_user_agents
     spider.batch_user_agents = []
@@ -197,6 +197,7 @@ def test_spider_crawls_links(spider, scrape_request, html_headers,
                              body=mock_html_twolinks)
     mock_response.request = scrape_request
     mock_response.headers = html_headers
+    mock_response.meta['user_agent'] = ua
     mock_response.status = 200
     mock_response.encoding = u'utf-8'
     mock_response.flags = []
@@ -206,15 +207,17 @@ def test_spider_crawls_links(spider, scrape_request, html_headers,
 
     # Assert that we got the expected set of new requests generated in the
     # spider and nothing else
-    sites_expected = set([mock_response.url,
-                         mock_response.url + '/link1.html',
-                         mock_response.url + '/link2.html'])
+    sites_expected = set([
+            mock_response.url + '/link1.html',
+            mock_response.url + '/link2.html',
+            ])
+
     sites_collected = []
     for new_request in pipeline_generator:
         if isinstance(new_request, Request):
             sites_collected.append(new_request.url)
         else:
-            assert False
+            pass
 
     assert sites_expected == set(sites_collected)
 
