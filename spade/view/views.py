@@ -25,8 +25,6 @@ def dashboard(request):
             'css_issue_percent':0,
         }
 
-    context = {batch_data}
-
     # TODO: Determine UA issue %
     # TODO: Determine CSS issue %
     # TODO: Determine UA issues fixed since last scan
@@ -34,7 +32,7 @@ def dashboard(request):
     # TODO: Determine UA issues regressed
     # TODO: Determine CSS issues regressed
 
-    return TemplateResponse(request, "dashboard.html", context)
+    return TemplateResponse(request, "dashboard.html", batch_data)
 
 
 def batch_report(request, batch_id):
