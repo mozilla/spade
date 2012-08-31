@@ -99,15 +99,13 @@ are identical).
 ``spade.view.urls``
 -------------------
 
-The URL configuration for the site. Currently the only enabled URLs are a
-placeholder home page and the Django admin at ``/admin/``. The latter is a
-useful way to explore and modify the contents of the database.
+The URL configuration for the site.
 
 Run ``python manage.py runserver`` to fire up a development web server and view
-these two URLs in your browser at ``http://localhost:8000/``.
+the app in your browser at ``http://localhost:8000/``.
 
 
 ``spade.view.views``
 --------------------
 
-Contains the Django view functions. Currently contains only one, for the placeholder home page.
+Contains the Django view functions.

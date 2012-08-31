@@ -51,9 +51,7 @@ data as needed.
 .. _South: http://south.aeracode.org
 
 
-Hook up the UI
---------------
+Complete the UI
+---------------
 
-The HTML mockups for the UI are in the ``ui-mock/`` directory. These need to be
-turned into Django templates, and Django view functions need to be written (in
-``spade/view/views.py`` to feed the appropriate data to those templates.
+The views in ``spade/view/views.py`` and the Django templates in ``spade/view/templates`` are incomplete, and need to be finished.
