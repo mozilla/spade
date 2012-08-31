@@ -150,10 +150,13 @@ class GeneralSpider(BaseSpider):
                         else:
                             url = urljoin(response.url, url)
 
+                    ua = response.meta['user_agent']
+
                     request = Request(url)
+                    request.headers.setdefault('User-Agent', ua.ua_string)
                     request.meta['referrer'] = response.url
                     request.meta['sitescan'] = sitescan
-                    request.meta['user_agent'] = response.meta['user_agent']
+                    request.meta['user_agent'] = ua
                     request.meta['content_type'] = None
 
                     yield request
