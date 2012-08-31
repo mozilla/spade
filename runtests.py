@@ -11,7 +11,7 @@ from _pytest.core import main as pytest_main
 from spade.vendor import add_vendor_lib
 
 def main():
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "spade.settings.default")
+    os.environ["DJANGO_SETTINGS_MODULE"] = "spade.tests.settings"
     add_vendor_lib()
     args = sys.argv[1:]
     if not args:

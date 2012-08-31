@@ -1,10 +1,17 @@
 """
 Tests for css parsing util
 """
+from django.core.files.uploadedfile import SimpleUploadedFile
+
 from spade.utils import cssparser
 from spade.model import models
 
 from spade.tests.model.factories import LinkedCSSFactory
+
+
+def css_file(contents):
+    return SimpleUploadedFile("test.css", contents.encode("utf-8"), "text/css")
+
 
 RAW_CSS = (u"html body{\n"
            u"color:#000;\n"
@@ -18,17 +25,16 @@ RAW_CSS = (u"html body{\n"
 
 
 def pytest_funcarg__parser(request):
-    return cssparser.CSSParser(RAW_CSS)
+    return cssparser.CSSParser()
 
 
 def test_arbitrary_prefix(parser):
     """ Make sure that unknown prefixes get saved """
     test_css = (u"body{\n"
                 u"-testing-testprop: testval\n}")
-    parser.parse(test_css)
 
-    linkedcss = LinkedCSSFactory.create(raw_css=test_css)
-    parser.store_css(linkedcss)
+    linkedcss = LinkedCSSFactory.create(raw_css=css_file(test_css))
+    parser.parse(linkedcss)
 
     find_property = models.CSSProperty.objects.filter(prefix="-testing-",
                                                       name="testprop",
@@ -38,8 +44,8 @@ def test_arbitrary_prefix(parser):
 
 def test_unknown_property(parser):
     """ Make sure that unknown properties get saved """
-    linkedcss = LinkedCSSFactory.create(raw_css=RAW_CSS)
-    parser.store_css(linkedcss)
+    linkedcss = LinkedCSSFactory.create(raw_css=css_file(RAW_CSS))
+    parser.parse(linkedcss)
 
     find_property = models.CSSProperty.objects.filter(prefix="-webkit-",
                                                       name="something",
@@ -47,17 +53,10 @@ def test_unknown_property(parser):
     assert find_property.count() == 1
 
 
-def test_extract_rules(parser):
-    """Make sure we get all rules supplied in CSS"""
-    # Check to see that we have the correct selectors
-    selectors = parser.get_selector_list()
-    assert set(selectors) == set([u"html body", u"a:visited a:hover"])
-
-
-def test_store_css(parser):
+def test_parse(parser):
     """Make sure CSS rules are saved correctly"""
-    linkedcss = LinkedCSSFactory.create(raw_css=RAW_CSS)
-    parser.store_css(linkedcss)
+    linkedcss = LinkedCSSFactory.create(raw_css=css_file(RAW_CSS))
+    parser.parse(linkedcss)
 
     # The rule for "html body" should be saved
     find_rule = models.CSSRule.objects.filter(linkedcss=linkedcss,
@@ -81,10 +80,9 @@ def test_store_prefixed_properties(parser):
            u"box-shadow: 10px 10px 5px #888;\n}"
            u"a:visited a:hover{\n"
            u"-moz-box-shadow: 10px 10px 5px #000;\n}")
-    parser.parse(css)
 
-    linkedcss = LinkedCSSFactory.create(raw_css=css)
-    parser.store_css(linkedcss)
+    linkedcss = LinkedCSSFactory.create(raw_css=css_file(css))
+    parser.parse(linkedcss)
 
     # Check to see that we saved the prefixed property -moz-box-shadow
     prefixed_property = models.CSSProperty.objects.filter(prefix="-moz-",
@@ -116,10 +114,9 @@ def test_comments_dont_break_parser(parser):
                      u"a:visited a:hover{\n"
                      u"-moz-box-shadow: 10px 10px 5px #000;"
                      "/* comment inline */\n}")
-    parser.parse(commented_css)
 
-    linkedcss = LinkedCSSFactory.create(raw_css=commented_css)
-    parser.store_css(linkedcss)
+    linkedcss = LinkedCSSFactory.create(raw_css=css_file(commented_css))
+    parser.parse(linkedcss)
 
     # Check to see that expected rules were saved
     rule1 = models.CSSRule.objects.filter(linkedcss=linkedcss,

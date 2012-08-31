@@ -21,25 +21,49 @@ class Command(BaseCommand):
                     action='store',
                     dest='remove',
                     default=False,
-                    help='Remove useragent string from database'))
+                    help='Remove useragent string from database'),
+        make_option('--primary',
+                    action='store_true',
+                    dest='primary',
+                    default=False,
+                    help='Added user-agent will be primary mobile UA (the UA we want to be sure sites are sniffing for)'),
+        make_option('--desktop',
+                    action='store_true',
+                    dest='desktop',
+                    default=False,
+                    help='Added user-agent is a desktop UA'),
+        )
 
     def handle(self, *args, **options):
 
         new = options.get('add')
         remove = options.get('remove')
+        primary = options.get('primary')
+        desktop = options.get('desktop')
 
         if options.get('list'):
-            self.stdout.write("Listing all saved user agent strings:\n")
-            self.stdout.write("=====================================\n")
+            self.stdout.write("\n")
+            self.stdout.write("These UAs will be used for the next scan:\n")
+            self.stdout.write("=========================================\n")
 
             for agent in UserAgent.objects.all():
-                self.stdout.write(agent.ua_string + '\n')
+                self.stdout.write("%s\n" % agent)
 
         elif new:
-            new_ua = UserAgent()
-            new_ua.ua_string = str(new)
-            new_ua.save()
-            self.stdout.write('Successfully inserted "%s"\n' % str(new))
+            if primary:
+                if desktop:
+                    raise CommandError("The primary UA must be a mobile UA")
+                # only one UA can be primary
+                UserAgent.objects.update(primary_ua=False)
+
+            if desktop:
+                ua_type = UserAgent.DESKTOP
+            else:
+                ua_type = UserAgent.MOBILE
+
+            new_ua = UserAgent.objects.create(
+                ua_string=str(new), primary_ua=primary, ua_type=ua_type)
+            self.stdout.write('Successfully inserted "%s"\n' % new_ua)
 
         elif remove:
             try:

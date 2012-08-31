@@ -4,18 +4,16 @@ Item pipeline.
 """
 from django.core.files.base import ContentFile
 from hashlib import sha256
+
 from spade import model
+from spade.utils.cssparser import CSSParser
 
 
 class ScraperPipeline(object):
     def __init__(self):
-        """Initialize pipeline with user agents."""
-        # Get user agents from database
-        self.user_agents = list(model.UserAgent.objects.all())
+        """Initialize pipeline."""
+        self.css_parser = CSSParser()
 
-        if not self.user_agents:
-            raise ValueError(
-                "No user agents; add some with 'manage.py useragents --add'")
 
     def process_item(self, item, spider):
         """Called whenever an item is yielded by the spider"""
@@ -48,24 +46,18 @@ class ScraperPipeline(object):
                 url_scan=item['urlscan'],
                 user_agent=item['user_agent'])
 
-            # If the linked file already exists, don't save another copy
-            try:
-                linkedjs = model.LinkedJS.objects.get(
-                    url_hash=sha256(item['url']).hexdigest())
+            linkedjs, _ = model.LinkedJS.objects.get_or_create(
+                batch=spider.batch,
+                url_hash=sha256(item['url']).hexdigest(),
+                defaults={'url': item['url']},
+                )
 
-            except model.LinkedJS.DoesNotExist:
-                print "DNE"
-                # Create the item since it doesn't exist
-                linkedjs = model.LinkedJS.objects.create(
-                    url=item['url'],
-                    url_hash=sha256(item['url']).hexdigest())
+            # Store raw js
+            file_content = ContentFile(item['raw_content'])
+            linkedjs.raw_js.save(item['filename'], file_content)
+            linkedjs.raw_js.close()
 
-                # Store raw js
-                file_content = ContentFile(item['raw_content'])
-                linkedjs.raw_js.save(item['filename'], file_content)
-                linkedjs.raw_js.close()
-
-                linkedjs.save()
+            linkedjs.save()
 
             # Create relationship with url content
             linkedjs.linked_from.add(urlcontent)
@@ -75,38 +67,39 @@ class ScraperPipeline(object):
                 url_scan=item['urlscan'],
                 user_agent=item['user_agent'])
 
-            # If the linked file already exists, don't save another copy
-            try:
-                linkedcss = model.LinkedCSS.objects.get(
-                    url_hash=sha256(item['url']).hexdigest())
+            linkedcss, created = model.LinkedCSS.objects.get_or_create(
+                batch = spider.batch,
+                url_hash=sha256(item['url']).hexdigest(),
+                defaults={
+                    'url': item['url'],
+                    },
+                )
 
-            except model.LinkedCSS.DoesNotExist:
-                print "DNE"
-                # Create the item since it doesn't exist
-                linkedcss = model.LinkedCSS.objects.create(
-                    url=item['url'],
-                    url_hash=sha256(item['url']).hexdigest())
+            # Store raw css
+            file_content = ContentFile(item['raw_content'])
+            linkedcss.raw_css.save(item['filename'], file_content)
+            linkedcss.raw_css.close()
 
-                # Store raw css
-                file_content = ContentFile(item['raw_content'])
-                linkedcss.raw_css.save(item['filename'], file_content)
-                linkedcss.raw_css.close()
-
-                linkedcss.save()
+            linkedcss.save()
 
             # Create relationship with url content
             linkedcss.linked_from.add(urlcontent)
 
+            if created:
+                # Parse out rules and properties
+                self.css_parser.parse(linkedcss)
+
         return item
 
     def close_spider(self, spider):
-        """Executed on spider completion"""
+        """ Executed on spider completion """
+
         # Update batch finish time, keep this last
         spider.batch.finish_time = spider.get_now_time()
         spider.batch.save()
 
     def open_spider(self, spider):
-        """Executed on spider launch"""
+        """ Executed on spider launch """
         now = spider.get_now_time()
 
         # Create initial batch
@@ -114,4 +107,19 @@ class ScraperPipeline(object):
             kickoff_time=now, finish_time=now)
         spider.batch.save()
 
-        spider.user_agents = self.user_agents
+        spider.batch_user_agents = []
+
+        # Give the spider a set of batch user agents, which preserve historical
+        # user agent data
+        for ua in list(model.UserAgent.objects.all()):
+            batch_user_agent = model.BatchUserAgent.objects.create(
+                batch=spider.batch,
+                ua_string=ua.ua_string,
+                primary_ua=ua.primary_ua,
+                ua_type=ua.ua_type,
+                )
+            spider.batch_user_agents.append(batch_user_agent)
+
+        if not spider.batch_user_agents:
+            raise ValueError(
+                "No user agents; add some with 'manage.py useragents --add'")

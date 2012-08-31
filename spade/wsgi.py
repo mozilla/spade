@@ -15,7 +15,10 @@ framework.
 """
 import os
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "spade.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "spade.settings.default")
+
+from spade.vendor import add_vendor_lib
+add_vendor_lib()
 
 # This application object is used by any WSGI server configured to use this
 # file. This includes Django's development server, if the WSGI_APPLICATION
