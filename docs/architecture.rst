@@ -72,15 +72,23 @@ Contains the Django project settings.
 Contains the tests.
 
 
-``spade.utils.cssparser``
--------------------------
+``spade.utils.data_aggregator``
+-------------------------------
+
+Contains a ``DataAggregator`` class that populates the ``BatchData``,
+``SiteScanData``, ``URLScanData``, ``URLContentData`` and ``LinkedCSSData``
+models with summary aggregate data about the scan.
+
+
+``spade.utils.css_parser``
+--------------------------
 
 Contains a ``CSSParser`` class that can take raw CSS, parse it, and store it
 into the ``CSSRule`` and ``CSSProperty`` database models.
 
 
-``spade.utils.htmldiff``
-------------------------
+``spade.utils.html_diff``
+-------------------------
 
 Contains a ``HTMLDiff`` class that can compare the tag structure of two chunks
 of HTML, ignoring differences in tag content and attributes, and return a
