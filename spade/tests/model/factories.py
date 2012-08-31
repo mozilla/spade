@@ -129,7 +129,6 @@ class URLScanDataFactory(factory.Factory):
     # Dummy metric numbers
     num_rules = 5
     num_properties = 10
-    scanned_pages = 1
     css_issues = 3
     ua_issue = True
 
