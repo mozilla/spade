@@ -47,6 +47,7 @@ class BaseUserAgent(models.Model):
         (DESKTOP, 'desktop'),
         (MOBILE, 'mobile'),
     )
+    UA_TYPES = dict(UA_TYPE_CHOICES)
 
     ua_string = models.CharField(max_length=250, unique=True)
     ua_type = models.IntegerField(max_length=1,
@@ -55,7 +56,10 @@ class BaseUserAgent(models.Model):
     primary_ua = models.BooleanField(default=False)
 
     def __unicode__(self):
-        return self.ua_string
+        tags = self.UA_TYPES[self.ua_type]
+        if self.primary_ua:
+            tags += ", primary"
+        return u"(%s) %s" % (tags, self.ua_string)
 
     class Meta:
         abstract = True

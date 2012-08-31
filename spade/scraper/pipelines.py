@@ -113,7 +113,11 @@ class ScraperPipeline(object):
         # user agent data
         for ua in list(model.UserAgent.objects.all()):
             batch_user_agent = model.BatchUserAgent.objects.create(
-                batch=spider.batch, ua_string=ua.ua_string)
+                batch=spider.batch,
+                ua_string=ua.ua_string,
+                primary_ua=ua.primary_ua,
+                ua_type=ua.ua_type,
+                )
             spider.batch_user_agents.append(batch_user_agent)
 
         if not spider.batch_user_agents:
