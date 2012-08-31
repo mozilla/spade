@@ -49,7 +49,7 @@ class BaseUserAgent(models.Model):
     )
     UA_TYPES = dict(UA_TYPE_CHOICES)
 
-    ua_string = models.CharField(max_length=250, unique=True)
+    ua_string = models.CharField(max_length=250)
     ua_type = models.IntegerField(max_length=1,
                                   choices=UA_TYPE_CHOICES,
                                   default=DESKTOP)
@@ -273,7 +273,6 @@ class URLScanData(models.Model):
     # Other metrics
     num_rules = models.IntegerField()
     num_properties = models.IntegerField()
-    scanned_pages = models.IntegerField()
 
     # Aggregate css_issues from all linked css stylesheets
     css_issues = models.IntegerField()

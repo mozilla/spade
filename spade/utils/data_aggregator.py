@@ -2,7 +2,9 @@
 Class to perform data aggregation for completed scans
 
 """
-from spade.model import models
+from django.db import transaction
+
+from spade import model
 from spade.utils.html_diff import HTMLDiff
 
 # This constant determines the lowest similarity bound for two pages to still
@@ -15,13 +17,179 @@ class AggregationError(Exception):
 
 
 class DataAggregator(object):
+    @transaction.commit_on_success
+    def aggregate_batch(self, batch):
+        """
+        Given a particular batch, aggregate the stats from its children into
+        the data model and return it
+        """
+        sitescans = model.SiteScan.objects.filter(batch=batch)
+
+        # Initialize counters
+        total_rules = 0
+        total_properties = 0
+        total_pages_scanned = 0
+        total_css_issues = 0
+        total_ua_issues = 0
+
+        # Aggregate data for each sitescan
+        for sitescan in sitescans:
+            sitescan_data = self.aggregate_sitescan(sitescan)
+            total_rules += sitescan_data.num_rules
+            total_properties += sitescan_data.num_properties
+            total_pages_scanned += sitescan_data.scanned_pages
+            total_css_issues += sitescan_data.css_issues
+            total_ua_issues += sitescan_data.ua_issues
+
+        # Actually update the batchdata field
+        model.BatchData.objects.create(
+            batch=batch,
+            num_rules=total_rules,
+            num_properties=total_properties,
+            scanned_pages=total_pages_scanned,
+            css_issues=total_css_issues,
+            ua_issues=total_ua_issues,
+            )
+
+        # Mark the batch complete
+        batch.data_aggregated = True
+        batch.save()
+
+    def aggregate_sitescan(self, sitescan):
+        """
+        Given a particular sitescan, aggregate the stats from its children into
+        the data model and return it
+        """
+        urlscans = model.URLScan.objects.filter(site_scan=sitescan)
+
+        # Initialize counters
+        total_rules = 0
+        total_properties = 0
+        total_pages_scanned = 0
+        total_css_issues = 0
+        total_ua_issues = 0
+
+        # Aggregate data for each urlscan
+        for urlscan in urlscans:
+            urlscan_data = self.aggregate_urlscan(urlscan)
+            total_rules += urlscan_data.num_rules
+            total_properties += urlscan_data.num_properties
+            total_pages_scanned += 1
+            total_css_issues += urlscan_data.css_issues
+            if urlscan_data.ua_issue:
+                total_ua_issues += 1
+
+        # Create this sitescan's data model
+        return model.SiteScanData.objects.create(
+            sitescan=sitescan,
+            num_rules=total_rules,
+            num_properties=total_properties,
+            scanned_pages=total_pages_scanned,
+            css_issues=total_css_issues,
+            ua_issues=total_ua_issues,
+            )
+
+    def aggregate_urlscan(self, urlscan):
+        """
+        Given a particular urlscan, aggregate the stats from its children into
+        the data model and return it
+        """
+        urlcontents = model.URLContent.objects.filter(url_scan=urlscan)
+
+        # Initialize counters
+        total_rules = 0
+        total_properties = 0
+        total_css_issues = 0
+        ua_issue = False
+
+        # Detect user agent sniffing issues
+        try:
+            if self.detect_ua_issue(urlscan):
+                ua_issue = True
+        except AggregationError as e:
+            print "Unable to detect UA-sniffing issues for '%s': %s" % (
+                urlscan, e)
+
+        # Aggregate data for each urlcontent
+        for urlcontent in urlcontents:
+            urlcontent_data = self.aggregate_urlcontent(urlcontent)
+            total_rules += urlcontent_data.num_rules
+            total_properties += urlcontent_data.num_properties
+            total_css_issues += urlcontent_data.css_issues
+
+        # Create this urlscan's data model
+        return model.URLScanData.objects.create(
+            urlscan=urlscan,
+            num_rules=total_rules,
+            num_properties=total_properties,
+            css_issues=total_css_issues,
+            ua_issue=ua_issue,
+            )
+
+    def aggregate_urlcontent(self, urlcontent):
+        """
+        Given a particular urlcontent, aggregate the stats from its children
+        into the data model and return it
+        """
+        linkedstyles = model.LinkedCSS.objects.filter(linked_from=urlcontent)
+
+        # Initialize counters
+        total_rules = 0
+        total_properties = 0
+        total_css_issues = 0
+
+        # Aggregate data for each linked css stylesheet
+        for linkedcss in linkedstyles:
+            linkedcss_data = self.aggregate_linkedcss(linkedcss)
+            total_rules += linkedcss_data.num_rules
+            total_properties += linkedcss_data.num_properties
+            total_css_issues += linkedcss_data.css_issues
+
+        # Create this urlcontent's data model
+        return model.URLContentData.objects.create(
+            urlcontent=urlcontent,
+            num_rules = total_rules,
+            num_properties=total_properties,
+            css_issues=total_css_issues,
+            )
+
+    def aggregate_linkedcss(self, linkedcss):
+        """
+        Given a particular linkedcss, aggregate the stats from its children
+        into the data model and return it
+        """
+        # A single LinkedCSS can be linked from multiple URLContents, thus we
+        # have to check if its already been evaluated. (TODO we could keep an
+        # in-memory cache of these to save db queries, if needed to help
+        # performance)
+        try:
+            return model.LinkedCSSData.objects.get(linked_css=linkedcss)
+        except model.LinkedCSSData.DoesNotExist:
+            pass
+
+        # Initialize counters
+        total_rules = model.CSSRule.objects.filter(linkedcss=linkedcss).count()
+        total_properties = model.CSSProperty.objects.filter(
+            rule__linkedcss=linkedcss).count()
+        total_css_issues = 0
+
+        # TODO: Detect how many css issues exist.
+
+        # Create this linkedcss's data model
+        return model.LinkedCSSData.objects.create(
+            linked_css=linkedcss,
+            num_rules=total_rules,
+            num_properties=total_properties,
+            css_issues=total_css_issues,
+            )
+
     def detect_ua_issue(self, urlscan):
         """
         Given a urlscan, look at the different user agents used and determine
         whether there is a UA sniffing issue
         """
         diff_util = HTMLDiff()
-        urlcontents = models.URLContent.objects.filter(url_scan=urlscan)
+        urlcontents = model.URLContent.objects.filter(url_scan=urlscan)
 
         # Sort scanned pages by mobile / desktop user agents and find the
         # "primary ua" (the one of interest, the one we want to see was sniffed
@@ -32,9 +200,9 @@ class DataAggregator(object):
         for urlcontent in urlcontents:
             if urlcontent.user_agent.primary_ua:
                 primary_page = urlcontent
-            elif urlcontent.user_agent.ua_type == models.BatchUserAgent.DESKTOP:
+            elif urlcontent.user_agent.ua_type == model.BatchUserAgent.DESKTOP:
                 urls_with_desktop_ua.append(urlcontent)
-            elif urlcontent.user_agent.ua_type == models.BatchUserAgent.MOBILE:
+            elif urlcontent.user_agent.ua_type == model.BatchUserAgent.MOBILE:
                 urls_with_mobile_ua.append(urlcontent)
 
         # Ensure we successfully scanned / saved the page with the right user
@@ -70,166 +238,3 @@ class DataAggregator(object):
 
         return not primary_sniff
 
-    def aggregate_batch(self, batch):
-        """
-        Given a particular batch, aggregate the stats from its children into
-        the data model and return it
-        """
-        sitescans = models.SiteScan.objects.filter(batch=batch)
-
-        # Initialize counters
-        total_rules = 0
-        total_properties = 0
-        total_pages_scanned = 0
-        total_css_issues = 0
-        total_ua_issues = 0
-
-        # Aggregate data for each sitescan
-        for sitescan in sitescans:
-            sitescan_data = self.aggregate_sitescan(sitescan)
-            total_rules += sitescan_data.num_rules
-            total_properties += sitescan_data.num_properties
-            total_pages_scanned += sitescan_data.scanned_pages
-            total_css_issues += sitescan_data.css_issues
-            total_ua_issues += sitescan_data.ua_issues
-
-        # Actually update the batchdata field
-        batchdata = models.BatchData.objects.create(batch=batch)
-        batchdata.num_rules = total_rules
-        batchdata.num_properties = total_properties
-        batchdata.scanned_pages = total_pages_scanned
-        batchdata.css_issues = total_css_issues
-        batchdata.ua_issues = total_ua_issues
-        batchdata.save()
-
-        # Mark the batch complete
-        batch.data_aggregated = True
-        batch.save()
-
-    def aggregate_sitescan(self, sitescan):
-        """
-        Given a particular sitescan, aggregate the stats from its children into
-        the data model and return it
-        """
-        urlscans = models.URLScan.objects.filter(sitescan=sitescan)
-
-        # Initialize counters
-        total_rules = 0
-        total_properties = 0
-        total_pages_scanned = 0
-        total_css_issues = 0
-        total_ua_issues = 0
-
-        # Aggregate data for each urlscan
-        for urlscan in urlscans:
-            urlscan_data = self.aggregate_urlscan(urlscan)
-            total_rules += urlscan_data.num_rules
-            total_properties += urlscan_data.num_properties
-            total_pages_scanned += urlscan_data.scanned_pages
-            total_css_issues += urlscan_data.css_issues
-            if urlscan_data.ua_issue:
-                total_ua_issues += 1
-
-        # Actually update the sitescan field
-        sitescandata = models.SiteScanData.objects.create(sitescan=sitescan)
-        sitescandata.num_rules = total_rules
-        sitescandata.num_properties = total_properties
-        sitescandata.scanned_pages = total_pages_scanned
-        sitescandata.css_issues = total_css_issues
-        sitescandata.ua_issues = total_ua_issues
-        sitescandata.save()
-        return sitescandata
-
-    def aggregate_urlscan(self, urlscan):
-        """
-        Given a particular urlscan, aggregate the stats from its children into
-        the data model and return it
-        """
-        urlcontents = models.URLContent.objects.filter(url_scan=urlscan)
-
-        # Initialize counters
-        total_rules = 0
-        total_properties = 0
-        total_pages_scanned = 0
-        total_css_issues = 0
-        ua_issue = False
-
-        # TODO: determine # pages scanned by counting urlcontents belonging to
-        #       this urlscan belonging to a single ua? or all? how??
-
-        #total_pages_scanned =
-
-
-        # Detect user agent sniffing issues
-        try:
-            if self.detect_ua_issue(urlscan):
-                ua_issue = True
-        except AggregationError as e:
-            print "Unable to detect UA-sniffing issues for '%s': %s" % (
-                urlscan, e)
-
-        # Aggregate data for each urlcontent
-        for urlcontent in urlcontents:
-            urlcontent_data = self.aggregate_urlcontent(urlcontent)
-            total_rules += urlcontent_data.num_rules
-            total_properties += urlcontent_data.num_properties
-            total_css_issues += urlcontent_data.css_issues
-
-        # Update this urlscan's data model
-        urlscandata = models.URLScanData.objects.create(urlscan=urlscan)
-        urlscandata.num_rules = total_rules
-        urlscandata.num_properties = total_properties
-        urlscandata.scanned_pages = total_pages_scanned
-        urlscandata.css_issues = total_css_issues
-        urlscandata.ua_issue = ua_issue
-        urlscandata.save()
-        return urlscandata
-
-    def aggregate_urlcontent(self, urlcontent):
-        """
-        Given a particular urlcontent, aggregate the stats from its children
-        into the data model and return it
-        """
-        linkedstyles = models.LinkedCSS.objects.filter(linked_from=urlcontent)
-
-        # Initialize counters
-        total_rules = 0
-        total_properties = 0
-        total_css_issues = 0
-
-        # Aggregate data for each linked css stylesheet
-        for linkedcss in linkedstyles:
-            linkedcss_data = self.aggregate_linkedcss(linkedcss)
-            total_rules += linkedcss_data.num_rules
-            total_properties += linkedcss_data.num_properties
-            total_css_issues += linkedcss_data.css_issues
-
-        # Update this urlcontent's data model
-        urlcontentdata = models.URLContentData.objects.create(
-            urlcontent=urlcontent)
-        urlcontentdata.num_rules = total_rules
-        urlcontentdata.num_properties = total_properties
-        urlcontentdata.css_issues = total_css_issues
-        urlcontentdata.save()
-        return urlcontentdata
-
-    def aggregate_linkedcss(self, linkedcss):
-        """
-        Given a particular linkedcss, aggregate the stats from its children
-        into the data model and return it
-        """
-        # Initialize counters
-        total_rules = 0
-        total_properties = 0
-        total_css_issues = 0
-
-        # TODO: Detect how many rules, properties, and css issues exist.
-
-        # Update this linkedcss's data model
-        linkedcssdata = models.LinkedCSSData.objects.create(
-            linked_css=linkedcss)
-        linkedcssdata.num_rules = total_rules
-        linkedcssdata.num_properties = total_properties
-        linkedcssdata.css_issues = total_css_issues
-        linkedcssdata.save()
-        return linkedcssdata
