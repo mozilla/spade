@@ -3,10 +3,9 @@ Utility to parse and save CSS
 """
 import cssutils
 import logging
-import os
 import re
-from urllib import urlopen
-from spade.model import models
+
+from spade import model
 
 # Ensure that warnings for CSS properties are disabled: cssutils throws
 # warnings when properties are not recognized. It also only recognizes up to
@@ -16,13 +15,6 @@ cssutils.log.setLevel(logging.FATAL)
 
 
 class CSSParser(object):
-    def __init__(self, raw_css):
-        """ Initialize a cssutils parser """
-        self.parse(raw_css)
-
-    def parse(self, css):
-        self.css = cssutils.parseString(css).cssRules
-
     def parse_rule(self, rule):
         """
         Returns a tuple containing the rule's selector and parsed properties
@@ -51,33 +43,21 @@ class CSSParser(object):
 
         return (selector_string, properties_dict)
 
-    def get_selector_list(self):
-        """ Retrieve CSS selectors """
-        selectors = []
-        for rule in self.css:
-            selectors.append(rule.selectorText)
-        return selectors
 
-    def is_comment(self, rule):
-        """ Returns whether a rule a comment """
-        return rule.typeString == "COMMENT"
-
-    def store_css(self, linkedcss):
+    def parse(self, linkedcss):
         """
         Calls parse on the internal CSS, stores css properties into db model
         """
-        for rule in self.css:
-            if self.is_comment(rule):
-                # Ignore Comments
-                continue
-
+        css = linkedcss.raw_css.read()
+        for rule in cssutils.parseString(css).cssRules.rulesOfType(
+                cssutils.css.CSSRule.STYLE_RULE):
             # Get selector and properties from rule
             rule = self.parse_rule(rule)
             selector = rule[0]
             properties = rule[1]
 
             # Create CSS rule in model
-            current_rule = models.CSSRule.objects.create(linkedcss=linkedcss,
+            current_rule = model.CSSRule.objects.create(linkedcss=linkedcss,
                                                          selector=selector)
 
             for property in properties:
@@ -87,7 +67,7 @@ class CSSParser(object):
 
                 # Create CSSProperty object for each property belonging to the
                 # rule
-                new_property = models.CSSProperty.objects.create(
+                model.CSSProperty.objects.create(
                     rule=current_rule, prefix=prefix, name=unprefixed_name,
                     value=value)
 

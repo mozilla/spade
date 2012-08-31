@@ -61,6 +61,7 @@ class URLContentFactory(factory.Factory):
 class LinkedCSSFactory(factory.Factory):
     """ Linked CSS model factory """
     FACTORY_FOR = models.LinkedCSS
+    batch = factory.SubFactory(BatchFactory)
     url = MOCK_CSS_URL
     url_hash = sha256(MOCK_CSS_URL).hexdigest()
     raw_css = u"body{color:#000}"
@@ -69,6 +70,7 @@ class LinkedCSSFactory(factory.Factory):
 class LinkedJSFactory(factory.Factory):
     """ Linked JS model factory """
     FACTORY_FOR = models.LinkedJS
+    batch = factory.SubFactory(BatchFactory)
     url = MOCK_JS_URL
     url_hash = sha256(MOCK_JS_URL).hexdigest()
     raw_js = u"document.write('hello world')"

@@ -4,7 +4,6 @@ Spade models.
 """
 from datetime import datetime
 from django.db import models
-from urlparse import urlparse
 
 
 """ Naming scheme for local filesystem """
@@ -78,7 +77,7 @@ class Batch(models.Model):
 
 class BatchUserAgent(models.Model):
     """ A user agent from a given batch """
-    batch = models.ForeignKey(Batch, db_index=True)
+    batch = models.ForeignKey(Batch)
 
     # The following clones the UserAgent model, so that we can retain history
     # for scan UAs while allowing the user to add/remove/modify user agents
@@ -89,7 +88,7 @@ class BatchUserAgent(models.Model):
         (MOBILE, 'mobile'),
     )
 
-    ua_string = models.CharField(max_length=250, unique=True)
+    ua_string = models.CharField(max_length=250)
     ua_type = models.IntegerField(max_length=1,
                                   choices=UA_TYPE_CHOICES,
                                   default=DESKTOP)
@@ -97,6 +96,9 @@ class BatchUserAgent(models.Model):
 
     def __unicode__(self):
         return self.ua_string
+
+    class Meta:
+        unique_together = [("batch", "ua_string")]
 
 
 class SiteScan(models.Model):
@@ -161,7 +163,8 @@ class URLContent(models.Model):
 
 
 class LinkedCSS(models.Model):
-    """ A single linked CSS file. """
+    """A single linked CSS file."""
+    batch = models.ForeignKey(Batch)
     linked_from = models.ManyToManyField(URLContent)
     url = models.TextField()
     url_hash = models.CharField(max_length=64)
@@ -176,7 +179,8 @@ class LinkedCSS(models.Model):
 
 
 class LinkedJS(models.Model):
-    """ A single linked JS file. """
+    """A single linked JS file."""
+    batch = models.ForeignKey(Batch)
     linked_from = models.ManyToManyField(URLContent)
     url = models.TextField()
     url_hash = models.CharField(max_length=64)
@@ -193,15 +197,24 @@ class LinkedJS(models.Model):
 class CSSRule(models.Model):
     """ A CSS element rule """
     linkedcss = models.ForeignKey(LinkedCSS)
-    selector = models.CharField(max_length=50)
+    selector = models.TextField()
+
+    def __unicode__(self):
+        return self.selector
+
 
 
 class CSSProperty(models.Model):
     """ A CSS property belonging to a rule """
     rule = models.ForeignKey(CSSRule)
-    prefix = models.CharField(max_length=10)
-    name = models.CharField(max_length=50)
-    value = models.CharField(max_length=50)
+    prefix = models.CharField(max_length=50)
+    name = models.TextField()
+    value = models.TextField()
+
+    def __unicode__(self):
+        ret = u"%s%s: %s" % (self.prefix, self.name, self.value)
+
+        return ret
 
 
 """ Aggregate Data Models """
