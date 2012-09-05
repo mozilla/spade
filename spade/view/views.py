@@ -3,6 +3,7 @@ Spade home view
 """
 
 from django.http import HttpResponse
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import get_object_or_404, redirect, render
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
@@ -51,29 +52,48 @@ def get_previous_batch(batch):
 
 def dashboard(request):
     """ Front page dashboard view """
+    batches = model.Batch.objects.filter(data_aggregated=True)
+    batches = batches.order_by('-finish_time')
 
-    batches = model.Batch.objects.order_by('finish_time')
+    # pagination
+    paginator = Paginator(batches, 5)
+    page = request.GET.get('page')
+    try:
+        batches_pag = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        batches_pag = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        batches_pag = paginator.page(paginator.num_pages)
+    batches = batches_pag.object_list  # computing only for displayed batches
 
-    batch_data = {}
+    batches_data = []
     for batch in batches:
-        batch_data[batch.finish_time] = {
+
+        ua_regressed = 'N/A'
+        ua_fixed = 'N/A'
+
+        prev = get_previous_batch(batch)
+        if prev and prev.data_aggregated:
+            regressions, fixes = get_ua_diffs(prev, batch)
+            ua_regressed = '%d' % len(regressions)
+            ua_fixed = '%d' % len(fixes)
+
+        batch_data = batch.batchdata
+        batches_data.append({
             'id': batch.id,
-            'ua_issues_fixed':0,
-            'css_issues_fixed': 0,
-            'ua_issues_regressed':0,
-            'css_issues_regressed':0,
-            'ua_issue_percent':0,
-            'css_issue_percent':0,
-        }
+            'finish_time': batch.finish_time,
+            'ua_issues_fixed': ua_fixed,
+            'css_issues_fixed': 'N/A',
+            'ua_issues_regressed': ua_regressed,
+            'css_issues_regressed': 'N/A',
+            'ua_issue_percent': batch_data.ua_issues_pctg,
+            'css_issue_percent': batch_data.css_issues_pctg,
+        })
+    context = {'batches_data': batches_data, 'paginator': batches_pag}
 
-    # TODO: Determine UA issue %
-    # TODO: Determine CSS issue %
-    # TODO: Determine UA issues fixed since last scan
-    # TODO: Determine CSS issues fixed since last scan
-    # TODO: Determine UA issues regressed
-    # TODO: Determine CSS issues regressed
-
-    return TemplateResponse(request, "dashboard.html", batch_data)
+    return TemplateResponse(request, "dashboard.html", context)
 
 
 def batch_report(request, batch_id):
