@@ -243,10 +243,14 @@ class BatchData(models.Model):
 
     @property
     def css_issues_pctg(self):
+        if not self.scanned_pages:
+            return 0.
         return self.css_issues * 100.0 / self.scanned_pages
 
     @property
     def ua_issues_pctg(self):
+        if not self.scanned_pages:
+            return 0.
         return self.ua_issues * 100.0 / self.scanned_pages
 
 
