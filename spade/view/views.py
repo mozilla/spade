@@ -151,6 +151,12 @@ def batch_report(request, batch_id):
 
 def site_report(request, site_id, user_agent="combined"):
     """ Site report view """
-    context = { 'site_id': site_id }
-    print user_agent
+    site = get_object_or_404(model.SiteScan, id=site_id)
+    context = {'site_id': site_id,
+               'date': site.batch.finish_time,
+               'url_count': site.urlscan_set.count(),
+               'ua_count': site.batch.batchuseragent_set.count(),
+               'uas': site.batch.batchuseragent_set.all(),
+               'css_issues_count': 'N/A'}
+
     return TemplateResponse(request, "site_report.html", context)
