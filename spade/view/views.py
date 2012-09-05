@@ -8,6 +8,47 @@ from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from spade import model
 
+
+def get_url_scan(url, batch):
+    urls = model.URLScan.objects.filter(site_scan__batch__id=batch.id)
+    urls = urls.filter(page_url=url.page_url)
+    if urls.count():
+        return urls[0]
+    return None
+
+
+def get_ua_diffs(previous_batch, current_batch):
+    """ Returns a 2-tuple containing a list of regressions
+    and a list of fixes """
+
+    # get a list of the urls scanned in the current batch
+    urls = []
+    for site_scan in current_batch.sitescan_set.all():
+        for url in site_scan.urlscan_set.all():
+            urls.append(url)
+
+    regressions = []
+    fixes = []
+    for url in urls:
+        prev = get_url_scan(url, previous_batch)
+        if not prev:
+            continue
+        if not prev.urlscandata.ua_issue and url.urlscandata.ua_issue:
+            regressions.append(url)
+        if prev.urlscandata.ua_issue and not url.urlscandata.ua_issue:
+            fixes.append(url)
+
+    return (regressions, fixes)
+
+
+def get_previous_batch(batch):
+    prev_batches = model.Batch.objects.filter(finish_time__lt=batch.finish_time)
+    prev = prev_batches.order_by('-finish_time')[:1]
+    if prev:
+        return prev[0]
+    return None
+
+
 def dashboard(request):
     """ Front page dashboard view """
 
