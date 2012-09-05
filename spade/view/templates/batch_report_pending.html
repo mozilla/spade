@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+<div class="left-column">
+    <!-- This div holds the logo -->
+    <a href="#" style="border:none;"><div class="logo"></div></a>
+
+    <!-- Actual leftside content -->
+    <div class="left-content">
+
+        <!-- We can easily add sections to display more scan statistics -->
+        <div class="section">
+            <label class="nav-label">Aggregate Metrics:</label>
+            <ul class="summary">
+                <!-- Scan stats -->
+                    <li><span class="good">{{ scanned_total }}</span> sites scanned</li>
+            </ul>
+        </div>
+
+    </div>
+</div>
+
+<div class="right-column">
+    <div class="right-content">
+        <h2 class="content-title">Statistics from batch scanned on 07-31-2012</h2>
+        <div class="content">
+            <h4><span class="bad">Data not yet processed.</span></h4>
+        <!-- End content -->
+        </div>
+    <!-- End rightside content-->
+    </div>
+<!-- End right column-->
+</div>
+{% endblock content %}

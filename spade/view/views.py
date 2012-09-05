@@ -98,9 +98,54 @@ def dashboard(request):
 
 def batch_report(request, batch_id):
     """ Batch report view """
-    context = { 'batch_id': batch_id }
 
+    # get the current batch
+    batch = get_object_or_404(model.Batch, id=batch_id)
 
+    context = {'batch_id': batch_id}
+
+    # check if the batch has been processed
+    if not batch.data_aggregated:
+        return TemplateResponse(request, "batch_report_pending.html", context)
+    batch_data = batch.batchdata
+
+    ua_regressed = 'N/A'
+    ua_fixed = 'N/A'
+
+    # find the previous batch and the diff data
+    prev = get_previous_batch(batch)
+    if prev and prev.data_aggregated:
+        regressions, fixes = get_ua_diffs(prev, batch)
+        ua_regressed = '%d' % len(regressions)
+        ua_fixed = '%d' % len(fixes)
+
+    # find site_scans with UA errors
+    ua_issues_sites = model.SiteScan.objects.filter(batch__id=batch.id)
+    ua_issues_sites = ua_issues_sites.filter(sitescandata__ua_issues__gt=0)
+
+    # pagination
+    paginator = Paginator(ua_issues_sites, 5)
+    page = request.GET.get('page_ua')
+    try:
+        ua_issues_pag = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        ua_issues_pag = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        ua_issues_pag = paginator.page(paginator.num_pages)
+
+    # display the data
+    context.update({'scanned_total': batch_data.scanned_pages,
+                   'css_issues_pctg': batch_data.css_issues_pctg,
+                   'ua_issues_pctg': batch_data.ua_issues_pctg,
+                   'ua_issues_fixed': ua_fixed,
+                   'css_issues_fixed': 'N/A',
+                   'ua_issues_regressed': ua_regressed,
+                   'css_issues_regressed': 'N/A',
+                   'ua_issues_sites': ua_issues_pag.object_list,
+                   'ua_issues_count': len(ua_issues_sites),
+                   'ua_issues_paginator': ua_issues_pag})
     return TemplateResponse(request, "batch_report.html", context)
 
 

@@ -4,7 +4,7 @@
 {% block content %}
 <div class="left-column">
     <!-- This div holds the logo -->
-    <a href="#" style="border:none;"><div class="logo"></div></a>
+    <a href="{% url dashboard %}" style="border:none;"><div class="logo"></div></a>
 
     <!-- Actual leftside content -->
     <div class="left-content">
@@ -14,17 +14,17 @@
             <label class="nav-label">Aggregate Metrics:</label>
             <ul class="summary">
                 <!-- Scan stats -->
-                    <li><span class="good">17,000</span> sites scanned</li>
-                    <li><span class="bad">55.21</span>% sites had CSS issues</li>
-                    <li><span class="bad">53.2</span>% sites had UA issues</li>
+                    <li><span class="good">{{ scanned_total }}</span> sites scanned</li>
+                    <li><span class="bad">{{ css_issues_pctg|floatformat:-2 }}</span>% sites had CSS issues</li>
+                    <li><span class="bad">{{ ua_issues_pctg|floatformat:-2 }}</span>% sites had UA issues</li>
             </ul>
 
             <label class="nav-label">Since last scan:</label>
             <ul class="summary">
-                    <li><span class="good">429</span> CSS issues fixed</li>
-                    <li><span class="good">429</span> UA issues fixed</li>
-                    <li><span class="bad">44</span> CSS issues regressed</li>
-                    <li><span class="bad">21</span> UA issues regressed</li>
+                    <li><span class="good">{{ css_issues_fixed }}</span> CSS issues fixed</li>
+                    <li><span class="good">{{ ua_issues_fixed }}</span> UA issues fixed</li>
+                    <li><span class="bad">{{ css_issues_regressed }}</span> CSS issues regressed</li>
+                    <li><span class="bad">{{ ua_issues_regressed }}</span> UA issues regressed</li>
             </ul>
         </div>
 
@@ -35,7 +35,7 @@
     <div class="right-content">
         <h2 class="content-title">Statistics from batch scanned on 07-31-2012</h2>
         <div class="content">
-            <h4>[<span class="bad">4 sites</span>] used at prefixed properties without moz equivalents:</h4>
+            <h4> (MOCK) [<span class="bad">4 sites</span>] used at prefixed properties without moz equivalents:</h4>
             <!-- Put table here -->
             <div class="info-table">
                 <table class="site-table">
@@ -58,7 +58,7 @@
                 <div class="pagination">« Prev | 1 | 2 | 3 | 4 | Next »</div>
             </div>
 
-            <h4>[<span class="bad">2 sites</span>] detected UA sniffing but not for fennec:</h4>
+            <h4>[<span class="bad">{{ ua_issues_count }} site(s)</span>] with UA issues:</h4>
             <!-- Put table here -->
             <div class="info-table">
                 <table class="site-table">
@@ -66,16 +66,28 @@
                         <th>Site URL</th>
                         <th>Full site Report</th>
                     </tr>
+                    {% for site in ua_issues_sites %}
                     <tr>
-                        <td>http://www.google.com</td>
-                        <td class="report-link"><a href="#">View Site Evaluation Report</a></td>
+                        <td>{{ site.site_url }}</td>
+                        <td class="report-link"><a href="{% url site_report site.id %}">View Site Evaluation Report</a></td>
                     </tr>
-                    <tr>
-                        <td>http://www.yahoo.com</td>
-                        <td class="report-link"><a href="#">View Site Evaluation Report</a></td>
-                    </tr>
+                    {% endfor %}
                 </table>
-                <div class="pagination">« Prev | 1 | 2 | 3 | 4 | Next »</div>
+                <div class="pagination">
+                    <span class="step-links">
+                        {% if ua_issues_paginator.has_previous %}
+                            <a href="?page_ua={{ ua_issues_paginator.previous_page_number }}">previous</a>
+                        {% endif %}
+
+                        <span class="current">
+                            Page {{ ua_issues_paginator.number }} of {{ ua_issues_paginator.paginator.num_pages }}.
+                        </span>
+
+                        {% if ua_issues_paginator.has_next %}
+                            <a href="?page_ua={{ ua_issues_paginator.next_page_number }}">next</a>
+                        {% endif %}
+                    </span>
+                </div>
             </div>
         <!-- End content -->
         </div>
