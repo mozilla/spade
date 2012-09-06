@@ -1,0 +1,99 @@
+# This file contains the set of CSS properties we are looking for in
+# the websites we are scraping. It doesn't matter if the property
+# actually exists in the wild, because this is just our guide for what to
+# look for. If the property doesn't exist in the wild, then we will never
+# find it on a web page. This way, we will catch instances where a
+# webkit-only property exists and is being used, but no moz prefix
+# property has been created and no unprefixed version exists. This is
+# a situation we want to capture and highlight. So, having this 
+# equivalence table should aid us to look for properties as they
+# become used in the wild.
+#
+# NOTE: We have to update this file each time a property name changes.
+#
+# The format is:
+# <moz-prefix prop><space><webkit-prefix-prop><space><unprefixed prop>
+#
+# This does not currently handle -ms- or -o- vendor prefixes but we could
+# easily adapt the format to add that later.
+#
+-moz-appearance -webkit-appearance 
+-moz-animation -webkit-animation animation
+-moz-animation-delay -webkit-animation-delay animation-delay
+-moz-animation-direction -webkit-animation-direction animation-direction
+-moz-animation-duration -webkit-animation-duration animation-duration
+-moz-animation-fill-mode -webkit-animation-fill-mode animation-fill-mode
+-moz-animation-iteration-count -webkit-animation-iteration-count animation-iteration-count
+-moz-animation-name -webkit-animation-name animation-name
+-moz-animation-play-state -webkit-animation-play-state animation-play-state
+-moz-animation-timing-function -webkit-animation-timing-function animation-timing-function
+-moz-backface-visibility -webkit-backface-visibility backface-visibility
+-moz-background-inline-policy -webkit-background-inline-policy background-inline-policy
+-moz-background-clip -webkit-background-clip background-clip
+-moz-background-origin -webkit-background-origin background-origin
+-moz-background-size -webkit-background-size background-size
+-moz-border-image -webkit-border-image border-image
+-moz-border-image-outset -webkit-border-image-outset border-image-outset
+-moz-border-image-repeat -webkit-border-image-repeat border-image-repeat
+-moz-border-image-slice -webkit-border-image-slice border-image-slice
+-moz-border-image-source -webkit-border-image-source border-image-source
+-moz-border-image-width -webkit-border-image-width border-image-width
+-moz-border-bottom-left-radius -webkit-border-bottom-left-radius border-bottom-left-radius
+-moz-border-bottom-right-radius -webkit-border-bottom-right-radius border-bottom-right-radius
+-moz-border-radius -webkit-border-radius border-radius
+-moz-border-top-right-radius -webkit-border-top-right-radius border-top-right-radius
+-moz-border-top-left-radius -webkit-border-top-left-radius border-top-left-radius
+-moz-box-sizing -webkit-box-sizing box-sizing
+-moz-clip-path -webkit-clip-path clip-path
+-moz-column-count -webkit-column-count column-count
+-moz-column-gap -webkit-column-gap column-gap
+-moz-column-width -webkit-column-width column-width
+-moz-column-rule -webkit-column-rule column-rule
+-moz-column-rule-width -webkit-column-rule-width column-rule-width
+-moz-column-rule-style -webkit-column-rule-style column-rule-style
+-moz-column-rule-color -webkit-column-rule-color column-rule-color
+-moz-columns -webkit-columns columns
+-moz-column-span -webkit-column-span column-span
+-moz-column-fill -webkit-column-fill column-fill
+-moz-filter -webkit-filter filter
+-moz-font-kerning -webkit-font-kerning font-kerning
+-moz-font-size-delta -webkit-font-size-delta font-size-delta
+-moz-font-variant-ligatures -webkit-font-variant-ligatures font-variant-ligatures
+-moz-font-feature-settings -webkit-font-feature-settings font-feature-settings
+-moz-font-language-override -webkit-font-language-override font-language-override
+-moz-grid-column -webkit-grid-column grid-column
+-moz-grid-columns -webkit-grid-columns grid-columns
+-moz-grid-row -webkit-grid-row grid-row
+-moz-grid-rows -webkit-grid-rows grid-rows
+-moz-hyphens -webkit-hyphens hyphens
+-moz-mask -webkit-mask mask
+-moz-opacity -webkit-opacity opacity
+-moz-outline -webkit-outline outline
+-moz-outline-color -webkit-outline-color outline-color
+-moz-outline-offset -webkit-outline-offset outline-offset
+-moz-outline-style -webkit-outline-style outline-style
+-moz-outline-width -webkit-outline-width outline-width
+-moz-perspective -webkit-perspective perspective
+-moz-perspective-origin -webkit-perspective-origin perspective-origin
+-moz-pointer-events -webkit-pointer-events pointer-events
+-moz-region-overflow -webkit-region-overflow region-overflow
+-moz-text-align-last -webkit-text-align-last text-align-last
+-moz-text-decoration-color -webkit-text-decoration-color text-decoration-color
+-moz-text-decoration-line -webkit-text-decoration-line text-decoration-line
+-moz-text-decoration-style -webkit-text-decoration-style text-decoration-style
+-moz-transform -webkit-transform transform
+-moz-transform-origin -webkit-transform-origin transform-origin
+-moz-transform-style -webkit-transform-style transform-style
+-moz-transform-delay -webkit-transform-delay transform-delay
+-moz-transform-duration -webkit-transform-duration transform-duration
+-moz-transform-property -webkit-transform-property transform-property
+-moz-transform-timing-function -webkit-transform-timing-function transform-timing-function
+-moz-transition -webkit-transition transition
+-moz-transition-delay -webkit-transition-delay transition-delay
+-moz-transition-duration -webkit-transition-duration transition-duration
+-moz-transition-property -webkit-transition-property transition-property
+-moz-transition-timing-function -webkit-transition-timing-function transition-timing-function
+-moz--epub-word-break -webkit--epub-word-break -epub-word-break
+-moz--epub-writing-mode -webkit--epub-writing-mode -epub-writing-mode
+-moz--epub-caption-side -webkit--epub-caption-side -epub-caption-side
+-moz--epub-text-transform -webkit--epub-text-transform -epub-text-transform
