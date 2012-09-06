@@ -241,6 +241,18 @@ class BatchData(models.Model):
         return u"'{0}' has ({1}) css issues and ({2}) ua issues".format(
             self.batch, self.css_issues, self.ua_issues)
 
+    @property
+    def css_issues_pctg(self):
+        if not self.scanned_pages:
+            return 0.
+        return self.css_issues * 100.0 / self.scanned_pages
+
+    @property
+    def ua_issues_pctg(self):
+        if not self.scanned_pages:
+            return 0.
+        return self.ua_issues * 100.0 / self.scanned_pages
+
 
 class SiteScanData(models.Model):
     """ Aggregate data model for site scans """
