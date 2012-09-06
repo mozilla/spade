@@ -1,8 +1,6 @@
-from lxml import etree
-from Queue import Queue
-from StringIO import StringIO
-
 import difflib
+
+from lxml.html.clean import Cleaner
 
 
 class HTMLDiff(object):
@@ -14,19 +12,15 @@ class HTMLDiff(object):
         html1 = self.strip(html1)
         html2 = self.strip(html2)
 
-        # Get difflib ratio
         s = difflib.SequenceMatcher(None, html1, html2)
         return s.ratio()
 
     def strip(self, html):
         """Remove text elements from the html, as well as element attrs"""
-        parser = etree.HTMLParser()
-        tree = etree.parse(StringIO(html), parser)
+        cleaner = Cleaner(scripts=True, javascript=True, comments=True,
+            style=True, embedded=True)
 
-        # Clear attributes and text, to get bare html
-        for element in tree.iter():
-            element.text = ""
-            for key in element.keys():
-                del element.attrib[key]
+        h = html.read()
+        html.seek(0)  # hack to have the file re-readable for further checking
 
-        return etree.tostring(tree)
+        return cleaner.clean_html(h)
