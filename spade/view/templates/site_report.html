@@ -3,7 +3,7 @@
 {% block content %}
 <div class="left-column">
     <!-- This div holds the logo -->
-    <a href="#" style="border:none;"><div class="logo"></div></a>
+    <a href="{% url dashboard %}" style="border:none;"><div class="logo"></div></a>
 
     <!-- Actual leftside content -->
     <div class="left-content">
@@ -13,18 +13,17 @@
             <label class="nav-label">http://www.google.com</label>
             <ul class="summary">
                 <!-- Site stats -->
-                <li>Scanned on <span class="statistic">07-22-2012</span></li>
-                <li><span class="good">453</span> pages scanned from here</li>
-                <li><span class="good">5</span> user agents used:</li>
+                <li>Scanned on <span class="statistic">{{ date }}</span></li>
+                <li><span class="good">{{ url_count }}</span> pages scanned from here</li>
+                <li><span class="good">{{ ua_count }}</span> user agents used:</li>
                 <ul>
-                    <li class="">Firefox / 11.0</li>
-                    <li class="">Webkit / 4.0</li>
-                    <li class="bad">Firefox / 11.0 (Fennec)</li>
-                    <li class="good">Firefox / 11.0 (iPhone)</li>
+                    {% for ua in uas %}
+                    <li class="">{{ ua.ua_string }}</li>
+                    {% endfor %}
                 </ul>
                 <br/>
-                <li><span class="bad">24</span> CSS issues</li>
-                <li><span class="bad">No</span> UA sniffing for fennec</li>
+                <li><span class="bad">{{ css_issues_count }}</span> CSS issues</li>
+                <li>[MOCK] <span class="bad">No</span> UA sniffing for fennec</li>
             </ul>
         </div>
 
@@ -33,7 +32,7 @@
 <div class="right-column">
     <div class="right-content">
 
-        <h2 class="content-title">Google.com Statistics</h2>
+        <h2 class="content-title">[MOCK] Google.com Statistics</h2>
          <form class="sort-by-useragent">
             <label class="filter-dropdown-label">Filter by user agents:</label>
             <select>

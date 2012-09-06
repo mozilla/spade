@@ -7,7 +7,7 @@
 {% endblock htmlhead %}
 
 {% block content %}
-<a href="#" style="border:none;"><div class="logo"></div></a>
+<a href="{% url dashboard %}" style="border:none;"><div class="logo"></div></a>
 <div class="primary-column">
     <div class="primary-content" style="margin-top:0px">
     <!-- Begin rightside content -->
@@ -46,50 +46,34 @@
                         <th>CSS use fixed</th>
                         <th>CSS use regressed</th>
                     </tr>
-                    {% for finish_time in batch_data %}
+                    {% for batch in batches_data %}
                     <tr>
-                        <td class="id">{#{scan.id}#}</td>
-                        <td><a href="scanreport.html">07-23-2012 21:11:01</a></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td class="id">2</td>
-                        <td><a href="#">07-23-2012 21:11:01</a></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                     <tr>
-                        <td class="id">3</td>
-                        <td><a href="#">07-23-2012 21:11:01</a></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td class="id">4</td>
-                        <td><a href="#">07-23-2012 21:11:01</a></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        <td class="id">{{ batch.id }}</td>
+                        <td><a href="{% url batch_report batch.id %}">{{ batch.finish_time }}</a></td>
+                        <td>{{ batch.ua_issue_percent|floatformat:-2 }}</td>
+                        <td>{{ batch.css_issue_percent|floatformat:-2 }}</td>
+                        <td>{{ batch.ua_issues_fixed }}</td>
+                        <td>{{ batch.ua_issues_regressed }}</td>
+                        <td>{{ batch.css_issues_fixed }}</td>
+                        <td>{{ batch.css_issues_regressed }}</td>
                     </tr>
                     {% endfor %}
                 </table>
-                <div class="pagination">« Prev | 1 | 2 | 3 | 4 | Next »</div>
+                <div class="pagination">
+                    <span class="step-links">
+                        {% if paginator.has_previous %}
+                            <a href="?page={{ paginator.previous_page_number }}">previous</a>
+                        {% endif %}
+
+                        <span class="current">
+                            Page {{ paginator.number }} of {{ paginator.paginator.num_pages }}.
+                        </span>
+
+                        {% if paginator.has_next %}
+                            <a href="?page={{ paginator.next_page_number }}">next</a>
+                        {% endif %}
+                    </span>
+                </div>
             </div>
         <!-- End content -->
         </div>
