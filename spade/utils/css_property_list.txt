@@ -9,7 +9,8 @@
 # equivalence table should aid us to look for properties as they
 # become used in the wild.
 #
-# NOTE: We have to update this file each time a property name changes.
+# NOTE: We have to update this file each time a property name changes,
+#       and each time new properties are created.
 #
 # The format is:
 # <moz-prefix prop><space><webkit-prefix-prop><space><unprefixed prop>
