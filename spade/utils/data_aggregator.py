@@ -28,7 +28,7 @@ class DataAggregator(object):
         Given a particular batch, aggregate the stats from its children into
         the data model and return it
         """
-        sitescans = model.SiteScan.objects.filter(batch=batch)
+        sitescans = model.SiteScan.objects.filter(batch=batch).iterator()
 
         # Initialize counters
         total_rules = 0
@@ -65,7 +65,7 @@ class DataAggregator(object):
         Given a particular sitescan, aggregate the stats from its children into
         the data model and return it
         """
-        urlscans = model.URLScan.objects.filter(site_scan=sitescan)
+        urlscans = model.URLScan.objects.filter(site_scan=sitescan).iterator()
 
         # Initialize counters
         total_rules = 0
@@ -99,7 +99,7 @@ class DataAggregator(object):
         Given a particular urlscan, aggregate the stats from its children into
         the data model and return it
         """
-        urlcontents = model.URLContent.objects.filter(url_scan=urlscan)
+        urlcontents = model.URLContent.objects.filter(url_scan=urlscan).iterator()
 
         # Initialize counters
         total_rules = 0
@@ -162,8 +162,8 @@ class DataAggregator(object):
         if not prop_name:
             return 0
         count = 0
-        for rule in css.cssrule_set.all():
-            for prop in rule.cssproperty_set.all():
+        for rule in css.cssrule_set.iterator():
+            for prop in rule.cssproperty_set.iterator():
                 if prop.full_name == prop_name:
                     count += 1
         return count
@@ -192,8 +192,8 @@ class DataAggregator(object):
 
         # find all webkit properties
         webkit_props = set()
-        for rule in linkedcss.cssrule_set.all():
-            for webkit_prop in rule.cssproperty_set.filter(prefix='-webkit-'):
+        for rule in linkedcss.cssrule_set.iterator():
+            for webkit_prop in rule.cssproperty_set.filter(prefix='-webkit-').iterator():
                 webkit_props.add(webkit_prop.full_name)
 
         for webkit_prop in webkit_props:
@@ -229,7 +229,7 @@ class DataAggregator(object):
         whether there is a UA sniffing issue
         """
         diff_util = HTMLDiff()
-        urlcontents = model.URLContent.objects.filter(url_scan=urlscan)
+        urlcontents = model.URLContent.objects.filter(url_scan=urlscan).iterator()
 
         # Sort scanned pages by mobile / desktop user agents and find the
         # "primary ua" (the one of interest, the one we want to see was sniffed
@@ -277,4 +277,3 @@ class DataAggregator(object):
             return False
 
         return not primary_sniff
-

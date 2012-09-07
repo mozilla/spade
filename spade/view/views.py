@@ -27,9 +27,11 @@ def get_ua_diffs(previous_batch, current_batch):
 
     # get a list of the urls scanned in the current batch
     urls = []
-    for site_scan in current_batch.sitescan_set.all():
-        for url in site_scan.urlscan_set.all():
+    for site_scan in current_batch.sitescan_set.iterator():
+        for url in site_scan.urlscan_set.iterator():
             urls.append(url)
+
+    # TODO: maybe use directly the iterators above and do not save the urls
 
     regressions = []
     fixes = []
