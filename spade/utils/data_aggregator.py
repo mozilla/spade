@@ -182,6 +182,8 @@ class DataAggregator(object):
         except model.LinkedCSSData.DoesNotExist:
             pass
 
+        print "Aggregating CSS data for %s" % linkedcss.url
+
         # Initialize counters
         total_rules = model.CSSRule.objects.filter(linkedcss=linkedcss).count()
         total_properties = model.CSSProperty.objects.filter(

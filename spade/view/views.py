@@ -10,6 +10,9 @@ from django.template.response import TemplateResponse
 from spade import model
 
 
+PAGINATION = 5
+
+
 def get_url_scan(url, batch):
     urls = model.URLScan.objects.filter(site_scan__batch__id=batch.id)
     urls = urls.filter(page_url=url.page_url)
@@ -56,7 +59,7 @@ def dashboard(request):
     batches = batches.order_by('-finish_time')
 
     # pagination
-    paginator = Paginator(batches, 5)
+    paginator = Paginator(batches, PAGINATION)
     page = request.GET.get('page')
     try:
         batches_pag = paginator.page(page)
@@ -118,22 +121,38 @@ def batch_report(request, batch_id):
         regressions, fixes = get_ua_diffs(prev, batch)
         ua_regressed = '%d' % len(regressions)
         ua_fixed = '%d' % len(fixes)
+        # TODO CSS regressions & fixed
 
     # find site_scans with UA errors
-    ua_issues_sites = model.SiteScan.objects.filter(batch__id=batch.id)
-    ua_issues_sites = ua_issues_sites.filter(sitescandata__ua_issues__gt=0)
+    site_scans = model.SiteScan.objects.filter(batch__id=batch.id)
+    ua_issues_sites = site_scans.filter(sitescandata__ua_issues__gt=0)
 
-    # pagination
-    paginator = Paginator(ua_issues_sites, 5)
+    # find site_scans with CSS issues
+    css_issues_sites = site_scans.filter(sitescandata__css_issues__gt=0)
+
+    # UA pagination
+    ua_paginator = Paginator(ua_issues_sites, PAGINATION)
     page = request.GET.get('page_ua')
     try:
-        ua_issues_pag = paginator.page(page)
+        ua_issues_pag = ua_paginator.page(page)
     except PageNotAnInteger:
         # If page is not an integer, deliver first page.
-        ua_issues_pag = paginator.page(1)
+        ua_issues_pag = ua_paginator.page(1)
     except EmptyPage:
         # If page is out of range (e.g. 9999), deliver last page of results.
-        ua_issues_pag = paginator.page(paginator.num_pages)
+        ua_issues_pag = ua_paginator.page(ua_paginator.num_pages)
+
+    # CSS pagination
+    css_paginator = Paginator(css_issues_sites, PAGINATION)
+    page = request.GET.get('page_css')
+    try:
+        css_issues_pag = css_paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        css_issues_pag = css_paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        css_issues_pag = css_paginator.page(css_paginator.num_pages)
 
     # display the data
     context.update({'scanned_total': batch_data.scanned_pages,
@@ -145,7 +164,10 @@ def batch_report(request, batch_id):
                    'css_issues_regressed': 'N/A',
                    'ua_issues_sites': ua_issues_pag.object_list,
                    'ua_issues_count': len(ua_issues_sites),
-                   'ua_issues_paginator': ua_issues_pag})
+                   'ua_issues_paginator': ua_issues_pag,
+                   'css_issues_sites': css_issues_pag.object_list,
+                   'css_issues_count': len(css_issues_sites),
+                   'css_issues_paginator': css_issues_pag})
     return TemplateResponse(request, "batch_report.html", context)
 
 
@@ -157,6 +179,6 @@ def site_report(request, site_id, user_agent="combined"):
                'url_count': site.urlscan_set.count(),
                'ua_count': site.batch.batchuseragent_set.count(),
                'uas': site.batch.batchuseragent_set.all(),
-               'css_issues_count': 'N/A'}
+               'css_issues_count': site.sitescandata.css_issues}
 
     return TemplateResponse(request, "site_report.html", context)

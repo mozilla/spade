@@ -259,14 +259,20 @@ class BatchData(models.Model):
 
     @property
     def css_issues_pctg(self):
-        if not self.scanned_pages:
-            return 0.
-        return self.css_issues * 100.0 / self.scanned_pages
+        total = 0
+        issues = 0
+        for linkedcss in self.batch.linkedcss_set.all():
+            data = linkedcss.linkedcssdata
+            total += data.num_properties
+            issues += data.css_issues
+        if total == 0:
+            return 0.0
+        return issues * 100.0 / total
 
     @property
     def ua_issues_pctg(self):
         if not self.scanned_pages:
-            return 0.
+            return 0.0
         return self.ua_issues * 100.0 / self.scanned_pages
 
 
