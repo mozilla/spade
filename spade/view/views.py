@@ -10,7 +10,9 @@ from django.template.response import TemplateResponse
 from spade import model
 
 
-PAGINATION = 5
+SHORT_PAGINATION = 5
+LONG_PAGINATION = 15
+
 
 
 def get_url_scan(url, batch):
@@ -61,7 +63,7 @@ def dashboard(request):
     batches = batches.order_by('-finish_time')
 
     # pagination
-    paginator = Paginator(batches, PAGINATION)
+    paginator = Paginator(batches, SHORT_PAGINATION)
     page = request.GET.get('page')
     try:
         batches_pag = paginator.page(page)
@@ -133,7 +135,7 @@ def batch_report(request, batch_id):
     css_issues_sites = site_scans.filter(sitescandata__css_issues__gt=0)
 
     # UA pagination
-    ua_paginator = Paginator(ua_issues_sites, PAGINATION)
+    ua_paginator = Paginator(ua_issues_sites, SHORT_PAGINATION)
     page = request.GET.get('page_ua')
     try:
         ua_issues_pag = ua_paginator.page(page)
@@ -145,7 +147,7 @@ def batch_report(request, batch_id):
         ua_issues_pag = ua_paginator.page(ua_paginator.num_pages)
 
     # CSS pagination
-    css_paginator = Paginator(css_issues_sites, PAGINATION)
+    css_paginator = Paginator(css_issues_sites, SHORT_PAGINATION)
     page = request.GET.get('page_css')
     try:
         css_issues_pag = css_paginator.page(page)
@@ -176,11 +178,42 @@ def batch_report(request, batch_id):
 def site_report(request, site_id, user_agent="combined"):
     """ Site report view """
     site = get_object_or_404(model.SiteScan, id=site_id)
-    context = {'site_id': site_id,
+
+    # dict of 3-sized list like 'prop': [moz_count, webkit_count, no_pref_count]
+    props = {}
+    # need to do this nesting because of the way the DB is structured
+    for urlscan in site.urlscan_set.iterator():
+        for content in urlscan.urlcontent_set.iterator():
+            for linkedcss in content.linkedcss_set.iterator():
+                for cssprop in linkedcss.csspropertydata_set.iterator():
+                    if cssprop.name not in props:
+                        props[cssprop.name] = [0, 0, 0]
+                    counts = props[cssprop.name]
+                    counts[0] += cssprop.moz_count
+                    counts[1] += cssprop.webkit_count
+                    counts[2] += cssprop.unpref_count
+    # easier to paginate
+    props = props.items()
+
+    # pagination
+    paginator = Paginator(props, LONG_PAGINATION)
+    page = request.GET.get('page')
+    try:
+        props_pag = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        props_pag = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        props_pag = paginator.page(paginator.num_pages)
+
+    context = {'site': site,
                'date': site.batch.finish_time,
                'url_count': site.urlscan_set.count(),
                'ua_count': site.batch.batchuseragent_set.count(),
                'uas': site.batch.batchuseragent_set.all(),
-               'css_issues_count': site.sitescandata.css_issues}
+               'css_issues_count': site.sitescandata.css_issues,
+               'props_data': props_pag.object_list,
+               'props_paginator': props_pag}
 
     return TemplateResponse(request, "site_report.html", context)

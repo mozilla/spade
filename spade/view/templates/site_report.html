@@ -32,8 +32,8 @@
 <div class="right-column">
     <div class="right-content">
 
-        <h2 class="content-title">[MOCK] Google.com Statistics</h2>
-         <form class="sort-by-useragent">
+        <h2 class="content-title">{{ site.site_url }} Statistics</h2>
+<!--          <form class="sort-by-useragent">
             <label class="filter-dropdown-label">Filter by user agents:</label>
             <select>
                 <option default>Combined View</option>
@@ -42,38 +42,45 @@
                 <option>Firefox / 11.0 (Fennec)</option>
                 <option>Firefox / 11.0 (iPhone)</option>
             </select>
-        </form>
+        </form> -->
         <div class="content">
             <!-- Put table here -->
             <div class="info-table" style="margin-top:20px;">
                 <table class="site-table">
                     <tr>
                         <th>Property used</th>
-                        <th>-moz</th>
-                        <th>-webkit</th>
+                        <th>Mozilla</th>
+                        <th>Webkit</th>
                         <th>no prefix</th>
                     </tr>
-                    <tr class="bad">
-                        <td >box-shadow</td>
-                        <td>0</td>
-                        <td>23</td>
-                        <td>0</td>
-                    </tr>
-                    <tr class="good">
-                        <td>border-radius</td>
-                        <td>23</td>
-                        <td>23</td>
-                        <td>0</td>
-                    </tr>
-                    <tr class="good">
-                        <td>canvas</td>
-                        <td>0</td>
-                        <td>0</td>
-                        <td>1</td>
-                    </tr>
-
+                    {% for prop, counts in props_data %}
+                        {% if counts.0 < counts.1 %}
+                            <tr class="bad">
+                        {% else %}
+                            <tr class="good">
+                        {% endif %}
+                        <td>{{ prop }}</td>
+                            {% for count in counts %}
+                                <td>{{ count }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
                 </table>
-                <div class="pagination">« Prev | 1 | 2 | 3 | 4 | Next »</div>
+                <div class="pagination">
+                    <span class="step-links">
+                        {% if props_paginator.has_previous %}
+                            <a href="?page={{ props_paginator.previous_page_number }}">previous</a>
+                        {% endif %}
+
+                        <span class="current">
+                            Page {{ props_paginator.number }} of {{ props_paginator.paginator.num_pages }}.
+                        </span>
+
+                        {% if props_paginator.has_next %}
+                            <a href="?page={{ props_paginator.next_page_number }}">next</a>
+                        {% endif %}
+                    </span>
+                </div>
             </div>
 
         <!-- End content -->
