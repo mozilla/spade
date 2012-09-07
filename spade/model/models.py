@@ -205,7 +205,6 @@ class CSSRule(models.Model):
         return self.selector
 
 
-
 class CSSProperty(models.Model):
     """ A CSS property belonging to a rule """
     rule = models.ForeignKey(CSSRule)
@@ -218,6 +217,26 @@ class CSSProperty(models.Model):
 
         return ret
 
+    @property
+    def full_name(self):
+        return '%s%s' % (self.prefix, self.name)
+
+
+class CSSPropertyData(models.Model):
+    """ Aggregated data for fast outputting """
+    linkedcss = models.ForeignKey(LinkedCSS)
+    name = models.CharField(max_length=100)
+    moz_count = models.IntegerField(default=0)
+    webkit_count = models.IntegerField(default=0)
+    unpref_count = models.IntegerField(default=0)
+
+    def __unicode__(self):
+        return '%s: moz %d, webkit %d, unpref %d' %\
+            (self.name, self.moz_count, self.webkit_count, self.unpref_count)
+
+    @property
+    def supports_moz(self):
+        return self.moz_count >= self.webkit_count
 
 """ Aggregate Data Models """
 
@@ -237,20 +256,31 @@ class BatchData(models.Model):
     # Aggregate number of UA issues in this batch
     ua_issues = models.IntegerField()
 
+    css_issues_regressed = models.IntegerField(null=True)
+    css_issues_fixed = models.IntegerField(null=True)
+    ua_issues_regressed = models.IntegerField(null=True)
+    ua_issues_fixed = models.IntegerField(null=True)
+
     def __unicode__(self):
         return u"'{0}' has ({1}) css issues and ({2}) ua issues".format(
             self.batch, self.css_issues, self.ua_issues)
 
     @property
     def css_issues_pctg(self):
-        if not self.scanned_pages:
-            return 0.
-        return self.css_issues * 100.0 / self.scanned_pages
+        total = 0
+        issues = 0
+        for linkedcss in self.batch.linkedcss_set.all():
+            data = linkedcss.linkedcssdata
+            total += data.num_properties
+            issues += data.css_issues
+        if total == 0:
+            return 0.0
+        return issues * 100.0 / total
 
     @property
     def ua_issues_pctg(self):
         if not self.scanned_pages:
-            return 0.
+            return 0.0
         return self.ua_issues * 100.0 / self.scanned_pages
 
 
