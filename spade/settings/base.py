@@ -9,9 +9,10 @@ from os import environ
 BASE_PATH = dirname(dirname(dirname(abspath(__file__))))
 environ['SCRAPY_SETTINGS_MODULE'] = 'spade.scraper.settings'
 
+CSS_PROPS_FILE = join(BASE_PATH, 'spade', 'utils', 'css_property_list.txt')
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
-
 
 ADMINS = [
     ("Sam Liu", "sliu@mozilla.com"),

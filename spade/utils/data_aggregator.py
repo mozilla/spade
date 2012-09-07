@@ -6,6 +6,8 @@ from django.db import transaction
 
 from spade import model
 from spade.utils.html_diff import HTMLDiff
+from spade.utils.read_props import read_props
+from spade.settings.base import CSS_PROPS_FILE
 
 # This constant determines the lowest similarity bound for two pages to still
 # be considered the same content.
@@ -17,6 +19,9 @@ class AggregationError(Exception):
 
 
 class DataAggregator(object):
+    def __init__(self):
+        self.props = read_props(CSS_PROPS_FILE)
+
     @transaction.commit_on_success
     def aggregate_batch(self, batch):
         """
@@ -153,6 +158,16 @@ class DataAggregator(object):
             css_issues=total_css_issues,
             )
 
+    def get_prop_count(self, css, prop_name):
+        if not prop_name:
+            return 0
+        count = 0
+        for rule in css.cssrule_set.all():
+            for prop in rule.cssproperty_set.all():
+                if prop.full_name == prop_name:
+                    count += 1
+        return count
+
     def aggregate_linkedcss(self, linkedcss):
         """
         Given a particular linkedcss, aggregate the stats from its children
@@ -173,7 +188,30 @@ class DataAggregator(object):
             rule__linkedcss=linkedcss).count()
         total_css_issues = 0
 
-        # TODO: Detect how many css issues exist.
+        # find all webkit properties
+        webkit_props = set()
+        for rule in linkedcss.cssrule_set.all():
+            for webkit_prop in rule.cssproperty_set.filter(prefix='-webkit-'):
+                webkit_props.add(webkit_prop.full_name)
+
+        for webkit_prop in webkit_props:
+            name = webkit_prop[8:]  # strip away the prefix
+            data = model.CSSPropertyData(linkedcss=linkedcss, name=name)
+            data.webkit_count = self.get_prop_count(linkedcss, webkit_prop)
+            if webkit_prop not in self.props:
+                total_css_issues += 1
+                data.moz_count = 0
+                data.unpref_count = 0
+                data.save()
+                continue
+            moz_equiv = self.props[webkit_prop][0]
+            unpref_equiv = self.props[webkit_prop][1]
+            data.moz_count = self.get_prop_count(linkedcss, moz_equiv)
+            data.unpref_count = self.get_prop_count(linkedcss, unpref_equiv)
+            data.save()
+
+            if data.webkit_count > data.moz_count:
+                total_css_issues += 1
 
         # Create this linkedcss's data model
         return model.LinkedCSSData.objects.create(

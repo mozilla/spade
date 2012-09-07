@@ -205,7 +205,6 @@ class CSSRule(models.Model):
         return self.selector
 
 
-
 class CSSProperty(models.Model):
     """ A CSS property belonging to a rule """
     rule = models.ForeignKey(CSSRule)
@@ -217,6 +216,23 @@ class CSSProperty(models.Model):
         ret = u"%s%s: %s" % (self.prefix, self.name, self.value)
 
         return ret
+
+    @property
+    def full_name(self):
+        return '%s%s' % (self.prefix, self.name)
+
+
+class CSSPropertyData(models.Model):
+    """ Aggregated data for fast outputting """
+    linkedcss = models.ForeignKey(LinkedCSS)
+    name = models.CharField(max_length=100)
+    moz_count = models.IntegerField(default=0)
+    webkit_count = models.IntegerField(default=0)
+    unpref_count = models.IntegerField(default=0)
+
+    def __unicode__(self):
+        return '%s: moz %d, webkit %d, unpref %d' %\
+            (self.name, self.moz_count, self.webkit_count, self.unpref_count)
 
 
 """ Aggregate Data Models """
