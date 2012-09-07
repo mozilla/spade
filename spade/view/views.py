@@ -14,47 +14,10 @@ SHORT_PAGINATION = 5
 LONG_PAGINATION = 15
 
 
-
-def get_url_scan(url, batch):
-    urls = model.URLScan.objects.filter(site_scan__batch__id=batch.id)
-    urls = urls.filter(page_url=url.page_url)
-    if urls.count():
-        return urls[0]
-    return None
-
-
-def get_ua_diffs(previous_batch, current_batch):
-    """ Returns a 2-tuple containing a list of regressions
-    and a list of fixes """
-
-    # get a list of the urls scanned in the current batch
-    urls = []
-    for site_scan in current_batch.sitescan_set.iterator():
-        for url in site_scan.urlscan_set.iterator():
-            urls.append(url)
-
-    # TODO: maybe use directly the iterators above and do not save the urls
-
-    regressions = []
-    fixes = []
-    for url in urls:
-        prev = get_url_scan(url, previous_batch)
-        if not prev:
-            continue
-        if not prev.urlscandata.ua_issue and url.urlscandata.ua_issue:
-            regressions.append(url)
-        if prev.urlscandata.ua_issue and not url.urlscandata.ua_issue:
-            fixes.append(url)
-
-    return (regressions, fixes)
-
-
-def get_previous_batch(batch):
-    prev_batches = model.Batch.objects.filter(finish_time__lt=batch.finish_time)
-    prev = prev_batches.order_by('-finish_time')[:1]
-    if prev:
-        return prev[0]
-    return None
+def string_repr(int_data):
+    if int_data is None:
+        return 'N/A'
+    return '%d' % int_data
 
 
 def dashboard(request):
@@ -77,24 +40,20 @@ def dashboard(request):
 
     batches_data = []
     for batch in batches:
-
-        ua_regressed = 'N/A'
-        ua_fixed = 'N/A'
-
-        prev = get_previous_batch(batch)
-        if prev and prev.data_aggregated:
-            regressions, fixes = get_ua_diffs(prev, batch)
-            ua_regressed = '%d' % len(regressions)
-            ua_fixed = '%d' % len(fixes)
-
         batch_data = batch.batchdata
+
+        ua_regressed = string_repr(batch_data.ua_issues_regressed)
+        ua_fixed = string_repr(batch_data.ua_issues_fixed)
+        css_issues_regressed = string_repr(batch_data.css_issues_regressed)
+        css_issues_fixed = string_repr(batch_data.css_issues_fixed)
+
         batches_data.append({
             'id': batch.id,
             'finish_time': batch.finish_time,
             'ua_issues_fixed': ua_fixed,
-            'css_issues_fixed': 'N/A',
+            'css_issues_fixed': css_issues_fixed,
             'ua_issues_regressed': ua_regressed,
-            'css_issues_regressed': 'N/A',
+            'css_issues_regressed': css_issues_regressed,
             'ua_issue_percent': batch_data.ua_issues_pctg,
             'css_issue_percent': batch_data.css_issues_pctg,
         })
@@ -116,16 +75,10 @@ def batch_report(request, batch_id):
         return TemplateResponse(request, "batch_report_pending.html", context)
     batch_data = batch.batchdata
 
-    ua_regressed = 'N/A'
-    ua_fixed = 'N/A'
-
-    # find the previous batch and the diff data
-    prev = get_previous_batch(batch)
-    if prev and prev.data_aggregated:
-        regressions, fixes = get_ua_diffs(prev, batch)
-        ua_regressed = '%d' % len(regressions)
-        ua_fixed = '%d' % len(fixes)
-        # TODO CSS regressions & fixed
+    ua_regressed = string_repr(batch_data.ua_issues_regressed)
+    ua_fixed = string_repr(batch_data.ua_issues_fixed)
+    css_issues_regressed = string_repr(batch_data.css_issues_regressed)
+    css_issues_fixed = string_repr(batch_data.css_issues_fixed)
 
     # find site_scans with UA errors
     site_scans = model.SiteScan.objects.filter(batch__id=batch.id)
@@ -163,9 +116,9 @@ def batch_report(request, batch_id):
                    'css_issues_pctg': batch_data.css_issues_pctg,
                    'ua_issues_pctg': batch_data.ua_issues_pctg,
                    'ua_issues_fixed': ua_fixed,
-                   'css_issues_fixed': 'N/A',
+                   'css_issues_fixed': css_issues_fixed,
                    'ua_issues_regressed': ua_regressed,
-                   'css_issues_regressed': 'N/A',
+                   'css_issues_regressed': css_issues_regressed,
                    'ua_issues_sites': ua_issues_pag.object_list,
                    'ua_issues_count': len(ua_issues_sites),
                    'ua_issues_paginator': ua_issues_pag,

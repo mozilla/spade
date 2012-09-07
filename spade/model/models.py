@@ -234,6 +234,9 @@ class CSSPropertyData(models.Model):
         return '%s: moz %d, webkit %d, unpref %d' %\
             (self.name, self.moz_count, self.webkit_count, self.unpref_count)
 
+    @property
+    def supports_moz(self):
+        return self.moz_count >= self.webkit_count
 
 """ Aggregate Data Models """
 
@@ -252,6 +255,11 @@ class BatchData(models.Model):
 
     # Aggregate number of UA issues in this batch
     ua_issues = models.IntegerField()
+
+    css_issues_regressed = models.IntegerField(null=True)
+    css_issues_fixed = models.IntegerField(null=True)
+    ua_issues_regressed = models.IntegerField(null=True)
+    ua_issues_fixed = models.IntegerField(null=True)
 
     def __unicode__(self):
         return u"'{0}' has ({1}) css issues and ({2}) ua issues".format(

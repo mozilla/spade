@@ -18,6 +18,92 @@ class AggregationError(Exception):
     pass
 
 
+class DBUtils(object):
+    @staticmethod
+    def get_previous_batch(batch):
+        prev_batches = model.Batch.objects.filter(finish_time__lt=batch.finish_time)
+        prev = prev_batches.order_by('-finish_time')[:1]
+        if prev:
+            return prev[0]
+        return None
+
+    @staticmethod
+    def get_url_scan(url, batch):
+        urls = model.URLScan.objects.filter(site_scan__batch__id=batch.id)
+        urls = urls.filter(page_url=url.page_url)
+        if urls.count():
+            return urls[0]
+        return None
+
+    @staticmethod
+    def get_linkedcss(url, batch):
+        css = batch.linkedcss_set.filter(url=url)
+        if css.count():
+            return css[0]
+        return None
+
+    @staticmethod
+    def get_csspropdata(name, linkedcss):
+        props = linkedcss.csspropertydata_set.filter(name=name)
+        if props.count():
+            return props[0]
+        return None
+
+
+class RegressionHunter(object):
+    @staticmethod
+    def get_ua_diffs(previous_batch, current_batch):
+        """ Returns a 2-tuple containing a list of regressions
+        and a list of fixes """
+
+        # get a list of the urls scanned in the current batch
+        urls = []
+        for site_scan in current_batch.sitescan_set.iterator():
+            for url in site_scan.urlscan_set.iterator():
+                urls.append(url)
+
+        # TODO: maybe use directly the iterators above and do not save the urls
+
+        regressions = []
+        fixes = []
+        for url in urls:
+            prev = DBUtils.get_url_scan(url, previous_batch)
+            if not prev:
+                continue
+            if not prev.urlscandata.ua_issue and url.urlscandata.ua_issue:
+                regressions.append(url)
+            elif prev.urlscandata.ua_issue and not url.urlscandata.ua_issue:
+                fixes.append(url)
+
+        return (regressions, fixes)
+
+    @staticmethod
+    def get_css_diffs(previous_batch, current_batch):
+        """ Returns a 2-tuple containing a list of regressions
+        and a list of fixes """
+
+        regressions = []
+        fixes = []
+
+        # current linkedCSSs
+        for linkedcss in current_batch.linkedcss_set.iterator():
+            # find the equivalent linkedcss in the previous batch (if any)
+            prev = DBUtils.get_linkedcss(linkedcss.url, previous_batch)
+            if not prev:
+                continue
+            for prop_data in linkedcss.csspropertydata_set.iterator():
+                # find the equivalent prop_data in the prev linkedcss
+                prev_prop_data = DBUtils.get_csspropdata(prop_data.name, prev)
+                if not prev_prop_data:
+                    continue
+                if prev_prop_data.supports_moz and not prop_data.supports_moz:
+                    regressions.append(prop_data)
+                elif not prev_prop_data.supports_moz and prop_data.supports_moz:
+                    fixes.append(prop_data)
+
+        return (regressions, fixes)
+
+
 class DataAggregator(object):
     def __init__(self):
         self.props = read_props(CSS_PROPS_FILE)
@@ -47,7 +133,7 @@ class DataAggregator(object):
             total_ua_issues += sitescan_data.ua_issues
 
         # Actually update the batchdata field
-        model.BatchData.objects.create(
+        data = model.BatchData.objects.create(
             batch=batch,
             num_rules=total_rules,
             num_properties=total_properties,
@@ -55,6 +141,17 @@ class DataAggregator(object):
             css_issues=total_css_issues,
             ua_issues=total_ua_issues,
             )
+
+        # Count and store regressions and fixes
+        prev = DBUtils.get_previous_batch(batch)
+        if prev and prev.data_aggregated:
+            regressions, fixes = RegressionHunter.get_ua_diffs(prev, batch)
+            data.ua_issues_regressed = len(regressions)
+            data.ua_issues_fixed = len(fixes)
+            regressions, fixes = RegressionHunter.get_css_diffs(prev, batch)
+            data.css_issues_regressed = len(regressions)
+            data.css_issues_fixed = len(fixes)
+            data.save()
 
         # Mark the batch complete
         batch.data_aggregated = True
