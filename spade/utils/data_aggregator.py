@@ -153,7 +153,7 @@ class DataAggregator(object):
         # Create this urlcontent's data model
         return model.URLContentData.objects.create(
             urlcontent=urlcontent,
-            num_rules = total_rules,
+            num_rules=total_rules,
             num_properties=total_properties,
             css_issues=total_css_issues,
             )
