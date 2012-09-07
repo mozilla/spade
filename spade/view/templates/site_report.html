@@ -22,8 +22,8 @@
                     {% endfor %}
                 </ul>
                 <br/>
-                <li><span class="bad">{{ css_issues_count }}</span> CSS issues</li>
-                <li>[MOCK] <span class="bad">No</span> UA sniffing for fennec</li>
+                <li><span class={% if css_issues_count %}"bad"{% else %}"good"{% endif %}>{{ css_issues_count }}</span> CSS issues</li>
+                <!-- <li>[MOCK] <span class="bad">No</span> UA sniffing for fennec</li> -->
             </ul>
         </div>
 

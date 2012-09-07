@@ -15,8 +15,8 @@
             <ul class="summary">
                 <!-- Scan stats -->
                     <li><span class="good">{{ scanned_total }}</span> sites scanned</li>
-                    <li><span class="bad">{{ css_issues_pctg|floatformat:-2 }}</span>% sites had CSS issues</li>
-                    <li><span class="bad">{{ ua_issues_pctg|floatformat:-2 }}</span>% sites had UA issues</li>
+                    <li><span class={% if css_issues_pctg %}"bad"{% else %}"good"{% endif %}>{{ css_issues_pctg|floatformat:-2 }}</span>% sites had CSS issues</li>
+                    <li><span class={% if ua_issues_pctg %}"bad"{% else %}"good"{% endif %}>{{ ua_issues_pctg|floatformat:-2 }}</span>% sites had UA issues</li>
             </ul>
 
             <label class="nav-label">Since last scan:</label>
@@ -35,7 +35,7 @@
     <div class="right-content">
         <h2 class="content-title">Statistics from batch scanned on 07-31-2012</h2>
         <div class="content">
-            <h4>[<span class="bad">{{ css_issues_count }} site(s)</span>] with CSS issues:</h4>
+            <h4>[<span class={% if css_issues_count %}"bad"{% else %}"good"{% endif %}>{{ css_issues_count }} site(s)</span>] with CSS issues:</h4>
             <!-- Put table here -->
             <div class="info-table">
                 <table class="site-table">
@@ -69,7 +69,7 @@
                 </div>
             </div>
 
-            <h4>[<span class="bad">{{ ua_issues_count }} site(s)</span>] with UA issues:</h4>
+            <h4>[<span class={% if ua_issues_count %}"bad"{% else %}"good"{% endif %}>{{ ua_issues_count }} site(s)</span>] with UA issues:</h4>
             <!-- Put table here -->
             <div class="info-table">
                 <table class="site-table">
