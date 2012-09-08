@@ -2,6 +2,14 @@
 
 # Add some user-agent strings.
 
-./manage.py useragents --add "Mozilla/5.0 (Linux; U; Android 4.0.3; ko-kr; LG-L160L Build/IML74K) AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"
-./manage.py useragents --add "Mozilla/5.0 (Android; Linux armv7l; rv:9.0) Gecko/20111216 Firefox/9.0 Fennec/9.0" --primary
+# Add iPhone 3.0
+./manage.py useragents --add "Mozilla/5.0 (iPhone; U; CPU iPhone OS 3_0 like Mac OS X; en-us) AppleWebKit/528.18 (KHTML, like Gecko) Version/4.0 Mobile/7A341 Safari/528.16"
+
+# Add chrome android from galaxy nexus
+./manage.py useragents --add "Mozilla/5.0 (Linux; U; Android 4.0.4; Galaxy Nexus Build/IMM76B) AppleWebkit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.133 Mobile Safari/535.19"
+
+# Add fennec UA
+./manage.py useragents --add "Mozilla/5.0 (Android; Linux armv7l; rv:15.0) Gecko/20111216 Firefox/15.0 Fennec/15.0" --primary
+
+# Add desktop firefox
 ./manage.py useragents --add "Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120716 Firefox/15.0a2" --desktop
