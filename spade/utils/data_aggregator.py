@@ -157,6 +157,7 @@ class DataAggregator(object):
         batch.data_aggregated = True
         batch.save()
 
+    @transaction.commit_on_success
     def aggregate_sitescan(self, sitescan):
         """
         Given a particular sitescan, aggregate the stats from its children into
@@ -191,6 +192,7 @@ class DataAggregator(object):
             ua_issues=total_ua_issues,
             )
 
+    @transaction.commit_on_success
     def aggregate_urlscan(self, urlscan):
         """
         Given a particular urlscan, aggregate the stats from its children into
@@ -228,6 +230,7 @@ class DataAggregator(object):
             ua_issue=ua_issue,
             )
 
+    @transaction.commit_on_success
     def aggregate_urlcontent(self, urlcontent):
         """
         Given a particular urlcontent, aggregate the stats from its children
@@ -265,6 +268,7 @@ class DataAggregator(object):
                     count += 1
         return count
 
+    @transaction.commit_on_success
     def aggregate_linkedcss(self, linkedcss):
         """
         Given a particular linkedcss, aggregate the stats from its children
