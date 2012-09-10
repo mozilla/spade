@@ -2,7 +2,7 @@
 Class to perform data aggregation for completed scans
 
 """
-from django.db import transaction
+from django.db import transaction, reset_queries, close_connection
 
 from spade import model
 from spade.utils.html_diff import HTMLDiff
@@ -243,6 +243,11 @@ class DataAggregator(object):
         # Aggregate data for each linked css stylesheet
         for linkedcss in linkedstyles:
             linkedcss_data = self.aggregate_linkedcss(linkedcss)
+
+            # try to fix db errors
+            close_connection()
+            reset_queries()
+
             total_rules += linkedcss_data.num_rules
             total_properties += linkedcss_data.num_properties
             total_css_issues += linkedcss_data.css_issues

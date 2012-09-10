@@ -11,7 +11,7 @@ environ['SCRAPY_SETTINGS_MODULE'] = 'spade.scraper.settings'
 
 CSS_PROPS_FILE = join(BASE_PATH, 'spade', 'utils', 'css_property_list.txt')
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = [
