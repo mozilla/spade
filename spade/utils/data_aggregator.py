@@ -2,7 +2,7 @@
 Class to perform data aggregation for completed scans
 
 """
-from django.db import transaction, reset_queries, close_connection
+from django.db import transaction
 
 from spade import model
 from spade.utils.html_diff import HTMLDiff
@@ -157,6 +157,7 @@ class DataAggregator(object):
         batch.data_aggregated = True
         batch.save()
 
+    @transaction.commit_on_success
     def aggregate_sitescan(self, sitescan):
         """
         Given a particular sitescan, aggregate the stats from its children into
@@ -191,6 +192,7 @@ class DataAggregator(object):
             ua_issues=total_ua_issues,
             )
 
+    @transaction.commit_on_success
     def aggregate_urlscan(self, urlscan):
         """
         Given a particular urlscan, aggregate the stats from its children into
@@ -228,6 +230,7 @@ class DataAggregator(object):
             ua_issue=ua_issue,
             )
 
+    @transaction.commit_on_success
     def aggregate_urlcontent(self, urlcontent):
         """
         Given a particular urlcontent, aggregate the stats from its children
@@ -243,11 +246,6 @@ class DataAggregator(object):
         # Aggregate data for each linked css stylesheet
         for linkedcss in linkedstyles:
             linkedcss_data = self.aggregate_linkedcss(linkedcss)
-
-            # try to fix db errors
-            close_connection()
-            reset_queries()
-
             total_rules += linkedcss_data.num_rules
             total_properties += linkedcss_data.num_properties
             total_css_issues += linkedcss_data.css_issues
@@ -270,6 +268,7 @@ class DataAggregator(object):
                     count += 1
         return count
 
+    @transaction.commit_on_success
     def aggregate_linkedcss(self, linkedcss):
         """
         Given a particular linkedcss, aggregate the stats from its children
