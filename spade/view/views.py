@@ -113,6 +113,7 @@ def batch_report(request, batch_id):
 
     # display the data
     context.update({'scanned_total': batch_data.scanned_pages,
+                   'finish_time': batch.finish_time,
                    'css_issues_pctg': batch_data.css_issues_pctg,
                    'ua_issues_pctg': batch_data.ua_issues_pctg,
                    'ua_issues_fixed': ua_fixed,
