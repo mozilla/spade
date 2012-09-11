@@ -39,11 +39,12 @@
 -moz-border-image-slice -webkit-border-image-slice border-image-slice
 -moz-border-image-source -webkit-border-image-source border-image-source
 -moz-border-image-width -webkit-border-image-width border-image-width
--moz-border-bottom-left-radius -webkit-border-bottom-left-radius border-bottom-left-radius
--moz-border-bottom-right-radius -webkit-border-bottom-right-radius border-bottom-right-radius
+-moz-border-radius-bottomleft -webkit-border-bottom-left-radius border-bottom-left-radius
+-moz-border-radius-bottomright -webkit-border-bottom-right-radius border-bottom-right-radius
 -moz-border-radius -webkit-border-radius border-radius
--moz-border-top-right-radius -webkit-border-top-right-radius border-top-right-radius
--moz-border-top-left-radius -webkit-border-top-left-radius border-top-left-radius
+-moz-border-radius-topright -webkit-border-top-right-radius border-top-right-radius
+-moz-border-radius-topleft -webkit-border-top-left-radius border-top-left-radius
+-moz-box-shadow -webkit-box-shadow box-shadow
 -moz-box-sizing -webkit-box-sizing box-sizing
 -moz-clip-path -webkit-clip-path clip-path
 -moz-column-count -webkit-column-count column-count
