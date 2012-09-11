@@ -3,7 +3,7 @@ Item pipeline.
 
 """
 from django.core.files.base import ContentFile
-from hashlib import sha256
+from hashlib import sha256, sha1
 
 from spade import model
 from spade.utils.cssparser import CSSParser
@@ -18,6 +18,9 @@ class ScraperPipeline(object):
     def process_item(self, item, spider):
         """Called whenever an item is yielded by the spider"""
 
+        # hash the filename to prevent storing too-long file names
+        filename = sha1(item['filename']).hexdigest()
+
         # Javascript MIME types
         js_mimes = ('text/javascript',
                     'application/x-javascript',
@@ -31,12 +34,12 @@ class ScraperPipeline(object):
 
             # Store raw markup
             file_content = ContentFile(item['raw_content'])
-            urlcontent.raw_markup.save(item['filename'], file_content)
+            urlcontent.raw_markup.save(filename, file_content)
             urlcontent.raw_markup.close()
 
             # Store raw headers
             file_content = ContentFile(item['headers'])
-            urlcontent.headers.save(item['filename'], file_content)
+            urlcontent.headers.save(filename, file_content)
             urlcontent.headers.close()
 
             urlcontent.save()
@@ -54,7 +57,7 @@ class ScraperPipeline(object):
 
             # Store raw js
             file_content = ContentFile(item['raw_content'])
-            linkedjs.raw_js.save(item['filename'], file_content)
+            linkedjs.raw_js.save(filename, file_content)
             linkedjs.raw_js.close()
 
             linkedjs.save()
@@ -77,7 +80,7 @@ class ScraperPipeline(object):
 
             # Store raw css
             file_content = ContentFile(item['raw_content'])
-            linkedcss.raw_css.save(item['filename'], file_content)
+            linkedcss.raw_css.save(filename, file_content)
             linkedcss.raw_css.close()
 
             linkedcss.save()
