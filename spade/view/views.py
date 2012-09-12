@@ -135,17 +135,9 @@ def site_report(request, site_id, user_agent="combined"):
 
     # dict of 3-sized list like 'prop': [moz_count, webkit_count, no_pref_count]
     props = {}
-    # need to do this nesting because of the way the DB is structured
-    for urlscan in site.urlscan_set.iterator():
-        for content in urlscan.urlcontent_set.iterator():
-            for linkedcss in content.linkedcss_set.iterator():
-                for cssprop in linkedcss.csspropertydata_set.iterator():
-                    if cssprop.name not in props:
-                        props[cssprop.name] = [0, 0, 0]
-                    counts = props[cssprop.name]
-                    counts[0] += cssprop.moz_count
-                    counts[1] += cssprop.webkit_count
-                    counts[2] += cssprop.unpref_count
+    for data in site.csspropertydata_set.iterator():
+        props[data.name] = [data.moz_count, data.webkit_count, data.unpref_count]
+
     # easier to paginate
     props = props.items()
 

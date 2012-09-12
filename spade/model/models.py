@@ -224,7 +224,8 @@ class CSSProperty(models.Model):
 
 class CSSPropertyData(models.Model):
     """ Aggregated data for fast outputting """
-    linkedcss = models.ForeignKey(LinkedCSS)
+    linkedcsss = models.ManyToManyField(LinkedCSS, related_name='cssproperties')
+    sitescan = models.ForeignKey(SiteScan)
     name = models.CharField(max_length=100)
     moz_count = models.IntegerField(default=0)
     webkit_count = models.IntegerField(default=0)
@@ -237,6 +238,11 @@ class CSSPropertyData(models.Model):
     @property
     def supports_moz(self):
         return self.moz_count >= self.webkit_count
+
+    @property
+    def prefix_diff(self):
+        """ The higher this is, the worse the moz support is """
+        return self.webkit_count - self.moz_count
 
 """ Aggregate Data Models """
 
@@ -269,19 +275,27 @@ class BatchData(models.Model):
     def css_issues_pctg(self):
         total = 0
         issues = 0
-        for linkedcss in self.batch.linkedcss_set.all():
-            data = linkedcss.linkedcssdata
-            total += data.num_properties
-            issues += data.css_issues
+        for sitescan in self.batch.sitescan_set.iterator():
+            data = sitescan.sitescandata
+            total += 1
+            if data.css_issues:
+                issues += 1
         if total == 0:
             return 0.0
         return issues * 100.0 / total
 
     @property
     def ua_issues_pctg(self):
-        if not self.scanned_pages:
+        total = 0
+        issues = 0
+        for sitescan in self.batch.sitescan_set.iterator():
+            data = sitescan.sitescandata
+            total += 1
+            if data.ua_issues:
+                issues += 1
+        if total == 0:
             return 0.0
-        return self.ua_issues * 100.0 / self.scanned_pages
+        return issues * 100.0 / total
 
 
 class SiteScanData(models.Model):
