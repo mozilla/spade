@@ -43,8 +43,15 @@ class DBUtils(object):
         return None
 
     @staticmethod
-    def get_csspropdata(name, linkedcss):
-        props = linkedcss.csspropertydata_set.filter(name=name)
+    def get_sitescan(site_url, batch):
+        sitescan = batch.sitescan_set.filter(site_url=site_url)
+        if sitescan.count():
+            return sitescan[0]
+        return None
+
+    @staticmethod
+    def get_csspropdata(name, sitescan):
+        props = sitescan.csspropertydata_set.filter(name=name)
         if props.count():
             return props[0]
         return None
@@ -85,20 +92,30 @@ class RegressionHunter(object):
         regressions = []
         fixes = []
 
-        # current linkedCSSs
-        for linkedcss in current_batch.linkedcss_set.iterator():
-            # find the equivalent linkedcss in the previous batch (if any)
-            prev = DBUtils.get_linkedcss(linkedcss.url, previous_batch)
+        # check for every sitescan
+        for sitescan in current_batch.sitescan_set.iterator():
+            # find the equivalent sitescan in the previous batch (if any)
+            prev = DBUtils.get_sitescan(sitescan.site_url, previous_batch)
             if not prev:
                 continue
-            for prop_data in linkedcss.csspropertydata_set.iterator():
-                # find the equivalent prop_data in the prev linkedcss
+            for prop_data in sitescan.csspropertydata_set.iterator():
+                # find the equivalent prop_data in the prev sitescan
                 prev_prop_data = DBUtils.get_csspropdata(prop_data.name, prev)
                 if not prev_prop_data:
                     continue
+
+                # check to see if issue has been totally fixed / regressed
                 if prev_prop_data.supports_moz and not prop_data.supports_moz:
                     regressions.append(prop_data)
+                    continue
                 elif not prev_prop_data.supports_moz and prop_data.supports_moz:
+                    fixes.append(prop_data)
+                    continue
+
+                # check to see if issue has been partially fixed / regressed
+                if prev_prop_data.prefix_diff > prop_data.prefix_diff:
+                    regressions.append(prop_data)
+                elif prev_prop_data.prefix_diff < prop_data.prefix_diff:
                     fixes.append(prop_data)
 
         return (regressions, fixes)
@@ -178,9 +195,14 @@ class DataAggregator(object):
             total_rules += urlscan_data.num_rules
             total_properties += urlscan_data.num_properties
             total_pages_scanned += 1
-            total_css_issues += urlscan_data.css_issues
             if urlscan_data.ua_issue:
                 total_ua_issues += 1
+
+        # figure out the number of distinct css property issues
+        css_issues = 0
+        for prop_data in sitescan.csspropertydata_set.iterator():
+            if prop_data.moz_count < prop_data.webkit_count:
+                css_issues += 1
 
         # Create this sitescan's data model
         return model.SiteScanData.objects.create(
@@ -188,7 +210,7 @@ class DataAggregator(object):
             num_rules=total_rules,
             num_properties=total_properties,
             scanned_pages=total_pages_scanned,
-            css_issues=total_css_issues,
+            css_issues=css_issues,
             ua_issues=total_ua_issues,
             )
 
@@ -297,24 +319,32 @@ class DataAggregator(object):
             for webkit_prop in rule.cssproperty_set.filter(prefix='-webkit-').iterator():
                 webkit_props.add(webkit_prop.full_name)
 
+        sitescan = linkedcss.linked_from.all()[0].url_scan.site_scan
         for webkit_prop in webkit_props:
             name = webkit_prop[8:]  # strip away the prefix
-            data = model.CSSPropertyData(linkedcss=linkedcss, name=name)
-            data.webkit_count = self.get_prop_count(linkedcss, webkit_prop)
+            # check to see if we already have a cssprop data object for this
+            data = model.CSSPropertyData.objects.filter(name=name, sitescan=sitescan)
+            if len(data):
+                data = data[0]
+            else:
+                data = model.CSSPropertyData.objects.create(name=name, sitescan=sitescan)
+            data.linkedcsss.add(linkedcss)
+            webkit_count = self.get_prop_count(linkedcss, webkit_prop)
             if webkit_prop not in self.props:
-                total_css_issues += 1
-                data.moz_count = 0
-                data.unpref_count = 0
-                data.save()
-                continue
+                # just add it to self.props and go on as if it were there
+                self.props[webkit_prop] = ('-moz-%s' % name, name)
             moz_equiv = self.props[webkit_prop][0]
             unpref_equiv = self.props[webkit_prop][1]
-            data.moz_count = self.get_prop_count(linkedcss, moz_equiv)
-            data.unpref_count = self.get_prop_count(linkedcss, unpref_equiv)
-            data.save()
+            moz_count = self.get_prop_count(linkedcss, moz_equiv)
+            unpref_count = self.get_prop_count(linkedcss, unpref_equiv)
 
-            if data.webkit_count > data.moz_count:
+            if webkit_count > moz_count:
                 total_css_issues += 1
+
+            data.webkit_count += webkit_count
+            data.moz_count += moz_count
+            data.unpref_count += unpref_count
+            data.save()
 
         # Create this linkedcss's data model
         return model.LinkedCSSData.objects.create(
