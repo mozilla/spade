@@ -49,6 +49,7 @@ class BaseUserAgent(models.Model):
     )
     UA_TYPES = dict(UA_TYPE_CHOICES)
 
+    ua_human_name = models.CharField(max_length=50)
     ua_string = models.CharField(max_length=250)
     ua_type = models.IntegerField(max_length=1,
                                   choices=UA_TYPE_CHOICES,
@@ -59,7 +60,7 @@ class BaseUserAgent(models.Model):
         tags = self.UA_TYPES[self.ua_type]
         if self.primary_ua:
             tags += ", primary"
-        return u"(%s) %s" % (tags, self.ua_string)
+        return u"(%s) %s: '%s'" % (tags, self.ua_human_name, self.ua_string)
 
     class Meta:
         abstract = True

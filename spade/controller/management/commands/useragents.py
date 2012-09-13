@@ -27,6 +27,11 @@ class Command(BaseCommand):
                     dest='primary',
                     default=False,
                     help='Added user-agent will be primary mobile UA (the UA we want to be sure sites are sniffing for)'),
+        make_option('--name',
+                    action='store',
+                    dest='human_name',
+                    default='',
+                    help='Human readable name for UA string'),
         make_option('--desktop',
                     action='store_true',
                     dest='desktop',
@@ -37,6 +42,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         new = options.get('add')
+        human_name = options.get('human_name')
         remove = options.get('remove')
         primary = options.get('primary')
         desktop = options.get('desktop')
@@ -62,7 +68,7 @@ class Command(BaseCommand):
                 ua_type = UserAgent.MOBILE
 
             new_ua = UserAgent.objects.create(
-                ua_string=str(new), primary_ua=primary, ua_type=ua_type)
+                ua_string=str(new), ua_human_name=str(human_name), primary_ua=primary, ua_type=ua_type)
             self.stdout.write('Successfully inserted "%s"\n' % new_ua)
 
         elif remove:

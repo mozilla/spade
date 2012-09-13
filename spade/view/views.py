@@ -161,11 +161,25 @@ def site_report(request, site_id, user_agent="combined"):
         # If page is out of range (e.g. 9999), deliver last page of results.
         props_pag = paginator.page(paginator.num_pages)
 
+    # Get our list of uas from this batch, but use the human names for them
+    # instead of the full string, but default back to the full string if an error
+    batch_uas = site.batch.batchuseragent_set.all()
+    ua_human_names = []
+    for ua in batch_uas:
+        try:
+            u = model.UserAgent.objects.filter(ua_string__exact=ua.ua_string)[0]
+            if u.ua_human_name != '':
+                ua_human_names.append(u.ua_human_name)
+            else:
+                ua_human_names.append(u.ua_string)
+        except:
+            ua_human_names.append(ua.ua_string)
+
     context = {'site': site,
                'date': site.batch.finish_time,
                'url_count': site.urlscan_set.count(),
                'ua_count': site.batch.batchuseragent_set.count(),
-               'uas': site.batch.batchuseragent_set.all(),
+               'uas': ua_human_names,
                'css_issues_count': site.sitescandata.css_issues,
                'props_data': props_pag.object_list,
                'props_paginator': props_pag}
