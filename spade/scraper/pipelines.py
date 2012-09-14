@@ -19,7 +19,8 @@ class ScraperPipeline(object):
         """Called whenever an item is yielded by the spider"""
 
         # hash the filename to prevent storing too-long file names
-        filename = sha1(item['filename']).hexdigest()
+        hash_data = item['filename'] + item['user_agent'].ua_string
+        filename = sha1(hash_data).hexdigest()
 
         # Javascript MIME types
         js_mimes = ('text/javascript',
