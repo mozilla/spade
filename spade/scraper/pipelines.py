@@ -121,6 +121,7 @@ class ScraperPipeline(object):
                 ua_string=ua.ua_string,
                 primary_ua=ua.primary_ua,
                 ua_type=ua.ua_type,
+                ua_human_name=ua.ua_human_name
                 )
             spider.batch_user_agents.append(batch_user_agent)
 
