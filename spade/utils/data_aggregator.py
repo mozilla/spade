@@ -353,8 +353,20 @@ class DataAggregator(object):
         # find the main page urlscan
         urlscan = sitescan.urlscan_set.get(page_url=sitescan.site_url)
 
-        urlcontents = urlscan.urlcontent_set.all()
-        nr = urlcontents.count()
+        urlcontents = list(urlscan.urlcontent_set.all())
+        nr = len(urlcontents)
+
+        # if we have less urlcontents than UAs, check for redirects,
+        # like m.yahoo.com from yahoo.com
+        if nr < sitescan.batch.batchuseragent_set.count():
+            redirs = sitescan.urlscan_set.filter(redirected_from=
+                                                 sitescan.site_url)
+            if redirs.count():
+                mobile_homepage = redirs[0]
+                for content in mobile_homepage.urlcontent_set.iterator():
+                    urlcontents.append(content)
+        # update the number of urlcontents we need to check
+        nr = len(urlcontents)
 
         for i in xrange(nr):
             for j in xrange(i + 1, nr):

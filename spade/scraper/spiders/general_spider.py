@@ -114,6 +114,7 @@ class GeneralSpider(BaseSpider):
 
                     site_scan=sitescan,
                     page_url_hash=sha256(response.url).hexdigest(),
+                    redirected_from=response.meta.get('redirected_from', u''),
                     defaults={'page_url': response.url,
                               'timestamp': self.get_now_time()})
 
