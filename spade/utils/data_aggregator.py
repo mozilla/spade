@@ -327,7 +327,7 @@ class DataAggregator(object):
             moz_count = self.get_prop_count(linkedcss, moz_equiv)
             unpref_count = self.get_prop_count(linkedcss, unpref_equiv)
 
-            if webkit_count > moz_count:
+            if webkit_count > moz_count and webkit_count > unpref_count:
                 total_css_issues += 1
 
             data.webkit_count += webkit_count

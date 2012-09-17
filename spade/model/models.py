@@ -243,7 +243,8 @@ class CSSPropertyData(models.Model):
 
     @property
     def supports_moz(self):
-        return self.moz_count >= self.webkit_count
+        return (self.moz_count >= self.webkit_count or
+               self.unpref_count >= self.webkit_count)
 
     @property
     def prefix_diff(self):
