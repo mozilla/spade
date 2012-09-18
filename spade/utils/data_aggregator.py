@@ -350,10 +350,14 @@ class DataAggregator(object):
         ! Only checks the main (as in top level) page. !
         """
         diff_util = HTMLDiff()
-        # find the main page urlscan
-        urlscan = sitescan.urlscan_set.get(page_url=sitescan.site_url)
 
-        urlcontents = list(urlscan.urlcontent_set.all())
+        # find the main page urlscan (if any)
+        urlscans = sitescan.urlscan_set.filter(page_url=sitescan.site_url)
+        if urlscans.count():
+            urlcontents = list(urlscans[0].urlcontent_set.all())
+        else:
+            urlcontents = []
+
         nr = len(urlcontents)
 
         # if we have less urlcontents than UAs, check for redirects,
