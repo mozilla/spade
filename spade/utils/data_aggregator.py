@@ -382,3 +382,6 @@ class DataAggregator(object):
                                                 second_ua=content2.user_agent,
                                                 percentage=percentage)
         return False # FIXME!
+        # this needs to return True or False depending on the fact that we
+        # consider the site as having a UA sniffing issue or not
+        # this must be replaced after we agree on when a site has an UA issue
