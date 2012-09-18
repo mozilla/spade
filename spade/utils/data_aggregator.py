@@ -43,8 +43,8 @@ class DBUtils(object):
         return None
 
     @staticmethod
-    def get_sitescan(site_url, batch):
-        sitescan = batch.sitescan_set.filter(site_url=site_url)
+    def get_sitescan(site_url_hash, batch):
+        sitescan = batch.sitescan_set.filter(site_url_hash=site_url_hash)
         if sitescan.count():
             return sitescan[0]
         return None
@@ -63,24 +63,16 @@ class RegressionHunter(object):
         """ Returns a 2-tuple containing a list of regressions
         and a list of fixes """
 
-        # get a list of the urls scanned in the current batch
-        urls = []
-        for site_scan in current_batch.sitescan_set.iterator():
-            for url in site_scan.urlscan_set.iterator():
-                urls.append(url)
-
-        # TODO: maybe use directly the iterators above and do not save the urls
-
         regressions = []
         fixes = []
-        for url in urls:
-            prev = DBUtils.get_url_scan(url, previous_batch)
+        for site in current_batch.sitescan_set.iterator():
+            prev = DBUtils.get_sitescan(site.site_url_hash, previous_batch)
             if not prev:
                 continue
-            if not prev.urlscandata.ua_issue and url.urlscandata.ua_issue:
-                regressions.append(url)
-            elif prev.urlscandata.ua_issue and not url.urlscandata.ua_issue:
-                fixes.append(url)
+            if not prev.sitescandata.ua_issues and site.sitescandata.ua_issues:
+                regressions.append(site)
+            elif prev.sitescandata.ua_issues and not site.sitescandata.ua_issues:
+                fixes.append(site)
 
         return (regressions, fixes)
 
@@ -95,7 +87,7 @@ class RegressionHunter(object):
         # check for every sitescan
         for sitescan in current_batch.sitescan_set.iterator():
             # find the equivalent sitescan in the previous batch (if any)
-            prev = DBUtils.get_sitescan(sitescan.site_url, previous_batch)
+            prev = DBUtils.get_sitescan(sitescan.site_url_hash, previous_batch)
             if not prev:
                 continue
             for prop_data in sitescan.csspropertydata_set.iterator():
