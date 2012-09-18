@@ -16,9 +16,19 @@ from datetime import datetime
 from hashlib import sha256
 from urlparse import urljoin, urlparse
 import os
+import tldextract
 
 # Django model
 from spade import model
+
+
+# small helper function for finding only the domain of an url
+def get_domain(url):
+    try:
+        data = tldextract.extract(url)
+        return '%s.%s' % (data.domain, data.tld)
+    except:
+        return url
 
 
 class GeneralSpider(BaseSpider):
@@ -77,7 +87,7 @@ class GeneralSpider(BaseSpider):
             sitescan, ss_created = model.SiteScan.objects.get_or_create(
 
                 batch=self.batch,
-                site_url_hash=sha256(response.url).hexdigest(),
+                site_url_hash=sha256(get_domain(response.url)).hexdigest(),
                 defaults={'site_url': response.url})
 
             if not ss_created:
