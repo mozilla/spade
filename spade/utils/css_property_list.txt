@@ -99,3 +99,4 @@
 -moz--epub-writing-mode -webkit--epub-writing-mode -epub-writing-mode
 -moz--epub-caption-side -webkit--epub-caption-side -epub-caption-side
 -moz--epub-text-transform -webkit--epub-text-transform -epub-text-transform
+-moz-font-smooth -webkit-font-smoothing font-smooth

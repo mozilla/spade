@@ -57,10 +57,15 @@ class BaseUserAgent(models.Model):
     primary_ua = models.BooleanField(default=False)
 
     def __unicode__(self):
+        if self.ua_human_name:
+            return unicode(self.ua_human_name)
+        return unicode(self.ua_string)
+
+    def __repr__(self):
         tags = self.UA_TYPES[self.ua_type]
         if self.primary_ua:
             tags += ", primary"
-        return u"(%s) %s: '%s'" % (tags, self.ua_human_name, self.ua_string)
+        return u"<(%s) %s: '%s'>" % (tags, self.ua_human_name, self.ua_string)
 
     class Meta:
         abstract = True
@@ -133,6 +138,7 @@ class URLScan(models.Model):
 
     site_scan = models.ForeignKey(SiteScan, db_index=True)
     page_url = models.TextField()
+    redirected_from = models.TextField()
     timestamp = models.DateTimeField("timestamp")
 
     # See comment for site_url_hash -- same reason.
@@ -238,7 +244,8 @@ class CSSPropertyData(models.Model):
 
     @property
     def supports_moz(self):
-        return self.moz_count >= self.webkit_count
+        return (self.moz_count >= self.webkit_count or
+               self.unpref_count >= self.webkit_count)
 
     @property
     def prefix_diff(self):
@@ -311,8 +318,8 @@ class SiteScanData(models.Model):
     # Aggregate number of css issues from all scans in all user agents
     css_issues = models.IntegerField()
 
-    # Aggregate number of sniffing issues detected in this site scan
-    ua_issues = models.IntegerField()
+    # Does the website have issues sniffing our UA?
+    ua_issues = models.BooleanField(default=False)
 
 
     def __unicode__(self):
@@ -334,9 +341,6 @@ class URLScanData(models.Model):
     # Aggregate css_issues from all linked css stylesheets
     css_issues = models.IntegerField()
 
-    # If the url scan had a user agent issue (recognized non-primary mobile ua
-    # but not the primary mobile ua)
-    ua_issue = models.BooleanField(default=False)
 
     def __unicode__(self):
         return u"'{0}' has ({1}) css issues".format(
@@ -360,6 +364,21 @@ class URLContentData(models.Model):
     def __unicode__(self):
         return u"{0} has ({1}) css issues".format(
             self.urlcontent, self.css_issues)
+
+
+class MarkupDiff(models.Model):
+    """ How much two versions of the same website
+    served for different UAs are alike """
+
+    sitescan = models.ForeignKey(SiteScan)
+    first_ua = models.ForeignKey(BatchUserAgent, related_name='ua1')
+    second_ua = models.ForeignKey(BatchUserAgent, related_name='ua2')
+    percentage = models.FloatField(default=0.0)
+
+    def __unicode__(self):
+        s1 = unicode(self.first_ua)
+        s2 = unicode(self.second_ua)
+        return u'%s vs %s: %.2f%%' % (s1, s2, self.percentage)
 
 
 class LinkedCSSData(models.Model):

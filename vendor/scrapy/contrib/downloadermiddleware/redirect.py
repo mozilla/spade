@@ -50,6 +50,10 @@ class RedirectMiddleware(object):
         ttl = request.meta.setdefault('redirect_ttl', self.max_redirect_times)
         redirects = request.meta.get('redirect_times', 0) + 1
 
+        # save redirected_from in order to figure out mobile UA sniffing
+        if redirects == 1:
+            redirected.meta['redirected_from'] = request.url
+
         if ttl and redirects <= self.max_redirect_times:
             redirected.meta['redirect_times'] = redirects
             redirected.meta['redirect_ttl'] = ttl - 1

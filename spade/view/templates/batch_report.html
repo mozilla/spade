@@ -48,7 +48,7 @@
                     <tr>
                         <td>{{ site.site_url }}</td>
                         <td>{{ site.sitescandata.css_issues }}</td>
-                        <td class="report-link"><a href="{% url site_report site.id %}">View Site Evaluation Report</a></td>
+                        <td class="report-link"><a href="{% url site_css_report site.id %}">View Site Evaluation Report</a></td>
                     </tr>
                     {% endfor %}
                 </table>
@@ -69,7 +69,8 @@
                 </div>
             </div>
 
-            <h4>[<span class={% if ua_issues_count %}"bad"{% else %}"good"{% endif %}>{{ ua_issues_count }} site(s)</span>] with UA issues:</h4>
+            <!--<h4>[<span class={% if ua_issues_count %}"bad"{% else %}"good"{% endif %}>{{ ua_issues_count }} site(s)</span>] with UA issues:</h4>-->
+            <h4>[{{ ua_issues_count }} site(s)]:</h4>
             <!-- Put table here -->
             <div class="info-table">
                 <table class="site-table">
@@ -80,7 +81,7 @@
                     {% for site in ua_issues_sites %}
                     <tr>
                         <td>{{ site.site_url }}</td>
-                        <td class="report-link"><a href="{% url site_report site.id %}">View Site Evaluation Report</a></td>
+                        <td class="report-link"><a href="{% url site_ua_report site.id %}">View Site Evaluation Report</a></td>
                     </tr>
                     {% endfor %}
                 </table>
