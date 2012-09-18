@@ -130,7 +130,6 @@ class URLScanDataFactory(factory.Factory):
     num_rules = 5
     num_properties = 10
     css_issues = 3
-    ua_issue = True
 
 
 class URLContentDataFactory(factory.Factory):

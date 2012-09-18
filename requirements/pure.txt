@@ -7,3 +7,4 @@ zope.interface==4.0.1
 argparse==1.2.1
 cssutils==0.9.10b1
 django-inmemorystorage==0.1.1
+tldextract==1.1.2

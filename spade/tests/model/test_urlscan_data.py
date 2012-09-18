@@ -10,8 +10,7 @@ def test_unicode():
     urlscan = factories.URLScanFactory.create()
 
     urlscan_data = factories.URLScanDataFactory.create(urlscan=urlscan,
-                                                       css_issues=3,
-                                                       ua_issue=True)
+                                                       css_issues=3)
 
     assert unicode(urlscan_data) == (
         u"'http://www.mozilla.com' has (3) css issues")
