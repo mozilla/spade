@@ -147,7 +147,7 @@ class DataAggregator(object):
             total_properties += sitescan_data.num_properties
             total_pages_scanned += sitescan_data.scanned_pages
             total_css_issues += sitescan_data.css_issues
-            total_ua_issues += sitescan_data.ua_issues
+            total_ua_issues += 1 if sitescan_data.ua_issues else 0
 
         # Actually update the batchdata field
         data = model.BatchData.objects.create(
@@ -186,8 +186,6 @@ class DataAggregator(object):
         total_rules = 0
         total_properties = 0
         total_pages_scanned = 0
-        total_css_issues = 0
-        total_ua_issues = 0
 
         # Aggregate data for each urlscan
         for urlscan in urlscans:
@@ -195,14 +193,15 @@ class DataAggregator(object):
             total_rules += urlscan_data.num_rules
             total_properties += urlscan_data.num_properties
             total_pages_scanned += 1
-            if urlscan_data.ua_issue:
-                total_ua_issues += 1
 
         # figure out the number of distinct css property issues
         css_issues = 0
         for prop_data in sitescan.csspropertydata_set.iterator():
             if prop_data.moz_count < prop_data.webkit_count:
                 css_issues += 1
+
+        # figure out if the website does UA sniffing or not
+        ua_issues = self.detect_ua_issue(sitescan)
 
         # Create this sitescan's data model
         return model.SiteScanData.objects.create(
@@ -211,7 +210,7 @@ class DataAggregator(object):
             num_properties=total_properties,
             scanned_pages=total_pages_scanned,
             css_issues=css_issues,
-            ua_issues=total_ua_issues,
+            ua_issues=ua_issues,
             )
 
     @transaction.commit_on_success
@@ -226,15 +225,6 @@ class DataAggregator(object):
         total_rules = 0
         total_properties = 0
         total_css_issues = 0
-        ua_issue = False
-
-        # Detect user agent sniffing issues
-        try:
-            if self.detect_ua_issue(urlscan):
-                ua_issue = True
-        except AggregationError as e:
-            print "Unable to detect UA-sniffing issues for '%s': %s" % (
-                urlscan, e)
 
         # Aggregate data for each urlcontent
         for urlcontent in urlcontents:
@@ -249,7 +239,6 @@ class DataAggregator(object):
             num_rules=total_rules,
             num_properties=total_properties,
             css_issues=total_css_issues,
-            ua_issue=ua_issue,
             )
 
     @transaction.commit_on_success
@@ -338,7 +327,7 @@ class DataAggregator(object):
             moz_count = self.get_prop_count(linkedcss, moz_equiv)
             unpref_count = self.get_prop_count(linkedcss, unpref_equiv)
 
-            if webkit_count > moz_count:
+            if webkit_count > moz_count and webkit_count > unpref_count:
                 total_css_issues += 1
 
             data.webkit_count += webkit_count
@@ -354,57 +343,45 @@ class DataAggregator(object):
             css_issues=total_css_issues,
             )
 
-    def detect_ua_issue(self, urlscan):
+    def detect_ua_issue(self, sitescan):
         """
-        Given a urlscan, look at the different user agents used and determine
+        Given a sitescan, look at the different user agents used and determine
         whether there is a UA sniffing issue
+        ! Only checks the main (as in top level) page. !
         """
         diff_util = HTMLDiff()
-        urlcontents = model.URLContent.objects.filter(url_scan=urlscan).iterator()
+        # find the main page urlscan
+        urlscan = sitescan.urlscan_set.get(page_url=sitescan.site_url)
 
-        # Sort scanned pages by mobile / desktop user agents and find the
-        # "primary ua" (the one of interest, the one we want to see was sniffed
-        urls_with_desktop_ua = []
-        urls_with_mobile_ua = []
-        primary_page = None
+        urlcontents = list(urlscan.urlcontent_set.all())
+        nr = len(urlcontents)
 
-        for urlcontent in urlcontents:
-            if urlcontent.user_agent.primary_ua:
-                primary_page = urlcontent
-            elif urlcontent.user_agent.ua_type == model.BatchUserAgent.DESKTOP:
-                urls_with_desktop_ua.append(urlcontent)
-            elif urlcontent.user_agent.ua_type == model.BatchUserAgent.MOBILE:
-                urls_with_mobile_ua.append(urlcontent)
+        # if we have less urlcontents than UAs, check for redirects,
+        # like m.yahoo.com from yahoo.com
+        if nr < sitescan.batch.batchuseragent_set.count():
+            redirs = sitescan.urlscan_set.filter(redirected_from=
+                                                 sitescan.site_url)
+            if redirs.count():
+                mobile_homepage = redirs[0]
+                for content in mobile_homepage.urlcontent_set.iterator():
+                    urlcontents.append(content)
+        # update the number of urlcontents we need to check
+        nr = len(urlcontents)
 
-        # Ensure we successfully scanned / saved the page with the right user
-        # agents before continuing
-        if primary_page is None:
-            raise AggregationError("No primary mobile user agent!")
-        elif len(urls_with_mobile_ua) < 1:
-            raise AggregationError("No non-primary mobile user agents!")
-        elif len(urls_with_desktop_ua) < 1:
-            raise AggregationError("No desktop user agent!")
-
-        # Determine if mobile sniffing happens for other mobile UAs
-        mobile_sniff = True
-        for mobile_page in urls_with_mobile_ua:
-            for desktop_page in urls_with_desktop_ua:
-                similarity = diff_util.compare(mobile_page.raw_markup,
-                    desktop_page.raw_markup)
-                if similarity > SIMILARITY_CONSTANT:
-                    mobile_sniff = False
-
-        primary_sniff = False
-        if mobile_sniff:
-            # If other mobile UAs are sniffed, we want to ensure that we are
-            # being sniffed too.
-            for desktop_page in urls_with_desktop_ua:
-                similarity = diff_util.compare(primary_page.raw_markup,
-                    desktop_page.raw_markup)
-                if similarity < SIMILARITY_CONSTANT:
-                    primary_sniff = True
-        else:
-            # No issue if other mobiles aren't sniffed
-            return False
-
-        return not primary_sniff
+        for i in xrange(nr):
+            for j in xrange(i + 1, nr):
+                content1 = urlcontents[i]
+                content2 = urlcontents[j]
+                if content1 == content2:
+                    continue
+                similarity = diff_util.compare(content1.raw_markup,
+                                               content2.raw_markup)
+                percentage = similarity * 100
+                model.MarkupDiff.objects.create(sitescan=sitescan,
+                                                first_ua=content1.user_agent,
+                                                second_ua=content2.user_agent,
+                                                percentage=percentage)
+        return False # FIXME!
+        # this needs to return True or False depending on the fact that we
+        # consider the site as having a UA sniffing issue or not
+        # this must be replaced after we agree on when a site has an UA issue

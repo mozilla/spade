@@ -82,7 +82,9 @@ def batch_report(request, batch_id):
 
     # find site_scans with UA errors
     site_scans = model.SiteScan.objects.filter(batch__id=batch.id)
-    ua_issues_sites = site_scans.filter(sitescandata__ua_issues__gt=0)
+    #ua_issues_sites = site_scans.filter(sitescandata__ua_issues__gt=0)
+    # temp gte for proof of concept
+    ua_issues_sites = site_scans.filter(sitescandata__ua_issues__gte=0)
 
     # find site_scans with CSS issues
     css_issues_sites = site_scans.filter(sitescandata__css_issues__gt=0)
@@ -129,8 +131,8 @@ def batch_report(request, batch_id):
     return TemplateResponse(request, "batch_report.html", context)
 
 
-def site_report(request, site_id, user_agent="combined"):
-    """ Site report view """
+def site_css_report(request, site_id, user_agent="combined"):
+    """ Site css report view """
     site = get_object_or_404(model.SiteScan, id=site_id)
 
     # dict of 3-sized list like 'prop': [moz_count, webkit_count, no_pref_count]
@@ -153,19 +155,7 @@ def site_report(request, site_id, user_agent="combined"):
         # If page is out of range (e.g. 9999), deliver last page of results.
         props_pag = paginator.page(paginator.num_pages)
 
-    # Get our list of uas from this batch, but use the human names for them
-    # instead of the full string, but default back to the full string if an error
-    batch_uas = site.batch.batchuseragent_set.all()
-    ua_human_names = []
-    for ua in batch_uas:
-        try:
-            u = model.UserAgent.objects.filter(ua_string__exact=ua.ua_string)[0]
-            if u.ua_human_name != '':
-                ua_human_names.append(u.ua_human_name)
-            else:
-                ua_human_names.append(u.ua_string)
-        except:
-            ua_human_names.append(ua.ua_string)
+    ua_human_names = [unicode(ua) for ua in site.batch.batchuseragent_set.all()]
 
     context = {'site': site,
                'date': site.batch.finish_time,
@@ -176,4 +166,41 @@ def site_report(request, site_id, user_agent="combined"):
                'props_data': props_pag.object_list,
                'props_paginator': props_pag}
 
-    return TemplateResponse(request, "site_report.html", context)
+    return TemplateResponse(request, "site_css_report.html", context)
+
+
+def site_ua_report(request, site_id, user_agent="combined"):
+    """ Site ua report view """
+    site = get_object_or_404(model.SiteScan, id=site_id)
+
+    # list of 3-tuples like (first_ua, second_ua, similarity percentage)
+    data = []
+    for comparison in site.markupdiff_set.iterator():
+        data.append((unicode(comparison.first_ua),
+                    unicode(comparison.second_ua),
+                    '%.2f' % comparison.percentage))
+
+    # pagination
+    paginator = Paginator(data, LONG_PAGINATION)
+    page = request.GET.get('page')
+    try:
+        data_pag = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        data_pag = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        data_pag = paginator.page(paginator.num_pages)
+
+    ua_human_names = [unicode(ua) for ua in site.batch.batchuseragent_set.all()]
+
+    context = {'site': site,
+               'date': site.batch.finish_time,
+               'url_count': site.urlscan_set.count(),
+               'ua_count': site.batch.batchuseragent_set.count(),
+               'uas': ua_human_names,
+               'css_issues_count': site.sitescandata.css_issues,
+               'data': data_pag.object_list,
+               'data_paginator': data_pag}
+
+    return TemplateResponse(request, "site_ua_report.html", context)
