@@ -51,8 +51,13 @@ class RedirectMiddleware(object):
         redirects = request.meta.get('redirect_times', 0) + 1
 
         # save redirected_from in order to figure out mobile UA sniffing
+        # this is needed to detect the "mobile homepage"
+        redir_list = request.meta.get('redirect_urls', [])
         if redirects == 1:
-            redirected.meta['redirected_from'] = request.url
+            if redir_list:
+                redirected_meta['redirected_from'] = redir_list[0]
+            else:
+                redirected.meta['redirected_from'] = request.url
 
         if ttl and redirects <= self.max_redirect_times:
             redirected.meta['redirect_times'] = redirects

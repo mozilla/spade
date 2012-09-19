@@ -357,9 +357,9 @@ class DataAggregator(object):
             redirs = sitescan.urlscan_set.filter(redirected_from=
                                                  sitescan.site_url)
             if redirs.count():
-                mobile_homepage = redirs[0]
-                for content in mobile_homepage.urlcontent_set.iterator():
-                    urlcontents.append(content)
+                for mobile_homepage in redirs:
+                    for content in mobile_homepage.urlcontent_set.iterator():
+                        urlcontents.append(content)
         # update the number of urlcontents we need to check
         nr = len(urlcontents)
 
