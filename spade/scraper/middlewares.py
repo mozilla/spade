@@ -7,11 +7,8 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy import log
 
 
-
-def is_css_or_js(response_or_request):
-    exts = ["css", "js"]
-    return urlparse_cached(response_or_request).path.split(".")[-1] in exts
-
+def has_extension(response_or_request, ext):
+    return urlparse_cached(response_or_request).path.split(".")[-1] == ext
 
 
 class OffsiteMiddleware(offsite.OffsiteMiddleware):
@@ -32,11 +29,11 @@ class OffsiteMiddleware(offsite.OffsiteMiddleware):
 
 
     def should_follow(self, response, request):
-        """Only follow offsite links to CSS and JS files, not new pages."""
+        """Only follow offsite links to JS files, not new pages."""
         res_url_data = urlparse_cached(response)
         req_url_data = urlparse_cached(request)
 
-        if is_css_or_js(request):
+        if has_extension(request, 'js'):
             return True
 
         # Otherwise, ensure that the domains share the same root origin
@@ -45,12 +42,12 @@ class OffsiteMiddleware(offsite.OffsiteMiddleware):
 
 
 class DepthMiddleware(depth.DepthMiddleware):
-    """A depth middleware that exempts CSS and JS files."""
+    """A depth middleware that exempts JS files."""
     def process_spider_output(self, response, result, spider):
-        """Ignore depth restrictions for CSS/JS links."""
+        """Ignore depth restrictions for JS links."""
         check_depth = []
         for req in result or []:
-            if isinstance(req, Request) and is_css_or_js(req):
+            if isinstance(req, Request) and has_extension(req, 'js'):
                 yield req
             else:
                 check_depth.append(req)
