@@ -6,6 +6,7 @@ from datetime import datetime
 
 from django.db import models
 
+from spade.utils.misc import get_domain
 
 """ Naming scheme for local filesystem """
 
@@ -35,6 +36,10 @@ def headers_filename(instance, filename):
 def js_filename(instance, filename):
     return '/'.join(['js'] + get_file_path_components(instance, filename))
 
+
+def sitelist_filename(instance, filename):
+    return '/'.join(
+            ['sitelists'] + get_file_path_components(instance, filename))
 
 """ Models for scraper """
 
@@ -81,11 +86,40 @@ class Batch(models.Model):
     kickoff_time = models.DateTimeField("When crawl started")
     finish_time = models.DateTimeField("When crawl ended")
 
+    sitelist = models.FileField(
+        max_length=500, upload_to=sitelist_filename)
+
     # Flag to see if this particular batch's data has yet been aggregated. This
     # gets set to true at the end of the aggregation step. That way if the
     # aggregation step was interrupted this will still be false and the data
     # models will be regenerated at the next run of the aggregation function
     data_aggregated = models.BooleanField(default=False)
+
+    @property
+    def sites(self):
+        """ Returns a list of all the urls that were
+        passed in to the scraper """
+        data = [s.strip() for s in self.sitelist.readlines()]
+        self.sitelist.seek(0)  # make the file available for further reads
+        return data
+
+    @property
+    def bad_sites(self):
+        """ Returns a list of site urls that did not get scraped """
+        sitelist = self.sites
+        bad_sites = []
+        for sitescan in self.sitescan_set.iterator():
+            for site in sitelist:
+                if get_domain(site) == get_domain(sitescan.site_url):
+                    # if this domain is ok, take it out
+                    sitelist.remove(site)
+                    break
+            else:
+                bad_sites.append(site)
+        # now sitelist contains only "bad sites", since the good ones were
+        # removed in the loop
+        bad_sites.extend(sitelist)
+        return bad_sites
 
     def __unicode__(self):
         return u"Batch started at {0}".format(self.kickoff_time)
@@ -308,7 +342,7 @@ class BatchData(models.Model):
 
 class SiteScanData(models.Model):
     """ Aggregate data model for site scans """
-    sitescan = models.OneToOneField(SiteScan)
+    sitescan = models.OneToOneField(SiteScan, null=True)
 
     # Other metrics
     num_rules = models.IntegerField()

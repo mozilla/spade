@@ -10,25 +10,16 @@ from scrapy.http import Request
 from scrapy.selector import HtmlXPathSelector
 from scrapy.spider import BaseSpider
 from spade.scraper.items import MarkupItem
+from spade.utils.misc import get_domain
 
 # Utility Imports
 from datetime import datetime
 from hashlib import sha256
 from urlparse import urljoin, urlparse
 import os
-import tldextract
 
 # Django model
 from spade import model
-
-
-# small helper function for finding only the domain of an url
-def get_domain(url):
-    try:
-        data = tldextract.extract(url)
-        return '%s.%s' % (data.domain, data.tld)
-    except:
-        return url
 
 
 class GeneralSpider(BaseSpider):
