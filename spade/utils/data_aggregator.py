@@ -160,6 +160,11 @@ class DataAggregator(object):
         batch.data_aggregated = True
         batch.save()
 
+        # Print out the sites that did not get aggregated
+        for site in batch.sitescan_set.iterator():
+            if not site.urlscan_set.count():
+                print "%s did not get scraped & aggregated." % site.site_url
+
     @transaction.commit_on_success
     def aggregate_sitescan(self, sitescan):
         """
