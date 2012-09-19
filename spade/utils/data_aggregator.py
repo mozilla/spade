@@ -104,12 +104,6 @@ class RegressionHunter(object):
                     fixes.append(prop_data)
                     continue
 
-                # check to see if issue has been partially fixed / regressed
-                if prev_prop_data.prefix_diff > prop_data.prefix_diff:
-                    regressions.append(prop_data)
-                elif prev_prop_data.prefix_diff < prop_data.prefix_diff:
-                    fixes.append(prop_data)
-
         return (regressions, fixes)
 
 
