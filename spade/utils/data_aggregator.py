@@ -104,12 +104,6 @@ class RegressionHunter(object):
                     fixes.append(prop_data)
                     continue
 
-                # check to see if issue has been partially fixed / regressed
-                if prev_prop_data.prefix_diff > prop_data.prefix_diff:
-                    regressions.append(prop_data)
-                elif prev_prop_data.prefix_diff < prop_data.prefix_diff:
-                    fixes.append(prop_data)
-
         return (regressions, fixes)
 
 
@@ -165,6 +159,11 @@ class DataAggregator(object):
         # Mark the batch complete
         batch.data_aggregated = True
         batch.save()
+
+        # Print out the sites that did not get aggregated
+        for site in batch.sitescan_set.iterator():
+            if not site.urlscan_set.count():
+                print "%s did not get scraped & aggregated." % site.site_url
 
     @transaction.commit_on_success
     def aggregate_sitescan(self, sitescan):
