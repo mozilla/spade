@@ -24,7 +24,7 @@
                 <th>no prefix</th>
             </tr>
             {% for prop, counts in props_data %}
-                {% if counts.0 < counts.1 %}
+                {% if counts.0 < counts.1 and counts.2 < counts.1 %}
                     <tr class="bad">
                 {% else %}
                     <tr class="good">

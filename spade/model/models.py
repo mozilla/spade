@@ -172,7 +172,6 @@ class URLScan(models.Model):
 
     site_scan = models.ForeignKey(SiteScan, db_index=True)
     page_url = models.TextField()
-    redirected_from = models.TextField()
     timestamp = models.DateTimeField("timestamp")
 
     # See comment for site_url_hash -- same reason.
@@ -195,6 +194,7 @@ class URLContent(models.Model):
     """
     url_scan = models.ForeignKey(URLScan)
     user_agent = models.ForeignKey(BatchUserAgent)
+    redirected_from = models.TextField()
     raw_markup = models.FileField(
         max_length=500, upload_to=html_filename)
     headers = models.FileField(
