@@ -196,7 +196,7 @@ class DataAggregator(object):
         # figure out the number of distinct css property issues
         css_issues = 0
         for prop_data in sitescan.csspropertydata_set.iterator():
-            if prop_data.moz_count < prop_data.webkit_count:
+            if not prop_data.supports_moz:
                 css_issues += 1
 
         # figure out if the website does UA sniffing or not
