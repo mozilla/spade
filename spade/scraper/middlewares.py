@@ -29,11 +29,11 @@ class OffsiteMiddleware(offsite.OffsiteMiddleware):
 
 
     def should_follow(self, response, request):
-        """Only follow offsite links to JS files, not new pages."""
+        """Only follow offsite links to JS and CSS files, not new pages."""
         res_url_data = urlparse_cached(response)
         req_url_data = urlparse_cached(request)
 
-        if has_extension(request, 'js'):
+        if has_extension(request, 'js') or has_extension(request, 'css'):
             return True
 
         # Otherwise, ensure that the domains share the same root origin

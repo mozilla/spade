@@ -120,9 +120,14 @@ class DataAggregator(object):
         the data model and return it
         """
         # find all the invalid sitescans and delete them
+        # first, take out those with invalid domains
         requested_domains = [get_domain(s) for s in batch.sites]
         for sitescan in batch.sitescan_set.iterator():
             if not get_domain(sitescan.site_url) in requested_domains:
+                sitescan.delete()
+        # then take out those with no URLScans (a la mail.ru)
+        for sitescan in batch.sitescan_set.iterator():
+            if not sitescan.urlscan_set.count():
                 sitescan.delete()
 
         sitescans = model.SiteScan.objects.filter(batch=batch).iterator()
@@ -191,7 +196,7 @@ class DataAggregator(object):
         # figure out the number of distinct css property issues
         css_issues = 0
         for prop_data in sitescan.csspropertydata_set.iterator():
-            if prop_data.moz_count < prop_data.webkit_count:
+            if not prop_data.supports_moz:
                 css_issues += 1
 
         # figure out if the website does UA sniffing or not
@@ -357,12 +362,15 @@ class DataAggregator(object):
         # if we have less urlcontents than UAs, check for redirects,
         # like m.yahoo.com from yahoo.com
         if nr < sitescan.batch.batchuseragent_set.count():
-            redirs = sitescan.urlscan_set.filter(redirected_from=
-                                                 sitescan.site_url)
-            if redirs.count():
-                for mobile_homepage in redirs:
-                    for content in mobile_homepage.urlcontent_set.iterator():
-                        urlcontents.append(content)
+            # look in all urlscans
+            for urlscan in sitescan.urlscan_set.iterator():
+                # for urlcontents of pages redirected from the homepage
+                redirs = urlscan.urlcontent_set.filter(redirected_from=
+                                                       sitescan.site_url)
+                if not redirs.count():
+                    continue
+                for mobile_homepage_content in redirs:
+                        urlcontents.append(mobile_homepage_content)
         # update the number of urlcontents we need to check
         nr = len(urlcontents)
 
