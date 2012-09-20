@@ -286,3 +286,7 @@ tr .table-header, tr .table-header:hover{
     min-height: 100%;
     margin: 0 auto -33px;
 }
+
+div.urls {
+    overflow:scroll;
+}

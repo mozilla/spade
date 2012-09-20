@@ -82,6 +82,8 @@ def batch_report(request, batch_id):
 
     # find site_scans with UA errors
     site_scans = model.SiteScan.objects.filter(batch__id=batch.id)
+    # exclude not aggregated sites
+    site_scans = site_scans.exclude(sitescandata=None)
     #ua_issues_sites = site_scans.filter(sitescandata__ua_issues__gt=0)
     # temp gte for proof of concept
     ua_issues_sites = site_scans.filter(sitescandata__ua_issues__gte=0)
@@ -115,6 +117,7 @@ def batch_report(request, batch_id):
 
     # display the data
     context.update({'scanned_total': batch_data.scanned_pages,
+                   'bad_sites': batch.bad_sites,
                    'finish_time': batch.finish_time,
                    'css_issues_pctg': batch_data.css_issues_pctg,
                    'ua_issues_pctg': batch_data.ua_issues_pctg,

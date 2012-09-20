@@ -28,6 +28,12 @@
             </ul>
         </div>
 
+        <label class="nav-label">Sites that were not scraped:</label>
+        <div class="urls">
+            {% for site in bad_sites %}
+                <p> {{ site }} </p>
+            {% endfor %}
+        </div>
     </div>
 </div>
 
