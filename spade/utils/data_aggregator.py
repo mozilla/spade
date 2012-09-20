@@ -6,8 +6,10 @@ from django.db import transaction
 
 from spade import model
 from spade.utils.html_diff import HTMLDiff
+from spade.utils.misc import get_domain
 from spade.utils.read_props import read_props
 from spade.settings.base import CSS_PROPS_FILE
+
 
 # This constant determines the lowest similarity bound for two pages to still
 # be considered the same content.
@@ -117,6 +119,12 @@ class DataAggregator(object):
         Given a particular batch, aggregate the stats from its children into
         the data model and return it
         """
+        # find all the invalid sitescans and delete them
+        requested_domains = [get_domain(s) for s in batch.sites]
+        for sitescan in batch.sitescan_set.iterator():
+            if not get_domain(sitescan.site_url) in requested_domains:
+                sitescan.delete()
+
         sitescans = model.SiteScan.objects.filter(batch=batch).iterator()
 
         # Initialize counters
@@ -159,11 +167,6 @@ class DataAggregator(object):
         # Mark the batch complete
         batch.data_aggregated = True
         batch.save()
-
-        # Print out the sites that did not get aggregated
-        for site in batch.sitescan_set.iterator():
-            if not site.urlscan_set.count():
-                print "%s did not get scraped & aggregated." % site.site_url
 
     @transaction.commit_on_success
     def aggregate_sitescan(self, sitescan):
@@ -357,9 +360,9 @@ class DataAggregator(object):
             redirs = sitescan.urlscan_set.filter(redirected_from=
                                                  sitescan.site_url)
             if redirs.count():
-                mobile_homepage = redirs[0]
-                for content in mobile_homepage.urlcontent_set.iterator():
-                    urlcontents.append(content)
+                for mobile_homepage in redirs:
+                    for content in mobile_homepage.urlcontent_set.iterator():
+                        urlcontents.append(content)
         # update the number of urlcontents we need to check
         nr = len(urlcontents)
 

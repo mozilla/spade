@@ -111,6 +111,13 @@ class ScraperPipeline(object):
             kickoff_time=now, finish_time=now)
         spider.batch.save()
 
+        # save initial site list
+        file_content = ContentFile('\n'.join(spider.start_urls))
+        filename = str(spider.batch).replace(' ', '')
+        spider.batch.sitelist.save(filename, file_content)
+        spider.batch.sitelist.close()
+        spider.batch.save()
+
         spider.batch_user_agents = []
 
         # Give the spider a set of batch user agents, which preserve historical
