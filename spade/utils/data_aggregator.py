@@ -120,9 +120,14 @@ class DataAggregator(object):
         the data model and return it
         """
         # find all the invalid sitescans and delete them
+        # first, take out those with invalid domains
         requested_domains = [get_domain(s) for s in batch.sites]
         for sitescan in batch.sitescan_set.iterator():
             if not get_domain(sitescan.site_url) in requested_domains:
+                sitescan.delete()
+        # then take out those with no URLScans (a la mail.ru)
+        for sitescan in batch.sitescan_set.iterator():
+            if not sitescan.urlscan_set.count():
                 sitescan.delete()
 
         sitescans = model.SiteScan.objects.filter(batch=batch).iterator()
