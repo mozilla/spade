@@ -17,3 +17,4 @@ class MarkupItem(Item):
     urlscan = Field()
     url = Field()
     user_agent = Field()
+    redirected_from = Field()

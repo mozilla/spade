@@ -357,12 +357,15 @@ class DataAggregator(object):
         # if we have less urlcontents than UAs, check for redirects,
         # like m.yahoo.com from yahoo.com
         if nr < sitescan.batch.batchuseragent_set.count():
-            redirs = sitescan.urlscan_set.filter(redirected_from=
-                                                 sitescan.site_url)
-            if redirs.count():
-                for mobile_homepage in redirs:
-                    for content in mobile_homepage.urlcontent_set.iterator():
-                        urlcontents.append(content)
+            # look in all urlscans
+            for urlscan in sitescan.urlscan_set.iterator():
+                # for urlcontents of pages redirected from the homepage
+                redirs = urlscan.urlcontent_set.filter(redirected_from=
+                                                       sitescan.site_url)
+                if not redirs.count():
+                    continue
+                for mobile_homepage_content in redirs:
+                        urlcontents.append(mobile_homepage_content)
         # update the number of urlcontents we need to check
         nr = len(urlcontents)
 
