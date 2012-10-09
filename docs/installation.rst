@@ -17,4 +17,15 @@ Installation
 
 4. Run ``./manage.py syncdb`` to create the database tables.
 
+Vagrant Setup
+-------------
+
+1. Run ``vagrant up`` in a terminal. This will create a new VM that will have
+   Spade running on it. It will run the necessary `Puppet`_ scripts
+
+2. add ``127.0.0.1  dev.spade.org`` to /etc/hosts
+
+3. Navigate to http://dev.spade.org:8000 in your browser
+
 .. _virtualenv: http://www.virtualenv.org
+.. _Puppet: http://puppetlabs.com/

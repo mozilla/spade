@@ -36,3 +36,6 @@ spade/settings/local.py
 
 # generated files from storage
 media/*
+
+#Vagrant
+.vagrant
