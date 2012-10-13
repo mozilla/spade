@@ -119,7 +119,7 @@ class GeneralSpider(BaseSpider):
                               'timestamp': self.get_now_time()})
 
                 # Continue crawling
-                # Parse stylesheet links, scripts, and hyperlinks
+                # Parse stylesheet links and scripts
                 hxs = HtmlXPathSelector(response)
 
                 # Extract other target links
@@ -133,13 +133,8 @@ class GeneralSpider(BaseSpider):
                 except TypeError:
                     js_links = []
 
-                try:
-                    hyperlinks = hxs.select('//a/@href').extract()
-                except TypeError:
-                    hyperlinks = []
-
                 # Using a set removes duplicate links.
-                all_links = set(hyperlinks + js_links + css_links)
+                all_links = set(js_links + css_links)
 
                 # Examine links, yield requests if they are valid
                 for url in all_links:
