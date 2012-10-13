@@ -18,6 +18,9 @@ class ScraperPipeline(object):
     def process_item(self, item, spider):
         """Called whenever an item is yielded by the spider"""
 
+        # strip non ascii chars
+        item['raw_content'] = ''.join(c for c in item['raw_content'] if ord(c) < 128)
+
         # hash the filename to prevent storing too-long file names
         hash_data = item['filename'] + item['user_agent'].ua_string
         filename = sha1(hash_data).hexdigest()

@@ -21,6 +21,8 @@ class HTMLDiff(object):
             style=True, embedded=True)
 
         h = html.read()
+        # strip non ascii chars
+        h = ''.join(c for c in h if ord(c) < 128)
         html.seek(0)  # hack to have the file re-readable for further checking
 
         return cleaner.clean_html(h)
