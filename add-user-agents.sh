@@ -13,3 +13,6 @@
 
 # Add desktop firefox
 ./manage.py useragents --add "Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120716 Firefox/15.0a2" --desktop --name "Firefox Desktop 15.0 Windows"
+
+# Add android stock UA
+./manage.py useragents --add "Mozilla/5.0 (Linux; U; Android 4.0.2; en-US; Galaxy Nexus Build/ICL53F) AppleWebKit/535.7 (KHTML, like Gecko) CrMo/16.0.912.75 Mobile Safari/535.7" --name "Android ICS Stock"
