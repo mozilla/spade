@@ -289,5 +289,5 @@ tr .table-header, tr .table-header:hover{
 
 div.urls {
     overflow: scroll;
-    max-height: 100px;
+    max-height: 400px;
 }
