@@ -13,3 +13,6 @@
 
 # Add desktop firefox
 ./manage.py useragents --add "Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120716 Firefox/15.0a2" --desktop --name "Firefox Desktop 15.0 Windows"
+
+# Add firefox os
+./manage.py useragents --add "Mozilla/5.0 (Mobile; rv:15.0) Gecko/15.0 Firefox/15.0" --name "Firefox OS"
