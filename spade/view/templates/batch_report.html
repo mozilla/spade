@@ -31,7 +31,7 @@
         <label class="nav-label">Sites that were not scraped:</label>
         <div class="urls">
             {% for site in bad_sites %}
-                <p> {{ site }} </p>
+            <p><a href="{{ site }}">{{ site }}</a></p>
             {% endfor %}
         </div>
     </div>
