@@ -10,8 +10,8 @@ from django.template.response import TemplateResponse
 from spade import model
 
 
-SHORT_PAGINATION = 5
-LONG_PAGINATION = 15
+SHORT_PAGINATION = 50
+LONG_PAGINATION = 75
 
 
 def string_repr(int_data):
