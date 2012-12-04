@@ -10,27 +10,9 @@
 <a href="{% url dashboard %}" style="border:none;"><div class="logo"></div></a>
 <div class="primary-column">
     <div class="primary-content" style="margin-top:0px">
-    <!-- Begin rightside content -->
+        <!-- Begin rightside content -->
         <div class="content">
             <!-- Begin content -->
-            <!-- Display regression stuff-->
-            <div class="content-box">
-                <h4>Regression Analysis</h4>
-                <div class="charts">
-                    <div class="chart">
-                        <strong>UA Sniffing Chart</strong>
-                        <div class="chart-container" id="ua-sniff-chart">
-                        </div>
-                    </div>
-                    <div class="chart" >
-                        <strong>Prefixed CSS Usage</strong>
-                        <div class="chart-container" id="prefixed-feature-chart">
-                        </div>
-                    </div>
-                </div>
-                <br style="clear:both"/>
-            </div>
-            <script src="./static/js/index-charts.js" type="text/javascript"></script>
 
             <!-- Display table with scans -->
             <div class="content-box">
@@ -62,7 +44,7 @@
                 <div class="pagination">
                     <span class="step-links">
                         {% if paginator.has_previous %}
-                            <a href="?page={{ paginator.previous_page_number }}">previous</a>
+                        <a href="?page={{ paginator.previous_page_number }}">previous</a>
                         {% endif %}
 
                         <span class="current">
@@ -70,15 +52,15 @@
                         </span>
 
                         {% if paginator.has_next %}
-                            <a href="?page={{ paginator.next_page_number }}">next</a>
+                        <a href="?page={{ paginator.next_page_number }}">next</a>
                         {% endif %}
                     </span>
                 </div>
             </div>
-        <!-- End content -->
+            <!-- End content -->
         </div>
-    <!-- End primary-content-->
+        <!-- End primary-content-->
     </div>
-<!-- End primary-column-->
+    <!-- End primary-column-->
 </div>
 {% endblock content %}
