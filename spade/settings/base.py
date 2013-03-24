@@ -2,12 +2,12 @@
 Default Django Settings for Spade
 
 """
+import os
 from os.path import dirname, join, abspath
-from os import environ
 
 
 BASE_PATH = dirname(dirname(dirname(abspath(__file__))))
-environ['SCRAPY_SETTINGS_MODULE'] = 'spade.scraper.settings'
+os.environ['SCRAPY_SETTINGS_MODULE'] = 'spade.scraper.settings'
 
 CSS_PROPS_FILE = join(BASE_PATH, 'spade', 'utils', 'css_property_list.txt')
 
@@ -15,24 +15,24 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = [
-    ("Sam Liu", "sliu@mozilla.com"),
-    ("Carl Meyer", "cmeyer@mozilla.com"),
 ]
 
 MANAGERS = ADMINS
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',  # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'spade',                       # Or path to database file if using sqlite3.
-        'USER': '',                            # Not used with sqlite3.
-        'PASSWORD': '',                        # Not used with sqlite3.
-        'HOST': '',                            # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                            # Set to empty string for default. Not used with sqlite3.
+    "default": {
+        "ENGINE"   : "django.db.backends.mysql",
+        "NAME"     : os.environ.get("SPADE_DATABASE_NAME", ""),
+        "USER"     : os.environ.get("SPADE_DATABASE_USER", ""),
+        "PASSWORD" : os.environ.get("SPADE_DATABASE_PASSWORD", ""),
+        "HOST"     : os.environ.get("SPADE_DATABASE_HOST", "localhost"),
+        "PORT"     : os.environ.get("SPADE_DATABASE_PORT", ""),
         'OPTIONS': {
-            'init_command': 'SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; SET storage_engine=InnoDB;'},
+            "init_command": "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; SET storage_engine=InnoDB;"
+        },
     }
 }
+
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

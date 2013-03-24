@@ -13,7 +13,7 @@ class spade{
     }
 
     exec { "grant_mysql_database":
-        command => "mysql -uroot -B -e'GRANT ALL PRIVILEGES ON $DB_NAME.* TO $DB_USER@localhost # IDENTIFIED BY \"$DB_PASS\"'",
+        command => "mysql -uroot -B -e'GRANT ALL PRIVILEGES ON *.* TO $DB_USER@localhost IDENTIFIED BY \"$DB_PASS\"'",
         unless  => "mysql -uroot -B --skip-column-names mysql -e 'select user from user' | grep '$DB_USER'",
         require => Exec["create_mysql_database"];
     }
@@ -22,15 +22,5 @@ class spade{
         cwd => "$PROJ_DIR",
         command => "/home/vagrant/spade-venv/bin/python ./manage.py syncdb --noinput",
         require => Exec["grant_mysql_database"];
-    }
-
-    exec { "sql_migrate":
-        cwd => "$PROJ_DIR",
-        command => "python ./vendor/src/schematic/schematic migrations/",
-        require => [
-            Service["mysql"],
-            Package["python2.6-dev", "libapache2-mod-wsgi", "python-wsgi-intercept" ],
-            Exec["syncdb"]
-        ];
     }
 }
