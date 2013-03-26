@@ -2,6 +2,7 @@
 Class to perform data aggregation for completed scans
 
 """
+from itertools import combinations
 from django.db import transaction
 
 from spade import model
@@ -356,7 +357,6 @@ class DataAggregator(object):
             urlcontents = list(urlscans[0].urlcontent_set.all())
         else:
             urlcontents = []
-
         nr = len(urlcontents)
 
         # if we have less urlcontents than UAs, check for redirects,
@@ -373,21 +373,23 @@ class DataAggregator(object):
                         urlcontents.append(mobile_homepage_content)
         # update the number of urlcontents we need to check
         nr = len(urlcontents)
+        similarities = []
+        for content1, content2 in combinations(urlcontents, 2):
+            html1 = content1.raw_markup.read()
+            content1.raw_markup.seek(0)
 
-        for i in xrange(nr):
-            for j in xrange(i + 1, nr):
-                content1 = urlcontents[i]
-                content2 = urlcontents[j]
-                if content1 == content2:
-                    continue
-                similarity = diff_util.compare(content1.raw_markup,
-                                               content2.raw_markup)
-                percentage = similarity * 100
-                model.MarkupDiff.objects.create(sitescan=sitescan,
-                                                first_ua=content1.user_agent,
-                                                second_ua=content2.user_agent,
-                                                percentage=percentage)
-        return False # FIXME!
+            html2 = content2.raw_markup.read()
+            content2.raw_markup.seek(0)
+
+            similarity = diff_util.compare(html1, html2)
+
+            percentage = similarity * 100
+            model.MarkupDiff.objects.create(sitescan=sitescan,
+                                            first_ua=content1.user_agent,
+                                            second_ua=content2.user_agent,
+                                            percentage=percentage)
+        
+        return True  # FIXME!
         # this needs to return True or False depending on the fact that we
         # consider the site as having a UA sniffing issue or not
         # this must be replaced after we agree on when a site has an UA issue

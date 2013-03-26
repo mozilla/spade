@@ -259,15 +259,9 @@ def test_css_item_emission(spider, linked_css_request, css_headers, mock_css):
     item_expected['urlscan'] = mock_urlscan
     item_expected['url'] = mock_response.url
     item_expected['user_agent'] = mock_response.meta['user_agent']
+    item_expected['redirected_from'] = ''
 
-    item_collected = None
-    for item in pipeline_generator:
-        if isinstance(item, MarkupItem):
-            item_collected = item
-        else:
-            assert False
-
-    assert item_expected == item_collected
+    assert list(pipeline_generator) == [item_expected]
 
 
 def test_js_item_emission(spider, linked_js_request, js_headers, mock_js):
@@ -303,12 +297,6 @@ def test_js_item_emission(spider, linked_js_request, js_headers, mock_js):
     item_expected['urlscan'] = mock_urlscan
     item_expected['url'] = mock_response.url
     item_expected['user_agent'] = mock_response.meta['user_agent']
+    item_expected['redirected_from'] = ''
 
-    item_collected = None
-    for item in pipeline_generator:
-        if isinstance(item, MarkupItem):
-            item_collected = item
-        else:
-            assert False
-
-    assert item_expected == item_collected
+    assert list(pipeline_generator) == [item_expected]
