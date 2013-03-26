@@ -6,15 +6,19 @@ adjustment for a staging or production deployment.
 Copy local.sample.py to local.py and modify as needed.
 """
 # Local settings (overrides)
+import os
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'myuser_spade',               # Or path to database file if using sqlite3.
-        'USER': 'myuser',                     # Not used with sqlite3.
-        'PASSWORD': 'mypass',                 # Not used with sqlite3.
-        'HOST': '',                           # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                           # Set to empty string for default. Not used with sqlite3.
+    "default": {
+        "ENGINE"   : "django.db.backends.mysql",
+        "NAME"     : os.environ.get("SPADE_DATABASE_NAME", ""),
+        "USER"     : os.environ.get("SPADE_DATABASE_USER", ""),
+        "PASSWORD" : os.environ.get("SPADE_DATABASE_PASSWORD", ""),
+        "HOST"     : os.environ.get("SPADE_DATABASE_HOST", "localhost"),
+        "PORT"     : os.environ.get("SPADE_DATABASE_PORT", ""),
+        'OPTIONS': {
+            "init_command": "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; SET storage_engine=InnoDB;"
+        },
     }
 }
 
