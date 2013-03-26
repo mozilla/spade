@@ -86,6 +86,7 @@ def generate_offsite_testing_requests():
     mock_request.meta['referrer'] = 'http://test.com'
     yield mock_request
 
+
 def generate_crawl_html_requests():
     """Generate an arbitrary request"""
     mock_request = Request('http://test.com/hello.html')
@@ -168,9 +169,10 @@ def test_crawl_limit(spider, depth_middleware, mock_response, depth2_request):
     # Assert no requests went through
     assert len(results) == 0
 
+
 def test_linkedpages(spider, depth_middleware, mock_response, depth2_request):
     """
-    Ensure all CSS/JS requests are not filtered when linked from level 2 html
+    Ensure only JS requests are not filtered when linked from level 2 html
     pages
     """
     request_generator = generate_crawl_js_and_css_requests()
@@ -184,5 +186,4 @@ def test_linkedpages(spider, depth_middleware, mock_response, depth2_request):
     for req in remaining_requests:
         results.append(req)
 
-    # Assert both requests went through
-    assert len(results) == 2
+    assert len(results) == 1

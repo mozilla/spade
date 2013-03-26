@@ -25,7 +25,7 @@ def test_instantiation():
     assert ua.ua_type == BatchUserAgent.MOBILE
     assert ua.ua_type != BatchUserAgent.DESKTOP
     assert ua.ua_string == 'Mozilla / 5.0'
-    assert unicode(ua) == u"(mobile) Mozilla / 5.0"
+    assert unicode(ua) == u"Mozilla / 5.0"
 
 
 def test_length_toolong():
