@@ -4,8 +4,7 @@ from lxml.html.clean import Cleaner
 
 
 class HTMLDiff(object):
-    def __init__(self):
-        self.layers = 0
+    """Utility class that helps to test similarity of html fragments"""
 
     def compare(self, html1, html2):
         """Compare two html strings"""
@@ -16,13 +15,12 @@ class HTMLDiff(object):
         return s.ratio()
 
     def strip(self, html):
-        """Remove text elements from the html, as well as element attrs"""
-        cleaner = Cleaner(scripts=True, javascript=True, comments=True,
-            style=True, embedded=True)
+        """Strip out comments, scripts, styles, meta
+        from the html, as well as element attrs. For details see
+        http://lxml.de/api/lxml.html.clean.Cleaner-class.html"""
 
-        h = html.read()
+        cleaner = Cleaner(style=True, safe_attrs_only=True,
+                          page_structure=False, safe_attrs=[])
         # strip non ascii chars
-        h = ''.join(c for c in h if ord(c) < 128)
-        html.seek(0)  # hack to have the file re-readable for further checking
-
-        return cleaner.clean_html(h)
+        html = filter(lambda x: ord(x) < 128, html)
+        return cleaner.clean_html(html)
