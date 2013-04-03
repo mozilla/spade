@@ -39,3 +39,5 @@ media/*
 
 #Vagrant
 .vagrant
+
+.DS_Store

@@ -8,10 +8,16 @@ from django.db import IntegrityError
 from spade.model.models import UserAgent
 
 
-def test_unicode():
+def test_unicode_human_name():
     """Unicode representation of a user agent is the UA string."""
     ua = UserAgent(ua_string=u"Mozilla/5.0", ua_human_name=u"Moz 5")
-    assert unicode(ua) == u"(desktop) Moz 5: 'Mozilla/5.0'"
+    assert unicode(ua) == u"Moz 5"
+
+
+def test_unicode_ua_string():
+    """Unicode representation of a user agent is the UA string."""
+    ua = UserAgent(ua_string=u"Mozilla/5.0",)
+    assert unicode(ua) == u"Mozilla/5.0"
 
 
 def test_length_toolong():
