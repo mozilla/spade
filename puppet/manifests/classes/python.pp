@@ -3,7 +3,11 @@ class python {
     case $operatingsystem {
         centos: {
             package {
-                ["python26-devel", "python26-libs", "python26-distribute", "python26-mod_wsgi"]:
+                ["python26-devel",
+                 "python26-libs",
+                 "python26-distribute",
+                 "python26-mod_wsgi",
+                 "libatlas-base-dev"]:
                     ensure => installed;
             }
 

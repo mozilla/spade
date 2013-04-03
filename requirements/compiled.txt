@@ -10,3 +10,5 @@ MySQL-python
 lxml
 Twisted>=2.5
 pyOpenSSL
+Celery==3
+numpy==1.7.0
