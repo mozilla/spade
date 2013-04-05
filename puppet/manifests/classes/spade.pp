@@ -17,10 +17,4 @@ class spade{
         unless  => "mysql -uroot -B --skip-column-names mysql -e 'select user from user' | grep '$DB_USER'",
         require => Exec["create_mysql_database"];
     }
-
-    exec { "syncdb":
-        cwd => "$PROJ_DIR",
-        command => "/home/vagrant/spade-venv/bin/python ./manage.py syncdb --noinput",
-        require => Exec["grant_mysql_database"];
-    }
 }

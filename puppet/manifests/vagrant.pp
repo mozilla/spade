@@ -22,19 +22,6 @@ Exec {
     path => "/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/bin",
 }
 
-file {"/etc/profile.d/spade.sh":
-    content => "
-export SPADE_DATABASE_NAME='${DB_NAME}'
-export SPADE_DATABASE_USER='${DB_USER}'
-export SPADE_DATABASE_PASSWORD='${DB_PASS}'
-export SPADE_DATABASE_HOST='${DB_HOST}'
-export SPADE_DATABASE_PORT='${DB_PORT}'
-export SPADE_DEBUG='1'
-export SPADE_DJANGO_SECRET_KEY='${DJANGO_SECRET_KEY}'
-"
-}
-
-
 class dev {
     class {
         init: before => Class[mysql];
