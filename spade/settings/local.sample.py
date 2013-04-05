@@ -21,7 +21,10 @@ DATABASES = {
         },
     }
 }
-
+RABBITMQ_USER = os.environ.get("RABBITMQ_USER", "rabbituser")
+RABBITMQ_PASSWORD = os.environ.get("RABBITMQ_PASSWORD", "rabbitpass")
+RABBITMQ_VHOST = os.environ.get("RABBITMQ_VHOST", "spade")
+BROKER_URL = 'amqp://{0}:{1}@localhost:5672/{2}/'.format(RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_VHOST)
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'CHANGETHISFJKDFJDKFJDK#%^&JDKJDKFDK@K$%^KJ#K%J^K^JK@CHANGETHIS'
 
