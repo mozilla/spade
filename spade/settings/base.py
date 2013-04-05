@@ -4,7 +4,10 @@ Default Django Settings for Spade
 """
 import os
 from os.path import dirname, join, abspath
+import djcelery
 
+#setup celery environment
+djcelery.setup_loader()
 
 BASE_PATH = dirname(dirname(dirname(abspath(__file__))))
 os.environ['SCRAPY_SETTINGS_MODULE'] = 'spade.scraper.settings'
@@ -136,6 +139,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'spade.controller',
     'spade.model',
+    'djcelery',
 )
 
 # A sample logging configuration. The only tangible logging
