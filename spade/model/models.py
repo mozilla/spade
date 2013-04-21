@@ -10,6 +10,7 @@ from spade.utils.misc import get_domain
 
 """ Naming scheme for local filesystem """
 
+
 # Takes a urlcontent instance and a filename
 def get_file_path_components(instance, filename):
     now = datetime.now()
@@ -37,14 +38,29 @@ def js_filename(instance, filename):
     return '/'.join(['js'] + get_file_path_components(instance, filename))
 
 
-def sitelist_filename(instance, filename):
-    return '/'.join(
-            ['sitelists'] + get_file_path_components(instance, filename))
-
 """ Models for scraper """
 
 
-class BaseUserAgent(models.Model):
+class Issue(models.Model):
+    ISSUE_TYPE_CHOICES = enumerate(['ua sniffing', 'css prefix'])
+    name = models.CharField(max_length=255, unique=True)
+    issue_type = models.PositiveSmallIntegerField(choices=ISSUE_TYPE_CHOICES)
+    description = models.TextField(blank=True)
+
+
+class Url(models.Model):
+    page_url = models.TextField()
+    # page_url should be unique.
+    # since it's a text field, we put its hash in that constraint
+    page_url_hash = models.CharField(max_length=64, unique=True)
+
+
+class Site(models.Model):
+    url = models.ForeignKey(Url, unique=True)
+    issues = models.ManyToManyField(Issue, related_name='sites')
+
+
+class UserAgent(models.Model):
     """Base common class for UserAgent and BatchUserAgent."""
     DESKTOP = 0
     MOBILE = 1
@@ -55,9 +71,8 @@ class BaseUserAgent(models.Model):
     UA_TYPES = dict(UA_TYPE_CHOICES)
 
     ua_human_name = models.CharField(max_length=50)
-    ua_string = models.CharField(max_length=250)
-    ua_type = models.IntegerField(max_length=1,
-                                  choices=UA_TYPE_CHOICES,
+    ua_string = models.CharField(max_length=250, unique=True)
+    ua_type = models.IntegerField(max_length=1, choices=UA_TYPE_CHOICES,
                                   default=DESKTOP)
     primary_ua = models.BooleanField(default=False)
 
@@ -72,93 +87,76 @@ class BaseUserAgent(models.Model):
             tags += ", primary"
         return u"<(%s) %s: '%s'>" % (tags, self.ua_human_name, self.ua_string)
 
-    class Meta:
-        abstract = True
+STATUS_LIST = [
+    "Not started",
+    "Started",
+    "Failed",
+    "Finished"
+]
 
-
-class UserAgent(BaseUserAgent):
-    """ A user-agent string we will use for scanning. """
-    pass
+STATUS_CHOICES = enumerate(STATUS_LIST)
+STATUS_DICT = dict((v, k) for k, v in STATUS_CHOICES)
 
 
 class Batch(models.Model):
+
     """ A batch of sites scanned in one run. """
-    kickoff_time = models.DateTimeField("When crawl started")
-    finish_time = models.DateTimeField("When crawl ended")
-
-    sitelist = models.FileField(
-        max_length=500, upload_to=sitelist_filename)
-
-    # Flag to see if this particular batch's data has yet been aggregated. This
-    # gets set to true at the end of the aggregation step. That way if the
-    # aggregation step was interrupted this will still be false and the data
-    # models will be regenerated at the next run of the aggregation function
-    data_aggregated = models.BooleanField(default=False)
-
-    @property
-    def sites(self):
-        """ Returns a list of all the urls that were
-        passed in to the scraper """
-        data = [s.strip() for s in self.sitelist.readlines()]
-        self.sitelist.seek(0)  # make the file available for further reads
-        return data
+    kickoff_time = models.DateTimeField("When crawl started",
+                                        auto_now_add=True, unique=True)
+    finish_time = models.DateTimeField("When crawl ended",
+                                       blank=True, null=True)
+    scan_status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES,
+                                                   default=1)
+    aggregation_status = models.PositiveSmallIntegerField(
+        choices=STATUS_CHOICES,
+        default=1)
+    sites = models.ManyToManyField(Site)
+    user_agents = models.ManyToManyField(
+        UserAgent,
+        through='BatchUserAgent'
+        related_name='batches')
 
     @property
     def bad_sites(self):
         """ Returns a list of site urls that did not get scraped """
-        sitelist = self.sites
-        bad_sites = []
-        for sitescan in self.sitescan_set.iterator():
-            for site in sitelist:
-                if get_domain(site) == get_domain(sitescan.site_url):
-                    # if this domain is ok, take it out
-                    sitelist.remove(site)
-                    break
-            else:
-                bad_sites.append(site)
-        # now sitelist contains only "bad sites", since the good ones were
-        # removed in the loop
-        bad_sites.extend(sitelist)
-        return bad_sites
+        return self.sites_scanned.filter(scan_status=STATUS_DICT['Failed'])
 
     def __unicode__(self):
         return u"Batch started at {0}".format(self.kickoff_time)
 
     class Meta:
-        verbose_name_plural = u"Batches"
+        verbose_name_plural = u"batches"
 
 
-class BatchUserAgent(BaseUserAgent):
+class BatchUserAgent(models.Model):
     """
-    A user agent from a given batch.
-
-    Clones the UserAgent model, so that we can retain history for scan UAs
-    while allowing the user to add/remove/modify user agents for future
-    batches.
-
+    Holds the relation between a batch and a user_agent
     """
     batch = models.ForeignKey(Batch)
+    ua_string = models.CharField(max_length=250)
+    user_agent = models.ForeignKey(UserAgent)
 
     class Meta:
-        unique_together = [("batch", "ua_string")]
+        unique_together = [("batch", "user_agent")]
 
 
 class SiteScan(models.Model):
     """ An individual site scanned. """
-    batch = models.ForeignKey(Batch, db_index=True)
-    site_url = models.TextField()
-
-    # Need the hash of the URL to be in a key constraint. A "Textfield" cannot
-    # be in a key constraint. Thus we have both fields for the site_url as well
-    # as a hash of the url, which we ultimately use in the (batch, url_hash)
-    # key constraint.
-    site_url_hash = models.CharField(max_length=64)
+    scan_status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES,
+                                                   default=1)
+    kickoff_time = models.DateTimeField("When crawl started",
+                                        auto_now_add=True, unique=True)
+    finish_time = models.DateTimeField("When crawl ended",
+                                       blank=True, null=True)
+    batch = models.ForeignKey(Batch, db_index=True,
+                              related_name='sites_scanned')
+    site = models.ForeignKey(Site, related_name="scan_set")
 
     def __unicode__(self):
-        return self.site_url
+        return self.site.url
 
     class Meta:
-        unique_together = ("batch", "site_url_hash")
+        unique_together = ("batch", "site")
 
 
 class URLScan(models.Model):
@@ -171,87 +169,57 @@ class URLScan(models.Model):
     """
 
     site_scan = models.ForeignKey(SiteScan, db_index=True)
-    page_url = models.TextField()
+    url = models.ForeignKey(Url)
     timestamp = models.DateTimeField("timestamp")
-
-    # See comment for site_url_hash -- same reason.
-    page_url_hash = models.CharField(max_length=64)
 
     def __unicode__(self):
         return self.page_url
 
     class Meta:
-        unique_together = ("site_scan", "page_url_hash")
+        unique_together = ("site_scan", "url")
 
 
-class URLContent(models.Model):
+class CssFile(models.Model):
     """
-    The content for a particular user-agent from one scanned URL.
-
-    Stores raw markup and headers; linked CSS and JS are stored in the
-    ``LinkedCSS`` and ``LinkedJS`` tables.
-
+    A url pointing to a css resource.
+    Different css files can share the same content
     """
-    url_scan = models.ForeignKey(URLScan)
-    user_agent = models.ForeignKey(BatchUserAgent)
-    redirected_from = models.TextField()
-    raw_markup = models.FileField(
-        max_length=500, upload_to=html_filename)
-    headers = models.FileField(
-        max_length=500, upload_to=headers_filename)
-
-    def __unicode__(self):
-        return u"'{0}' scanned with '{1}'".format(
-            self.url_scan, self.user_agent.ua_string)
-
-
-class LinkedCSS(models.Model):
-    """A single linked CSS file."""
-    batch = models.ForeignKey(Batch)
-    linked_from = models.ManyToManyField(URLContent)
-    url = models.TextField()
-    url_hash = models.CharField(max_length=64)
-    raw_css = models.FileField(
-        max_length=500, upload_to=css_filename)
-
-    def __unicode__(self):
-        return self.url
+    url = models.ForeignKey(Url)
+    content = models.ForeignKey(CssContent, related_name='css_files')
+    timestamp = models.DateTimeField("timestamp", auto_now_add=True)
 
     class Meta:
-        verbose_name_plural = "Linked CSS"
+        unique_together = ['url', 'content', 'timestamp']
 
 
-class LinkedJS(models.Model):
-    """A single linked JS file."""
-    batch = models.ForeignKey(Batch)
-    linked_from = models.ManyToManyField(URLContent)
-    url = models.TextField()
-    url_hash = models.CharField(max_length=64)
-    raw_js = models.FileField(
-        max_length=500, upload_to=js_filename)
+class CssContent(models.Model):
+
+    raw_css = models.FileField(max_length=500, upload_to=css_filename)
+    content_hash = models.CharField(max_length=64, unique=True, blank=True)
 
     def __unicode__(self):
-        return self.url
-
-    class Meta:
-        verbose_name_plural = "Linked JS"
+        return self.content_hash
 
 
 class CSSRule(models.Model):
     """ A CSS element rule """
-    linkedcss = models.ForeignKey(LinkedCSS)
+    css_content = models.ForeignKey(CssContent)
     selector = models.TextField()
+    select_hash = models.CharField(max_length=64, unique=True, blank=True)
 
     def __unicode__(self):
         return self.selector
 
+    class Meta:
+        unique_together = ['css_content', 'selector_hash']
+
 
 class CSSProperty(models.Model):
     """ A CSS property belonging to a rule """
-    rule = models.ForeignKey(CSSRule)
+    rule = models.ForeignKey(CSSRule, related_name='properties')
     prefix = models.CharField(max_length=50)
-    name = models.TextField()
-    value = models.TextField()
+    name = models.CharField(max_length=255)
+    value = models.CharField(max_length=255)
 
     def __unicode__(self):
         ret = u"%s%s: %s" % (self.prefix, self.name, self.value)
@@ -262,10 +230,14 @@ class CSSProperty(models.Model):
     def full_name(self):
         return '%s%s' % (self.prefix, self.name)
 
+    class Meta:
+        unique_together = ['rule', 'prefix', 'name']
+
 
 class CSSPropertyData(models.Model):
     """ Aggregated data for fast outputting """
-    linkedcsss = models.ManyToManyField(LinkedCSS, related_name='cssproperties')
+    css_content = models.ManyToManyField(CssContent,
+                                         related_name='aggregated_properties')
     sitescan = models.ForeignKey(SiteScan)
     name = models.CharField(max_length=100)
     moz_count = models.IntegerField(default=0)
@@ -278,13 +250,60 @@ class CSSPropertyData(models.Model):
 
     @property
     def supports_moz(self):
-        return (self.moz_count >= self.webkit_count or
-               self.unpref_count >= self.webkit_count)
+        return (
+            self.moz_count >= self.webkit_count or
+            self.unpref_count >= self.webkit_count
+        )
 
     @property
     def prefix_diff(self):
         """ The higher this is, the worse the moz support is """
         return self.webkit_count - self.moz_count
+
+
+class URLContent(models.Model):
+    """
+    The content for a particular user-agent from one scanned URL.
+
+    Stores raw markup and headers; linked CSS and JS are stored in the
+    ``LinkedCSS`` and ``LinkedJS`` tables.
+
+    """
+    url_scan = models.ForeignKey(URLScan)
+    user_agent = models.ForeignKey(BatchUserAgent)
+    redirected_from = models.ForeignKey(Url, blank=True, null=True)
+    raw_markup = models.FileField(
+        max_length=500, upload_to=html_filename)
+    headers = models.FileField(
+        max_length=500, upload_to=headers_filename)
+    css = models.MantToMany(CssFile, related_name='referring_page')
+
+    def __unicode__(self):
+        return u"'{0}' scanned with '{1}'".format(
+            self.url_scan, self.user_agent.ua_string)
+
+
+class JsFile(models.Model):
+    """
+    A url pointing to a js resource.
+    Different js files can share the same content
+    """
+    url = models.ForeignKey(Url)
+    content = models.ForeignKey(JsContent, related_name='js_files')
+    timestamp = models.DateTimeField("timestamp", auto_now_add=True)
+
+    class Meta:
+        unique_together = ['url', 'content', 'timestamp']
+
+
+class JsContent(models.Model):
+
+    raw_js = models.FileField(max_length=500, upload_to=js_filename)
+    content_hash = models.CharField(max_length=64, unique=True, blank=True)
+
+    def __unicode__(self):
+        return self.content_hash
+
 
 """ Aggregate Data Models """
 
@@ -355,7 +374,6 @@ class SiteScanData(models.Model):
     # Does the website have issues sniffing our UA?
     ua_issues = models.BooleanField(default=False)
 
-
     def __unicode__(self):
         return u"'{0}' has ({1}) css issues and ({2}) ua issues".format(
             self.sitescan, self.css_issues, self.ua_issues)
@@ -374,7 +392,6 @@ class URLScanData(models.Model):
 
     # Aggregate css_issues from all linked css stylesheets
     css_issues = models.IntegerField()
-
 
     def __unicode__(self):
         return u"'{0}' has ({1}) css issues".format(
