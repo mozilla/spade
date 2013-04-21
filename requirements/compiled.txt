@@ -8,7 +8,7 @@
 
 MySQL-python
 lxml
-Twisted>=2.5
+Twisted==13.0.0
 pyOpenSSL
 Celery==3.0.17
 django-celery==3.0.17
