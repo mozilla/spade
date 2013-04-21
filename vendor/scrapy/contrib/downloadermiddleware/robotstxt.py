@@ -6,8 +6,6 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 
 import robotparser
 
-from scrapy.xlib.pydispatch import dispatcher
-
 from scrapy import signals, log
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
@@ -24,8 +22,8 @@ class RobotsTxtMiddleware(object):
         self._parsers = {}
         self._spider_netlocs = {}
         self._useragents = {}
-        dispatcher.connect(self.spider_opened, signals.spider_opened)
-        dispatcher.connect(self.spider_closed, signals.spider_closed)
+        crawler.signals.connect(self.spider_opened, signals.spider_opened)
+        crawler.signals.connect(self.spider_closed, signals.spider_closed)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -35,7 +33,8 @@ class RobotsTxtMiddleware(object):
         useragent = self._useragents[spider]
         rp = self.robot_parser(request, spider)
         if rp and not rp.can_fetch(useragent, request.url):
-            log.msg("Forbidden by robots.txt: %s" % request, log.DEBUG)
+            log.msg(format="Forbidden by robots.txt: %(request)s",
+                    level=log.DEBUG, request=request)
             raise IgnoreRequest
 
     def robot_parser(self, request, spider):

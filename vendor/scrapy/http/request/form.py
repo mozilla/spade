@@ -6,70 +6,148 @@ See documentation in docs/topics/request-response.rst
 """
 
 import urllib
-from cStringIO import StringIO
-
-from scrapy.xlib.ClientForm import ParseFile
-
+import lxml.html
 from scrapy.http.request import Request
 from scrapy.utils.python import unicode_to_str
-
-def _unicode_to_str(string, encoding):
-    if hasattr(string, '__iter__'):
-        return [unicode_to_str(k, encoding) for k in string]
-    else:
-        return unicode_to_str(string, encoding)
 
 
 class FormRequest(Request):
 
     def __init__(self, *args, **kwargs):
         formdata = kwargs.pop('formdata', None)
+        if formdata and kwargs.get('method') is None:
+            kwargs['method'] = 'POST'
+
         super(FormRequest, self).__init__(*args, **kwargs)
 
         if formdata:
             items = formdata.iteritems() if isinstance(formdata, dict) else formdata
-            query = [(unicode_to_str(k, self.encoding), _unicode_to_str(v, self.encoding))
-                    for k, v in items]
-            self.method = 'POST'
-            self._set_body(urllib.urlencode(query, doseq=1))
-            self.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+            querystr = _urlencode(items, self.encoding)
+            if self.method == 'POST':
+                self.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
+                self._set_body(querystr)
+            else:
+                self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
 
     @classmethod
-    def from_response(cls, response, formname=None, formnumber=0, formdata=None, 
+    def from_response(cls, response, formname=None, formnumber=0, formdata=None,
                       clickdata=None, dont_click=False, **kwargs):
-        encoding = getattr(response, 'encoding', 'utf-8')
-        forms = ParseFile(StringIO(response.body), response.url,
-                          encoding=encoding, backwards_compat=False)
-        if not forms:
-            raise ValueError("No <form> element found in %s" % response)
-        
-        form = None
+        kwargs.setdefault('encoding', response.encoding)
+        form = _get_form(response, formname, formnumber)
+        formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
+        url = form.action or form.base_url
+        return cls(url, method=form.method, formdata=formdata, **kwargs)
 
-        if formname:
-            for f in forms:
-                if f.name == formname:
-                    form = f
-                    break
 
-        if not form:
-            try:
-                form = forms[formnumber]
-            except IndexError:
-                raise IndexError("Form number %d not found in %s" % (formnumber, response))
-        if formdata:
-            # remove all existing fields with the same name before, so that
-            # formdata fields properly can properly override existing ones,
-            # which is the desired behaviour
-            form.controls = [c for c in form.controls if c.name not in formdata]
-            for k, v in formdata.iteritems():
-                for v2 in v if hasattr(v, '__iter__') else [v]:
-                    form.new_control('text', k, {'value': v2})
+def _urlencode(seq, enc):
+    values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
+              for k, vs in seq
+              for v in (vs if hasattr(vs, '__iter__') else [vs])]
+    return urllib.urlencode(values, doseq=1)
 
-        if dont_click:
-            url, body, headers = form._switch_click('request_data')
+def _get_form(response, formname, formnumber):
+    """Find the form element """
+    from scrapy.selector.lxmldocument import LxmlDocument
+    root = LxmlDocument(response, lxml.html.HTMLParser)
+    if not root.forms:
+        raise ValueError("No <form> element found in %s" % response)
+
+    if formname is not None:
+        f = root.xpath('//form[@name="%s"]' % formname)
+        if f:
+            return f[0]
+
+    # If we get here, it means that either formname was None
+    # or invalid
+    if formnumber is not None:
+        try:
+            form = root.forms[formnumber]
+        except IndexError:
+            raise IndexError("Form number %d not found in %s" %
+                                (formnumber, response))
         else:
-            url, body, headers = form.click_request_data(**(clickdata or {}))
+            return form
 
-        kwargs.setdefault('headers', {}).update(headers)
+def _get_inputs(form, formdata, dont_click, clickdata, response):
+    try:
+        formdata = dict(formdata or ())
+    except (ValueError, TypeError):
+        raise ValueError('formdata should be a dict or iterable of tuples')
 
-        return cls(url, method=form.method, body=body, **kwargs)
+    inputs = form.xpath('descendant::textarea'
+                        '|descendant::select'
+                        '|descendant::input[@type!="submit" and @type!="image" '
+                        'and ((@type!="checkbox" and @type!="radio") or @checked)]')
+    values = [(k, u'' if v is None else v) \
+              for k, v in (_value(e) for e in inputs) \
+              if k and k not in formdata]
+
+    if not dont_click:
+        clickable = _get_clickable(clickdata, form)
+        if clickable and clickable[0] not in formdata and not clickable[0] is None:
+            values.append(clickable)
+
+    values.extend(formdata.iteritems())
+    return values
+
+def _value(ele):
+    n = ele.name
+    v = ele.value
+    if ele.tag == 'select':
+        return _select_value(ele, n, v)
+    return n, v
+
+def _select_value(ele, n, v):
+    multiple = ele.multiple
+    if v is None and not multiple:
+        # Match browser behaviour on simple select tag without options selected
+        # And for select tags wihout options
+        o = ele.value_options
+        return (n, o[0]) if o else (None, None)
+    elif v is not None and multiple:
+        # This is a workround to bug in lxml fixed 2.3.1
+        # fix https://github.com/lxml/lxml/commit/57f49eed82068a20da3db8f1b18ae00c1bab8b12#L1L1139
+        selected_options = ele.xpath('.//option[@selected]')
+        v = [(o.get('value') or o.text or u'').strip() for o in selected_options]
+    return n, v
+
+
+def _get_clickable(clickdata, form):
+    """
+    Returns the clickable element specified in clickdata,
+    if the latter is given. If not, it returns the first
+    clickable element found
+    """
+    clickables = [el for el in form.xpath('.//input[@type="submit"]')]
+    if not clickables:
+        return
+
+    # If we don't have clickdata, we just use the first clickable element
+    if clickdata is None:
+        el = clickables[0]
+        return (el.name, el.value)
+
+    # If clickdata is given, we compare it to the clickable elements to find a
+    # match. We first look to see if the number is specified in clickdata,
+    # because that uniquely identifies the element
+    nr = clickdata.get('nr', None)
+    if nr is not None:
+        try:
+            el = list(form.inputs)[nr]
+        except IndexError:
+            pass
+        else:
+            return (el.name, el.value)
+
+    # We didn't find it, so now we build an XPath expression out of the other
+    # arguments, because they can be used as such
+    xpath = u'.//*' + \
+            u''.join(u'[@%s="%s"]' % c for c in clickdata.iteritems())
+    el = form.xpath(xpath)
+    if len(el) == 1:
+        return (el[0].name, el[0].value)
+    elif len(el) > 1:
+        raise ValueError("Multiple elements found (%r) matching the criteria "
+                         "in clickdata: %r" % (el, clickdata))
+    else:
+        raise ValueError('No clickable element matching clickdata: %r' % (clickdata,))

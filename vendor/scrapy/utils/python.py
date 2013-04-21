@@ -2,13 +2,14 @@
 This module contains essential stuff that should've come with Python itself ;)
 
 It also contains functions (or functionality) which is in Python versions
-higher than 2.5 which is the lowest version supported by Scrapy.
+higher than 2.5 which used to be the lowest version supported by Scrapy.
 
 """
 import os
 import re
 import inspect
 import weakref
+import errno
 from functools import wraps
 from sgmllib import SGMLParser
 
@@ -145,18 +146,62 @@ def isbinarytext(text):
     assert isinstance(text, str), "text must be str, got '%s'" % type(text).__name__
     return any(c in _BINARYCHARS for c in text)
 
-def get_func_args(func):
+def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
     if inspect.isfunction(func):
         func_args, _, _, _ = inspect.getargspec(func)
+    elif inspect.isclass(func):
+        return get_func_args(func.__init__, True)
+    elif inspect.ismethod(func):
+        return get_func_args(func.__func__, True)
+    elif inspect.ismethoddescriptor(func):
+        return []
     elif hasattr(func, '__call__'):
-        try:
-            func_args, _, _, _ = inspect.getargspec(func.__call__)
-        except Exception:
-            func_args = []
+        if inspect.isroutine(func):
+            return []
+        else:
+            return get_func_args(func.__call__, True)
     else:
         raise TypeError('%s is not callable' % type(func))
+    if stripself:
+        func_args.pop(0)
     return func_args
+
+def get_spec(func):
+    """Returns (args, kwargs) tuple for a function
+    >>> import re
+    >>> get_spec(re.match)
+    (['pattern', 'string'], {'flags': 0})
+
+    >>> class Test(object):
+    ...     def __call__(self, val):
+    ...         pass
+    ...     def method(self, val, flags=0):
+    ...         pass
+
+    >>> get_spec(Test)
+    (['self', 'val'], {})
+
+    >>> get_spec(Test.method)
+    (['self', 'val'], {'flags': 0})
+
+    >>> get_spec(Test().method)
+    (['self', 'val'], {'flags': 0})
+    """
+
+    if inspect.isfunction(func) or inspect.ismethod(func):
+        spec = inspect.getargspec(func)
+    elif hasattr(func, '__call__'):
+        spec = inspect.getargspec(func.__call__)
+    else:
+        raise TypeError('%s is not callable' % type(func))
+
+    defaults = spec.defaults or []
+
+    firstdefault = len(spec.args) - len(defaults)
+    args = spec.args[:firstdefault]
+    kwargs = dict(zip(spec.args[firstdefault:], defaults))
+    return args, kwargs
 
 def equal_attributes(obj1, obj2, attributes):
     """Compare two objects attributes"""
@@ -222,3 +267,13 @@ def setattr_default(obj, name, value):
     """
     if not hasattr(obj, name):
         setattr(obj, name, value)
+
+
+def retry_on_eintr(function, *args, **kw):
+    """Run a function and retry it while getting EINTR errors"""
+    while True:
+        try:
+            return function(*args, **kw)
+        except IOError, e:
+            if e.errno != errno.EINTR:
+                raise

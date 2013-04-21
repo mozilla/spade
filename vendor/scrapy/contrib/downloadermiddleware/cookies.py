@@ -1,30 +1,31 @@
 import os
 from collections import defaultdict
-from scrapy.xlib.pydispatch import dispatcher
 
-from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
-from scrapy.conf import settings
 from scrapy import log
 
 
 class CookiesMiddleware(object):
     """This middleware enables working with sites that need cookies"""
-    debug = settings.getbool('COOKIES_DEBUG')
 
-    def __init__(self):
-        if not settings.getbool('COOKIES_ENABLED'):
-            raise NotConfigured
+    def __init__(self, debug=False):
         self.jars = defaultdict(CookieJar)
-        dispatcher.connect(self.spider_closed, signals.spider_closed)
+        self.debug = debug
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        if not crawler.settings.getbool('COOKIES_ENABLED'):
+            raise NotConfigured
+        return cls(crawler.settings.getbool('COOKIES_DEBUG'))
 
     def process_request(self, request, spider):
         if 'dont_merge_cookies' in request.meta:
             return
 
-        jar = self.jars[spider]
+        cookiejarkey = request.meta.get("cookiejar")
+        jar = self.jars[cookiejarkey]
         cookies = self._get_request_cookies(jar, request)
         for cookie in cookies:
             jar.set_cookie_if_ok(cookie, request)
@@ -39,14 +40,12 @@ class CookiesMiddleware(object):
             return response
 
         # extract cookies from Set-Cookie and drop invalid/expired cookies
-        jar = self.jars[spider]
+        cookiejarkey = request.meta.get("cookiejar")
+        jar = self.jars[cookiejarkey]
         jar.extract_cookies(response, request)
         self._debug_set_cookie(response, spider)
 
         return response
-
-    def spider_closed(self, spider):
-        self.jars.pop(spider, None)
 
     def _debug_cookie(self, request, spider):
         if self.debug:
@@ -64,10 +63,26 @@ class CookiesMiddleware(object):
                 msg += os.linesep.join("Set-Cookie: %s" % c for c in cl)
                 log.msg(msg, spider=spider, level=log.DEBUG)
 
+    def _format_cookie(self, cookie):
+        # build cookie string
+        cookie_str = '%s=%s' % (cookie['name'], cookie['value'])
+
+        if cookie.get('path', None):
+            cookie_str += '; Path=%s' % cookie['path']
+        if cookie.get('domain', None):
+            cookie_str += '; Domain=%s' % cookie['domain']
+
+        return cookie_str
+
     def _get_request_cookies(self, jar, request):
-        headers = {'Set-Cookie': ['%s=%s;' % (k, v) for k, v in request.cookies.iteritems()]}
+        if isinstance(request.cookies, dict):
+            cookie_list = [{'name': k, 'value': v} for k, v in \
+                    request.cookies.iteritems()]
+        else:
+            cookie_list = request.cookies
+
+        cookies = map(self._format_cookie, cookie_list)
+        headers = {'Set-Cookie': cookies}
         response = Response(request.url, headers=headers)
-        cookies = jar.make_cookies(response, request)
-        return cookies
 
-
+        return jar.make_cookies(response, request)

@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import sys
 import os
 import glob
@@ -8,6 +6,7 @@ import shutil
 import time
 import urllib2
 import netrc
+import json
 from urlparse import urlparse, urljoin
 from subprocess import Popen, PIPE, check_call
 
@@ -15,8 +14,8 @@ from w3lib.form import encode_multipart
 
 from scrapy.command import ScrapyCommand
 from scrapy.exceptions import UsageError
-from scrapy.utils.py26 import json
 from scrapy.utils.http import basic_auth_header
+from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.conf import get_config, closest_scrapy_cfg
 
 _SETUP_PY_TEMPLATE = \
@@ -151,7 +150,7 @@ def _get_version(target, opts):
         p = Popen(['hg', 'tip', '--template', '{rev}'], stdout=PIPE)
         return 'r%s' % p.communicate()[0]
     elif version == 'GIT':
-        p = Popen(['git', 'rev-parse', 'HEAD'], stdout=PIPE)
+        p = Popen(['git', 'describe', '--always'], stdout=PIPE)
         return '%s' % p.communicate()[0].strip('\n')
     elif version:
         return version
@@ -208,7 +207,7 @@ def _build_egg():
         _create_default_setup_py(settings=settings)
     d = tempfile.mkdtemp()
     f = tempfile.TemporaryFile(dir=d)
-    check_call([sys.executable, 'setup.py', 'clean', '-a', 'bdist_egg', '-d', d], stdout=f)
+    retry_on_eintr(check_call, [sys.executable, 'setup.py', 'clean', '-a', 'bdist_egg', '-d', d], stdout=f)
     egg = glob.glob(os.path.join(d, '*.egg'))[0]
     return egg, d
 

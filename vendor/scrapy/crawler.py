@@ -2,10 +2,10 @@ import signal
 
 from twisted.internet import reactor, defer
 
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.extension import ExtensionManager
+from scrapy.signalmanager import SignalManager
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
 from scrapy import log, signals
@@ -16,6 +16,8 @@ class Crawler(object):
     def __init__(self, settings):
         self.configured = False
         self.settings = settings
+        self.signals = SignalManager(self)
+        self.stats = load_object(settings['STATS_CLASS'])(self)
 
     def install(self):
         import scrapy.project
@@ -31,6 +33,8 @@ class Crawler(object):
         if self.configured:
             return
         self.configured = True
+        lf_cls = load_object(self.settings['LOG_FORMATTER'])
+        self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
         spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
         self.spiders = spman_cls.from_crawler(self)
@@ -65,7 +69,7 @@ class CrawlerProcess(Crawler):
 
     def __init__(self, *a, **kw):
         super(CrawlerProcess, self).__init__(*a, **kw)
-        dispatcher.connect(self.stop, signals.engine_stopped)
+        self.signals.connect(self.stop, signals.engine_stopped)
         install_shutdown_handlers(self._signal_shutdown)
 
     def start(self):
@@ -89,13 +93,13 @@ class CrawlerProcess(Crawler):
     def _signal_shutdown(self, signum, _):
         install_shutdown_handlers(self._signal_kill)
         signame = signal_names[signum]
-        log.msg("Received %s, shutting down gracefully. Send again to force " \
-            "unclean shutdown" % signame, level=log.INFO)
+        log.msg(format="Received %(signame)s, shutting down gracefully. Send again to force ",
+                level=log.INFO, signame=signame)
         reactor.callFromThread(self.stop)
 
     def _signal_kill(self, signum, _):
         install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
-        log.msg('Received %s twice, forcing unclean shutdown' % signame, \
-            level=log.INFO)
+        log.msg(format='Received %(signame)s twice, forcing unclean shutdown',
+                level=log.INFO, signame=signame)
         reactor.callFromThread(self._stop_reactor)

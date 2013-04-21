@@ -1,23 +1,13 @@
 from cStringIO import StringIO
 import unittest
 
-from scrapy.xlib.pydispatch import dispatcher
-
-from scrapy.mail import MailSender, mail_sent
-
+from scrapy.mail import MailSender
 
 class MailSenderTest(unittest.TestCase):
 
-    def setUp(self):
-        self.catched_msg = None
-        dispatcher.connect(self._catch_mail_sent, signal=mail_sent)
-
-    def tearDown(self):
-        dispatcher.disconnect(self._catch_mail_sent, signal=mail_sent)
-
     def test_send(self):
         mailsender = MailSender(debug=True)
-        mailsender.send(to=['test@scrapy.org'], subject='subject', body='body')
+        mailsender.send(to=['test@scrapy.org'], subject='subject', body='body', _callback=self._catch_mail_sent)
 
         assert self.catched_msg
 
@@ -38,7 +28,7 @@ class MailSenderTest(unittest.TestCase):
 
         mailsender = MailSender(debug=True)
         mailsender.send(to=['test@scrapy.org'], subject='subject', body='body',
-                       attachs=attachs)
+                       attachs=attachs, _callback=self._catch_mail_sent)
 
         assert self.catched_msg
         self.assertEqual(self.catched_msg['to'], ['test@scrapy.org'])
