@@ -43,7 +43,6 @@ class CSSParser(object):
 
         return (selector_string, properties_dict)
 
-
     def parse(self, linkedcss):
         """
         Calls parse on the internal CSS, stores css properties into db model
@@ -58,17 +57,12 @@ class CSSParser(object):
 
             # Create CSS rule in model
             current_rule = model.CSSRule.objects.create(linkedcss=linkedcss,
-                                                         selector=selector)
+                                                        selector=selector)
 
-            for property in properties:
-                prefix = properties[property][0]
-                unprefixed_name = properties[property][1]
-                value = properties[property][2]
-
-                # Create CSSProperty object for each property belonging to the
-                # rule
-                model.CSSProperty.objects.create(
-                    rule=current_rule, prefix=prefix, name=unprefixed_name,
-                    value=value)
-
-        return True
+            model.CSSProperty.objects.bulk_create(
+                [model.CSSProperty(
+                    rule=current_rule,
+                    prefix=v[0],
+                    name=v[1],
+                    value=v[2]) for v in properties.values()]
+            )
