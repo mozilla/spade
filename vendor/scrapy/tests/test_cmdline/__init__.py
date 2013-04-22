@@ -3,12 +3,13 @@ import os
 from subprocess import Popen, PIPE
 import unittest
 
+from scrapy.utils.test import get_pythonpath
+
 class CmdlineTest(unittest.TestCase):
 
     def setUp(self):
         self.env = os.environ.copy()
-        if 'PYTHONPATH' in os.environ:
-            self.env['PYTHONPATH'] = os.environ['PYTHONPATH']
+        self.env['PYTHONPATH'] = get_pythonpath()
         self.env['SCRAPY_SETTINGS_MODULE'] = 'scrapy.tests.test_cmdline.settings'
 
     def _execute(self, *new_args, **kwargs):
@@ -19,14 +20,14 @@ class CmdlineTest(unittest.TestCase):
 
     def test_default_settings(self):
         self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
-            'default + loaded + started')
+            'default + started')
 
     def test_override_settings_using_set_arg(self):
         self.assertEqual(self._execute('settings', '--get', 'TEST1', '-s', 'TEST1=override'), \
-            'override + loaded + started')
+            'override + started')
 
     def test_override_settings_using_envvar(self):
         self.env['SCRAPY_TEST1'] = 'override'
         self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
-            'override + loaded + started')
+            'override + started')
 

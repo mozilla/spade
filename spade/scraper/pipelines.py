@@ -7,7 +7,7 @@ from hashlib import sha256, sha1
 
 from spade import model
 from spade.utils.cssparser import CSSParser
-
+from spade.controller.tasks import parse_css
 
 class ScraperPipeline(object):
     def __init__(self):
@@ -19,7 +19,8 @@ class ScraperPipeline(object):
         """Called whenever an item is yielded by the spider"""
 
         # strip non ascii chars
-        item['raw_content'] = ''.join(c for c in item['raw_content'] if ord(c) < 128)
+        item['raw_content'] = filter(lambda x : ord(x) < 128, item['raw_content'])
+        #item['raw_content'] = ''.join(c for c in item['raw_content'] if ord(c) < 128)
 
         # hash the filename to prevent storing too-long file names
         hash_data = item['filename'] + item['user_agent'].ua_string
@@ -96,7 +97,8 @@ class ScraperPipeline(object):
 
             if created:
                 # Parse out rules and properties
-                self.css_parser.parse(linkedcss)
+                
+                parse_css.delay(linkedcss)
 
         return item
 

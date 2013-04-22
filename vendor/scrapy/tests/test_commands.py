@@ -1,14 +1,15 @@
-from __future__ import with_statement
-
-import sys
 import os
+import sys
 import subprocess
+from time import sleep
 from os.path import exists, join, abspath
 from shutil import rmtree
 from tempfile import mkdtemp
 
 from twisted.trial import unittest
 
+from scrapy.utils.python import retry_on_eintr
+from scrapy.utils.test import get_pythonpath
 
 class ProjectTest(unittest.TestCase):
     project_name = 'testproject'
@@ -19,8 +20,7 @@ class ProjectTest(unittest.TestCase):
         self.proj_path = join(self.temp_path, self.project_name)
         self.proj_mod_path = join(self.proj_path, self.project_name)
         self.env = os.environ.copy()
-        if 'PYTHONPATH' in os.environ:
-            self.env['PYTHONPATH'] = os.environ['PYTHONPATH']
+        self.env['PYTHONPATH'] = get_pythonpath()
 
     def tearDown(self):
         rmtree(self.temp_path)
@@ -33,8 +33,20 @@ class ProjectTest(unittest.TestCase):
 
     def proc(self, *new_args, **kwargs):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
-        return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
-            cwd=self.cwd, env=self.env, **kwargs)
+        p = subprocess.Popen(args, cwd=self.cwd, env=self.env,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             **kwargs)
+
+        waited = 0
+        interval = 0.2
+        while p.poll() is None:
+            sleep(interval)
+            waited += interval
+            if waited > 5:
+                p.kill()
+                assert False, 'Command took too much time to complete'
+
+        return p
 
 
 class StartprojectTest(ProjectTest):
@@ -77,11 +89,11 @@ class GenspiderCommandTest(CommandTest):
         args = ['--template=%s' % tplname] if tplname else []
         spname = 'test_spider'
         p = self.proc('genspider', spname, 'test.com', *args)
-        out = p.stdout.read()
+        out = retry_on_eintr(p.stdout.read)
         self.assert_("Created spider %r using template %r in module" % (spname, tplname) in out)
         self.assert_(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
         p = self.proc('genspider', spname, 'test.com', *args)
-        out = p.stdout.read()
+        out = retry_on_eintr(p.stdout.read)
         self.assert_("Spider %r already exists in module" % spname in out)
 
     def test_template_basic(self):
@@ -126,10 +138,10 @@ class MySpider(BaseSpider):
 """)
         p = self.proc('runspider', fname)
         log = p.stderr.read()
-        self.assert_("[myspider] DEBUG: It Works!" in log)
-        self.assert_("[myspider] INFO: Spider opened" in log)
-        self.assert_("[myspider] INFO: Closing spider (finished)" in log)
-        self.assert_("[myspider] INFO: Spider closed (finished)" in log)
+        self.assert_("[myspider] DEBUG: It Works!" in log, log)
+        self.assert_("[myspider] INFO: Spider opened" in log, log)
+        self.assert_("[myspider] INFO: Closing spider (finished)" in log, log)
+        self.assert_("[myspider] INFO: Spider closed (finished)" in log, log)
 
     def test_runspider_no_spider_found(self):
         tmpdir = self.mktemp()

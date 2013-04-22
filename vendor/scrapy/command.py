@@ -2,8 +2,6 @@
 Base class for Scrapy commands
 """
 
-from __future__ import with_statement
-
 import os
 from optparse import OptionGroup
 
@@ -22,6 +20,7 @@ class ScrapyCommand(object):
 
     def __init__(self):
         self.settings = None # set in scrapy.cmdline
+        self.configured = False
 
     def set_crawler(self, crawler):
         assert not hasattr(self, '_crawler'), "crawler already set"
@@ -29,9 +28,10 @@ class ScrapyCommand(object):
 
     @property
     def crawler(self):
-        if not log.started:
-            log.start()
-        self._crawler.configure()
+        if not self.configured:
+            log.start_from_crawler(self._crawler)
+            self._crawler.configure()
+            self.configured = True
         return self._crawler
 
     def syntax(self):

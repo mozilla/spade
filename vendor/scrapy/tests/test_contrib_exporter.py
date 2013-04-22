@@ -1,9 +1,8 @@
-import unittest, cPickle as pickle
+import unittest, json, cPickle as pickle
 from cStringIO import StringIO
 
 from scrapy.item import Item, Field
 from scrapy.utils.python import str_to_unicode
-from scrapy.utils.py26 import json
 from scrapy.contrib.exporter import BaseItemExporter, PprintItemExporter, \
     PickleItemExporter, CsvItemExporter, XmlItemExporter, JsonLinesItemExporter, \
     JsonItemExporter
@@ -174,6 +173,8 @@ class XmlItemExporterTest(BaseItemExporterTest):
 
 class JsonLinesItemExporterTest(BaseItemExporterTest):
 
+    _expected_nested = {'name': u'Jesus', 'age': {'name': 'Maria', 'age': {'name': 'Joseph', 'age': '22'}}}
+
     def _get_exporter(self, **kwargs):
         return JsonLinesItemExporter(self.output, **kwargs)
 
@@ -181,7 +182,19 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         exported = json.loads(self.output.getvalue().strip())
         self.assertEqual(exported, dict(self.i))
 
+    def test_nested_item(self):
+        i1 = TestItem(name=u'Joseph', age='22')
+        i2 = TestItem(name=u'Maria', age=i1)
+        i3 = TestItem(name=u'Jesus', age=i2)
+        self.ie.start_exporting()
+        self.ie.export_item(i3)
+        self.ie.finish_exporting()
+        exported = json.loads(self.output.getvalue())
+        self.assertEqual(exported, self._expected_nested)
+
 class JsonItemExporterTest(JsonLinesItemExporterTest):
+
+    _expected_nested = [JsonLinesItemExporterTest._expected_nested]
 
     def _get_exporter(self, **kwargs):
         return JsonItemExporter(self.output, **kwargs)
@@ -197,6 +210,17 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.ie.finish_exporting()
         exported = json.loads(self.output.getvalue())
         self.assertEqual(exported, [dict(self.i), dict(self.i)])
+
+    def test_nested_item(self):
+        i1 = TestItem(name=u'Joseph\xa3', age='22')
+        i2 = TestItem(name=u'Maria', age=i1)
+        i3 = TestItem(name=u'Jesus', age=i2)
+        self.ie.start_exporting()
+        self.ie.export_item(i3)
+        self.ie.finish_exporting()
+        exported = json.loads(self.output.getvalue())
+        expected = {'name': u'Jesus', 'age': {'name': 'Maria', 'age': dict(i1)}}
+        self.assertEqual(exported, [expected])
 
 class CustomItemExporterTest(unittest.TestCase):
 

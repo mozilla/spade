@@ -6,7 +6,6 @@ See documentation in docs/topics/spider-middleware.rst
 
 import re
 
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
@@ -17,8 +16,13 @@ class OffsiteMiddleware(object):
     def __init__(self):
         self.host_regexes = {}
         self.domains_seen = {}
-        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
-        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        o = cls()
+        crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
+        return o
 
     def process_spider_output(self, response, result, spider):
         for x in result:
@@ -28,9 +32,9 @@ class OffsiteMiddleware(object):
                 else:
                     domain = urlparse_cached(x).hostname
                     if domain and domain not in self.domains_seen[spider]:
-                        log.msg("Filtered offsite request to %r: %s" % (domain, x),
-                            level=log.DEBUG, spider=spider)
                         self.domains_seen[spider].add(domain)
+                        log.msg(format="Filtered offsite request to %(domain)r: %(request)s",
+                                level=log.DEBUG, spider=spider, domain=domain, request=x)
             else:
                 yield x
 

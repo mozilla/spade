@@ -15,6 +15,10 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_any_domain(url, ['wheele-bin-art.co.uk']))
         self.assertFalse(url_is_from_any_domain(url, ['art.co.uk']))
 
+        url = 'http://192.169.0.15:8080/mypage.html'
+        self.assertTrue(url_is_from_any_domain(url, ['192.169.0.15:8080']))
+        self.assertFalse(url_is_from_any_domain(url, ['192.169.0.15']))
+
         url = 'javascript:%20document.orderform_2581_1190810811.mode.value=%27add%27;%20javascript:%20document.orderform_2581_1190810811.submit%28%29'
         self.assertFalse(url_is_from_any_domain(url, ['testdomain.com']))
         self.assertFalse(url_is_from_any_domain(url+'.testdomain.com', ['testdomain.com']))
@@ -56,12 +60,15 @@ class UrlUtilsTest(unittest.TestCase):
 
     def test_canonicalize_url(self):
         # simplest case
-        self.assertEqual(canonicalize_url("http://www.example.com"),
-                                          "http://www.example.com")
+        self.assertEqual(canonicalize_url("http://www.example.com/"),
+                                          "http://www.example.com/")
 
         # always return a str
         assert isinstance(canonicalize_url(u"http://www.example.com"), str)
 
+        # append missing path
+        self.assertEqual(canonicalize_url("http://www.example.com"),
+                                          "http://www.example.com/")
         # typical usage
         self.assertEqual(canonicalize_url("http://www.example.com/do?a=1&b=2&c=3"),
                                           "http://www.example.com/do?a=1&b=2&c=3")
@@ -141,8 +148,8 @@ class UrlUtilsTest(unittest.TestCase):
                                            'http://www.example.com/caf%E9-con-leche.htm')
 
         # domains are case insensitive
-        self.assertEqual(canonicalize_url("http://www.EXAMPLE.com"),
-                                          "http://www.example.com")
+        self.assertEqual(canonicalize_url("http://www.EXAMPLE.com/"),
+                                          "http://www.example.com/")
 
 
 if __name__ == "__main__":

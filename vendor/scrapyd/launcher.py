@@ -1,11 +1,11 @@
-import sys, os
+import sys
 from datetime import datetime
+from multiprocessing import cpu_count
 
 from twisted.internet import reactor, defer, protocol, error
 from twisted.application.service import Service
 from twisted.python import log
 
-from scrapy.utils.py26 import cpu_count
 from scrapy.utils.python import stringify_dict
 from scrapyd.utils import get_crawl_args
 from .interfaces import IPoller, IEnvironment
@@ -16,17 +16,18 @@ class Launcher(Service):
 
     def __init__(self, config, app):
         self.processes = {}
-        self.max_proc = config.getint('max_proc', 0)
-        if not self.max_proc:
-            self.max_proc = cpu_count() * config.getint('max_proc_per_cpu', 4)
+        self.finished = []
+        self.finished_to_keep = config.getint('finished_to_keep', 100)
+        self.max_proc = self._get_max_proc(config)
         self.runner = config.get('runner', 'scrapyd.runner')
         self.app = app
 
     def startService(self):
         for slot in range(self.max_proc):
             self._wait_for_project(slot)
-        log.msg("%s started: max_proc=%r, runner=%r" % (self.parent.name, \
-            self.max_proc, self.runner), system="Launcher")
+        log.msg(format='%(parent)s started: max_proc=%(max_proc)r, runner=%(runner)r',
+                parent=self.parent.name, max_proc=self.max_proc,
+                runner=self.runner, system='Launcher')
 
     def _wait_for_project(self, slot):
         poller = self.app.getComponent(IPoller)
@@ -47,9 +48,21 @@ class Launcher(Service):
         self.processes[slot] = pp
 
     def _process_finished(self, _, slot):
-        self.processes.pop(slot)
+        process = self.processes.pop(slot)
+        process.end_time = datetime.now()
+        self.finished.append(process)
+        del self.finished[:-self.finished_to_keep] # keep last 100 finished jobs
         self._wait_for_project(slot)
 
+    def _get_max_proc(self, config):
+        max_proc = config.getint('max_proc', 0)
+        if not max_proc:
+            try:
+                cpus = cpu_count()
+            except NotImplementedError:
+                cpus = 1
+            max_proc = cpus * config.getint('max_proc_per_cpu', 4)
+        return max_proc
 
 class ScrapyProcessProtocol(protocol.ProcessProtocol):
 
@@ -60,8 +73,10 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.spider = spider
         self.job = job
         self.start_time = datetime.now()
+        self.end_time = None
         self.env = env
-        self.logfile = env['SCRAPY_LOG_FILE']
+        self.logfile = env.get('SCRAPY_LOG_FILE')
+        self.itemsfile = env.get('SCRAPY_FEED_URI')
         self.deferred = defer.Deferred()
 
     def outReceived(self, data):
@@ -81,7 +96,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
             self.log("Process died: exitstatus=%r " % status.value.exitCode)
         self.deferred.callback(self)
 
-    def log(self, msg):
-        msg += "project=%r spider=%r job=%r pid=%r log=%r" % (self.project, \
-            self.spider, self.job, self.pid, self.logfile)
-        log.msg(msg, system="Launcher")
+    def log(self, action):
+        fmt = '%(action)s project=%(project)r spider=%(spider)r job=%(job)r pid=%(pid)r log=%(log)r items=%(items)r'
+        log.msg(format=fmt, action=action, project=self.project, spider=self.spider,
+                job=self.job, pid=self.pid, log=self.logfile, items=self.itemsfile)

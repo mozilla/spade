@@ -6,7 +6,6 @@ See docs/topics/webservice.rst
 
 from twisted.web import server, error
 
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
 from scrapy import log, signals
 from scrapy.utils.jsonrpc import jsonrpc_server_call
@@ -80,8 +79,8 @@ class WebService(server.Site):
             root.putChild(res.ws_name, res)
         server.Site.__init__(self, root, logPath=logfile)
         self.noisy = False
-        dispatcher.connect(self.start_listening, signals.engine_started)
-        dispatcher.connect(self.stop_listening, signals.engine_stopped)
+        crawler.signals.connect(self.start_listening, signals.engine_started)
+        crawler.signals.connect(self.stop_listening, signals.engine_stopped)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -90,7 +89,8 @@ class WebService(server.Site):
     def start_listening(self):
         self.port = listen_tcp(self.portrange, self.host, self)
         h = self.port.getHost()
-        log.msg("Web service listening on %s:%d" % (h.host, h.port), log.DEBUG)
+        log.msg(format='Web service listening on %(host)s:%(port)d',
+                level=log.DEBUG, host=h.host, port=h.port)
 
     def stop_listening(self):
         self.port.stopListening()

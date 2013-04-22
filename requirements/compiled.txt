@@ -8,5 +8,9 @@
 
 MySQL-python
 lxml
-Twisted>=2.5
+Twisted==13.0.0
 pyOpenSSL
+Celery==3.0.17
+django-celery==3.0.17
+kombu==2.4.7
+numpy==1.7.0

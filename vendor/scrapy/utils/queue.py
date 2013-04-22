@@ -1,11 +1,8 @@
-from __future__ import with_statement
-
 import os
 import struct
 import glob
+import json
 from collections import deque
-
-from scrapy.utils.py26 import json
 
 
 class FifoMemoryQueue(object):
@@ -13,13 +10,11 @@ class FifoMemoryQueue(object):
 
     def __init__(self):
         self.q = deque()
-
-    def push(self, obj):
-        self.q.appendleft(obj)
+        self.push = self.q.append
 
     def pop(self):
-        if self.q:
-            return self.q.pop()
+        q = self.q
+        return q.popleft() if q else None
 
     def close(self):
         pass
@@ -31,8 +26,9 @@ class FifoMemoryQueue(object):
 class LifoMemoryQueue(FifoMemoryQueue):
     """Memory LIFO queue."""
 
-    def push(self, obj):
-        self.q.append(obj)
+    def pop(self):
+        q = self.q
+        return q.pop() if q else None
 
 
 class FifoDiskQueue(object):
@@ -49,7 +45,7 @@ class FifoDiskQueue(object):
         self.chunksize = self.info['chunksize']
         self.headf = self._openchunk(self.info['head'][0], 'ab+')
         self.tailf = self._openchunk(self.info['tail'][0])
-        self.tailf.seek(self.info['tail'][2])
+        os.lseek(self.tailf.fileno(), self.info['tail'][2], os.SEEK_SET)
 
     def push(self, string):
         hnum, hpos = self.info['head']
