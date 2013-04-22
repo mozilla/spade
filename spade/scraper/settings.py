@@ -9,9 +9,6 @@
 # Allow scrapy to access django models
 import os
 
-BOT_NAME = 'scraper'
-BOT_VERSION = '1.0'
-
 # Allow scrapy to use "DjangoItem" (beta)
 os.environ['DJANGO_SETTINGS_MODULE'] = 'spade.settings'
 
@@ -38,10 +35,9 @@ SPIDER_MIDDLEWARES = {
 
 DEPTH_LIMIT = 2
 
-DOWNLOAD_DELAY = 0
-DOWNLOAD_TIMEOUT=20
-ENCODING_ALIASES = {'gb2312':'zh-cn', 'cp1251':'win-1251'}
-CONCURRENT_REQUESTS = 64
+DOWNLOAD_DELAY =1
+DOWNLOAD_TIMEOUT=15
+CONCURRENT_REQUESTS = 500
 CONCURRENT_REQUESTS_PER_DOMAIN = 16
 LOG_LEVEL='INFO'
 DEPTH_PRIORITY = 1
