@@ -3,14 +3,18 @@ class python {
     case $operatingsystem {
         centos: {
             package {
-                ["python26-devel", "python26-libs", "python26-distribute", "python26-mod_wsgi"]:
+                ["python-devel",
+                 "python-libs",
+                 "python-distribute",
+                 "python-mod_wsgi",
+                 "libatlas-base-dev"]:
                     ensure => installed;
             }
 
             exec { "pip-install":
                 command => "easy_install -U pip",
                 creates => "/usr/bin/pip",
-                require => Package["python26-devel", "python26-distribute"]
+                require => Package["python-devel", "python-distribute"]
             }
 
             exec { "virtualenv-install":
@@ -37,7 +41,7 @@ class python {
 
         ubuntu: {
             package {
-                ["python2.6-dev", "python2.6", "python-distribute","libapache2-mod-wsgi", "python-wsgi-intercept",  "libxml2-dev", "libxslt1-dev"]:
+                ["python-dev", "python", "python-distribute","libapache2-mod-wsgi", "python-wsgi-intercept",  "libxml2-dev", "libxslt1-dev"]:
                     ensure => installed;
             }
 

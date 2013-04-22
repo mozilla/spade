@@ -7,10 +7,9 @@ See documentation in docs/topics/spiders.rst
 
 import copy
 
-from scrapy.http import Request
+from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.spider import BaseSpider
-from scrapy.conf import settings
 
 def identity(x):
     return x
@@ -46,6 +45,8 @@ class CrawlSpider(BaseSpider):
         return results
 
     def _requests_to_follow(self, response):
+        if not isinstance(response, HtmlResponse):
+            return
         seen = set()
         for n, rule in enumerate(self._rules):
             links = [l for l in rule.link_extractor.extract_links(response) if l not in seen]
@@ -68,10 +69,9 @@ class CrawlSpider(BaseSpider):
             for requests_or_item in iterate_spider_output(cb_res):
                 yield requests_or_item
 
-        if follow and settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True):
+        if follow and self._follow_links:
             for request_or_item in self._requests_to_follow(response):
                 yield request_or_item
-                
 
     def _compile_rules(self):
         def get_method(method):
@@ -85,3 +85,7 @@ class CrawlSpider(BaseSpider):
             rule.callback = get_method(rule.callback)
             rule.process_links = get_method(rule.process_links)
             rule.process_request = get_method(rule.process_request)
+
+    def set_crawler(self, crawler):
+        super(CrawlSpider, self).set_crawler(crawler)
+        self._follow_links = crawler.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)

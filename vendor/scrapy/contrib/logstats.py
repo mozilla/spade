@@ -1,8 +1,6 @@
 from twisted.internet import task
 
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
-from scrapy.conf import settings
 from scrapy import log, signals
 
 class Slot(object):
@@ -16,18 +14,24 @@ class Slot(object):
 class LogStats(object):
     """Log basic scraping stats periodically"""
 
-    def __init__(self):
-        self.interval = settings.getfloat('LOGSTATS_INTERVAL')
-        if not self.interval:
-            raise NotConfigured
+    def __init__(self, interval=60.0):
+        self.interval = interval
         self.slots = {}
         self.multiplier = 60.0 / self.interval
-        dispatcher.connect(self.item_scraped, signal=signals.item_scraped)
-        dispatcher.connect(self.response_received, signal=signals.response_received)
-        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
-        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
-        dispatcher.connect(self.engine_started, signal=signals.engine_started)
-        dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        interval = crawler.settings.getfloat('LOGSTATS_INTERVAL')
+        if not interval:
+            raise NotConfigured
+        o = cls(interval)
+        crawler.signals.connect(o.item_scraped, signal=signals.item_scraped)
+        crawler.signals.connect(o.response_received, signal=signals.response_received)
+        crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
+        crawler.signals.connect(o.engine_started, signal=signals.engine_started)
+        crawler.signals.connect(o.engine_stopped, signal=signals.engine_stopped)
+        return o
 
     def item_scraped(self, spider):
         self.slots[spider].items += 1

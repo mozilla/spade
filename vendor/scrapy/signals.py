@@ -16,8 +16,9 @@ response_received = object()
 response_downloaded = object()
 item_scraped = object()
 item_dropped = object()
-stats_spider_opened = object()
-stats_spider_closing = object()
-stats_spider_closed = object()
+
+stats_spider_opened = spider_opened
+stats_spider_closing = spider_closed
+stats_spider_closed = spider_closed
 
 item_passed = item_scraped # for backwards compatibility

@@ -1,18 +1,19 @@
 import re
 import datetime
 import decimal
+import json
 
 from twisted.internet import defer
 
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, Response
-from scrapy.utils.py26 import json
+from scrapy.item import BaseItem
 
 
 class SpiderReferencer(object):
     """Class to serialize (and deserialize) objects (typically dicts)
     containing references to running spiders (ie. Spider objects). This is
-    required because simplejson fails to serialize dicts containing
+    required because json library fails to serialize dicts containing
     non-primitive types as keys, even when you override
     ScrapyJSONEncoder.default() with a custom encoding mechanism.
     """
@@ -98,6 +99,8 @@ class ScrapyJSONEncoder(json.JSONEncoder):
             return str(o)
         elif isinstance(o, defer.Deferred):
             return str(o)
+        elif isinstance(o, BaseItem):
+            return dict(o)
         elif isinstance(o, Request):
             return "<%s %s %s>" % (type(o).__name__, o.method, o.url)
         elif isinstance(o, Response):

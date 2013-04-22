@@ -4,11 +4,8 @@ Depth Spider Middleware
 See documentation in docs/topics/spider-middleware.rst
 """
 
-import warnings
-
 from scrapy import log
 from scrapy.http import Request
-from scrapy.exceptions import ScrapyDeprecationWarning
 
 class DepthMiddleware(object):
 
@@ -19,27 +16,24 @@ class DepthMiddleware(object):
         self.prio = prio
 
     @classmethod
-    def from_settings(cls, settings):
+    def from_crawler(cls, crawler):
+        settings = crawler.settings
         maxdepth = settings.getint('DEPTH_LIMIT')
-        usestats = settings.getbool('DEPTH_STATS')
         verbose = settings.getbool('DEPTH_STATS_VERBOSE')
         prio = settings.getint('DEPTH_PRIORITY')
-        if usestats:
-            from scrapy.stats import stats
-        else:
-            stats = None
-        return cls(maxdepth, stats, verbose, prio)
+        return cls(maxdepth, crawler.stats, verbose, prio)
 
     def process_spider_output(self, response, result, spider):
         def _filter(request):
             if isinstance(request, Request):
-                depth = response.request.meta['depth'] + 1
+                depth = response.meta['depth'] + 1
                 request.meta['depth'] = depth
                 if self.prio:
                     request.priority -= depth * self.prio
                 if self.maxdepth and depth > self.maxdepth:
-                    log.msg("Ignoring link (depth > %d): %s " % (self.maxdepth, request.url), \
-                        level=log.DEBUG, spider=spider)
+                    log.msg(format="Ignoring link (depth > %(maxdepth)d): %(requrl)s ",
+                            level=log.DEBUG, spider=spider,
+                            maxdepth=self.maxdepth, requrl=request.url)
                     return False
                 elif self.stats:
                     if self.verbose_stats:
@@ -48,8 +42,8 @@ class DepthMiddleware(object):
             return True
 
         # base case (depth=0)
-        if self.stats and 'depth' not in response.request.meta: 
-            response.request.meta['depth'] = 0
+        if self.stats and 'depth' not in response.meta:
+            response.meta['depth'] = 0
             if self.verbose_stats:
                 self.stats.inc_value('request_depth_count/0', spider=spider)
 

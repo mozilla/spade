@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import unittest
 from os.path import join
 
@@ -24,3 +22,7 @@ class GzTest(unittest.TestCase):
         with open(join(SAMPLEDIR, 'feed-sample1.xml'), 'rb') as f:
             self.assertRaises(IOError, gunzip, f.read())
 
+    def test_gunzip_truncated_short(self):
+        with open(join(SAMPLEDIR, 'truncated-crc-error-short.gz'), 'rb') as f:
+            text = gunzip(f.read())
+            assert text.endswith('</html>')

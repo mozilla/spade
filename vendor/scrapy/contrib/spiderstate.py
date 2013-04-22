@@ -1,10 +1,6 @@
-from __future__ import with_statement
-
 import os, cPickle as pickle
 
 from scrapy import signals
-from scrapy.exceptions import NotConfigured
-from scrapy.xlib.pydispatch import dispatcher
 
 class SpiderState(object):
     """Store and load spider state during a scraping job"""
@@ -15,8 +11,8 @@ class SpiderState(object):
     @classmethod
     def from_crawler(cls, crawler):
         obj = cls(crawler.settings.get('JOBDIR'))
-        dispatcher.connect(obj.spider_closed, signal=signals.spider_closed)
-        dispatcher.connect(obj.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(obj.spider_closed, signal=signals.spider_closed)
+        crawler.signals.connect(obj.spider_opened, signal=signals.spider_opened)
         return obj
 
     def spider_closed(self, spider):
@@ -26,7 +22,7 @@ class SpiderState(object):
 
     def spider_opened(self, spider):
         if self.jobdir and os.path.exists(self.statefn):
-            with open(self.statefn) as f:
+            with open(self.statefn, 'rb') as f:
                 spider.state = pickle.load(f)
         else:
             spider.state = {}

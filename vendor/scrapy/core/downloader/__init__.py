@@ -8,7 +8,6 @@ from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
 from scrapy.utils.defer import mustbe_deferred
-from scrapy.utils.signal import send_catch_log
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.resolver import dnscache
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -28,6 +27,7 @@ class Slot(object):
         self.queue = deque()
         self.transferring = set()
         self.lastseen = 0
+        self.latercall = None
 
     def free_transfer_slots(self):
         return self.concurrency - len(self.transferring)
@@ -58,9 +58,6 @@ def _get_concurrency_delay(concurrency, spider, settings):
     if hasattr(spider, 'max_concurrent_requests'):
         concurrency = spider.max_concurrent_requests
 
-    if delay > 0:
-        concurrency = 1 # force concurrency=1 if download delay required
-
     return concurrency, delay
 
 
@@ -68,9 +65,10 @@ class Downloader(object):
 
     def __init__(self, crawler):
         self.settings = crawler.settings
+        self.signals = crawler.signals
         self.slots = {}
         self.active = set()
-        self.handlers = DownloadHandlers()
+        self.handlers = DownloadHandlers(crawler.settings)
         self.total_concurrency = self.settings.getint('CONCURRENT_REQUESTS')
         self.domain_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self.ip_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_IP')
@@ -87,6 +85,7 @@ class Downloader(object):
             slot.active.remove(request)
             if not slot.active: # remove empty slots
                 self.inactive_slots[key] = self.slots.pop(key)
+
             return response
 
         dlfunc = partial(self._enqueue_request, slot=slot)
@@ -114,7 +113,7 @@ class Downloader(object):
 
     def _enqueue_request(self, request, spider, slot):
         def _downloaded(response):
-            send_catch_log(signal=signals.response_downloaded, \
+            self.signals.send_catch_log(signal=signals.response_downloaded, \
                     response=response, request=request, spider=spider)
             return response
 
@@ -124,23 +123,28 @@ class Downloader(object):
         return deferred
 
     def _process_queue(self, spider, slot):
+        if slot.latercall and slot.latercall.active():
+            return
+
         # Delay queue processing if a download_delay is configured
         now = time()
         delay = slot.download_delay()
         if delay:
             penalty = delay - now + slot.lastseen
-            if penalty > 0 and slot.free_transfer_slots():
-                d = defer.Deferred()
-                d.addCallback(self._process_queue, slot)
-                reactor.callLater(penalty, d.callback, spider)
+            if penalty > 0:
+                slot.latercall = reactor.callLater(penalty, self._process_queue, spider, slot)
                 return
-        slot.lastseen = now
 
         # Process enqueued requests if there are free slots to transfer for this slot
         while slot.queue and slot.free_transfer_slots() > 0:
+            slot.lastseen = now
             request, deferred = slot.queue.popleft()
             dfd = self._download(slot, request, spider)
             dfd.chainDeferred(deferred)
+            # prevent burst if inter-request delays were configured
+            if delay:
+                self._process_queue(spider, slot)
+                break
 
     def _download(self, slot, request, spider):
         # The order is very important for the following deferreds. Do not change!

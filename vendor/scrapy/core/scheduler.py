@@ -1,33 +1,32 @@
-from __future__ import with_statement
-
 import os
+import json
 from os.path import join, exists
 
 from scrapy.utils.pqueue import PriorityQueue
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 from scrapy.utils.misc import load_object
 from scrapy.utils.job import job_dir
-from scrapy.utils.py26 import json
-from scrapy.stats import stats
 from scrapy import log
 
 class Scheduler(object):
 
-    def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None, logunser=False):
+    def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None, logunser=False, stats=None):
         self.df = dupefilter
         self.dqdir = self._dqdir(jobdir)
         self.dqclass = dqclass
         self.mqclass = mqclass
         self.logunser = logunser
+        self.stats = stats
 
     @classmethod
-    def from_settings(cls, settings):
+    def from_crawler(cls, crawler):
+        settings = crawler.settings
         dupefilter_cls = load_object(settings['DUPEFILTER_CLASS'])
         dupefilter = dupefilter_cls.from_settings(settings)
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
         logunser = settings.getbool('LOG_UNSERIALIZABLE_REQUESTS')
-        return cls(dupefilter, job_dir(settings), dqclass, mqclass, logunser)
+        return cls(dupefilter, job_dir(settings), dqclass, mqclass, logunser, crawler.stats)
 
     def has_pending_requests(self):
         return len(self) > 0
@@ -48,11 +47,25 @@ class Scheduler(object):
     def enqueue_request(self, request):
         if not request.dont_filter and self.df.request_seen(request):
             return
-        if not self._dqpush(request):
+        dqok = self._dqpush(request)
+        if dqok:
+            self.stats.inc_value('scheduler/enqueued/disk', spider=self.spider)
+        else:
             self._mqpush(request)
+            self.stats.inc_value('scheduler/enqueued/memory', spider=self.spider)
+        self.stats.inc_value('scheduler/enqueued', spider=self.spider)
 
     def next_request(self):
-        return self.mqs.pop() or self._dqpop()
+        request = self.mqs.pop()
+        if request:
+            self.stats.inc_value('scheduler/dequeued/memory', spider=self.spider)
+        else:
+            request = self._dqpop()
+            if request:
+                self.stats.inc_value('scheduler/dequeued/disk', spider=self.spider)
+        if request:
+            self.stats.inc_value('scheduler/dequeued', spider=self.spider)
+        return request
 
     def __len__(self):
         return len(self.dqs) + len(self.mqs) if self.dqs else len(self.mqs)
@@ -65,15 +78,14 @@ class Scheduler(object):
             self.dqs.push(reqd, -request.priority)
         except ValueError, e: # non serializable request
             if self.logunser:
-                log.msg("Unable to serialize request: %s - reason: %s" % \
-                    (request, str(e)), level=log.ERROR, spider=self.spider)
+                log.msg(format="Unable to serialize request: %(request)s - reason: %(reason)s",
+                        level=log.ERROR, spider=self.spider,
+                        request=request, reason=e)
             return
         else:
-            stats.inc_value('scheduler/disk_enqueued', spider=self.spider)
             return True
 
     def _mqpush(self, request):
-        stats.inc_value('scheduler/memory_enqueued', spider=self.spider)
         self.mqs.push(request, -request.priority)
 
     def _dqpop(self):
@@ -97,8 +109,8 @@ class Scheduler(object):
             prios = ()
         q = PriorityQueue(self._newdq, startprios=prios)
         if q:
-            log.msg("Resuming crawl (%d requests scheduled)" % len(q), \
-                spider=self.spider)
+            log.msg(format="Resuming crawl (%(queuesize)d requests scheduled)",
+                    spider=self.spider, queuesize=len(q))
         return q
 
     def _dqdir(self, jobdir):
