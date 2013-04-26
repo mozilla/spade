@@ -1,29 +1,7 @@
-from scrapy.conf import settings
 from scrapy.http import Response, Request
-
 from spade import model
 from spade.scraper.middlewares import DepthMiddleware
 from spade.scraper.middlewares import OffsiteMiddleware
-from spade.scraper.spiders.general_spider import GeneralSpider
-
-
-def pytest_funcarg__spider(request):
-    """Use scrapy's overrides to start a spider w/ specific settings"""
-    # This is necessary because the spider errors when a source file is not
-    # provided.
-    settings.overrides['URLS'] = u"spade/tests/sitelists/urls.txt"
-    settings.overrides['LOG_ENABLED'] = True
-
-    # Initialize and return spider
-    spider = GeneralSpider()
-    now = spider.get_now_time()
-    spider.batch = model.Batch.objects.create(
-        kickoff_time=now, finish_time=now)
-    spider.batch.save()
-
-    # Delete created batch from database when test is done
-    request.addfinalizer(lambda: spider.batch.delete())
-    return spider
 
 
 def pytest_funcarg__offsite_middleware(request):

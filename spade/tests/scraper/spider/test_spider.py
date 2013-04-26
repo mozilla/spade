@@ -1,6 +1,7 @@
 from hashlib import sha256
-from scrapy.conf import settings
-from scrapy.http import Response, Request
+from scrapy.utils.project import get_project_settings
+from scrapy.http import Response, Request, HtmlResponse
+from scrapy.crawler import Crawler
 from spade.scraper.spiders.general_spider import GeneralSpider
 from spade import model
 from spade.scraper.items import MarkupItem
@@ -13,10 +14,14 @@ import os
 def pytest_funcarg__spider(request):
     """Use scrapy's overrides to start the spider w/ specific settings"""
 
-    settings.overrides['LOG_ENABLED'] = True
+    settings = get_project_settings()
     settings.overrides['URLS'] = u"spade/tests/sitelists/urls.txt"
-    spider = GeneralSpider()
+    settings.overrides['LOG_ENABLED'] = True
 
+    # Initialize and return spider
+
+    spider = GeneralSpider()
+    spider.set_crawler(Crawler(settings))
     # Create initial batch
     now = spider.get_now_time()
     spider.batch = model.Batch.objects.create(
@@ -145,9 +150,9 @@ def test_spider_name(spider):
 
 def test_spider_read_from_file(spider):
     """Ensure the test list of urls was read correctly"""
-    if len(spider.start_urls) != 1:
+    if len(spider.get_start_urls()) != 1:
         assert False
-    elif spider.start_urls[0] == "http://localhost:8181":
+    elif spider.get_start_urls()[0] == "http://localhost:8181":
         assert True
     else:
         assert False
@@ -193,13 +198,13 @@ def test_spider_crawls_links(spider, scrape_request, html_headers,
     spider.batch_user_agents = [ua]
 
     # Generate a mock response based on html containing two links
-    mock_response = Response('http://test:12345',
-                             body=mock_html_twolinks)
+    mock_response = HtmlResponse(url='http://test:12345',
+                                 body=mock_html_twolinks,
+                                 encoding='utf-8')
     mock_response.request = scrape_request
     mock_response.headers = html_headers
     mock_response.meta['user_agent'] = ua
     mock_response.status = 200
-    mock_response.encoding = u'utf-8'
     mock_response.flags = []
 
     # Call spider on the mock response

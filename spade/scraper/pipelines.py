@@ -119,7 +119,7 @@ class ScraperPipeline(object):
         spider.batch.save()
 
         # save initial site list
-        file_content = ContentFile('\n'.join(spider.start_urls))
+        file_content = ContentFile('\n'.join(spider.get_start_urls()))
         filename = str(spider.batch).replace(' ', '')
         spider.batch.sitelist.save(filename, file_content)
         spider.batch.sitelist.close()
