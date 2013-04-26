@@ -11,6 +11,7 @@ import os
 
 # Allow scrapy to use "DjangoItem" (beta)
 os.environ['DJANGO_SETTINGS_MODULE'] = 'spade.settings'
+from django.conf import settings
 
 SPIDER_MODULES = ['spade.scraper.spiders']
 NEWSPIDER_MODULE = 'spade.scraper.spiders'
@@ -33,6 +34,12 @@ SPIDER_MIDDLEWARES = {
     'spade.scraper.middlewares.OffsiteMiddleware': 543,
 }
 
+HTTPCACHE_ENABLED = True
+HTTPCACHE_POLICY = 'scrapy.contrib.httpcache.RFC2616Policy'
+# download cache expires every 4 hours
+HTTPCACHE_EXPIRATION_SECS = 60 * 60 * 4
+HTTPCACHE_DIR = os.path.join(settings.BASE_PATH, 'webcache')
+HTTPCACHE_STORAGE = 'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage'
 DEPTH_LIMIT = 2
 
 DOWNLOAD_DELAY =1
