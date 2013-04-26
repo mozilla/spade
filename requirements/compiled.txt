@@ -7,10 +7,9 @@
 # non-Debian-based system).
 
 MySQL-python
-lxml
-Twisted==13.0.0
-pyOpenSSL
+https://github.com/scrapy/scrapy/archive/0.17.0.zip
 Celery==3.0.17
 django-celery==3.0.17
 kombu==2.4.7
 numpy==1.7.0
+zope.interface==4.0.1

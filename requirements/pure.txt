@@ -1,9 +1,6 @@
 # Pure-python dependencies; pre-installed in vendor/
 
 Django>=1.5.1,<1.6
-Scrapy==0.16.4
-w3lib==1.2
-zope.interface==4.0.1
 argparse==1.2.1
 cssutils==0.9.10
 django-inmemorystorage==0.1.1
