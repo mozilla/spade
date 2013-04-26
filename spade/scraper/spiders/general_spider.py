@@ -5,7 +5,6 @@ from django.utils.timezone import utc
 
 # Scrapy Imports
 from scrapy import log
-from scrapy.conf import settings
 from scrapy.http import Request
 from scrapy.selector import HtmlXPathSelector
 from scrapy.spider import BaseSpider
@@ -35,7 +34,6 @@ class GeneralSpider(BaseSpider):
         """
         Set URLs to traverse from
         """
-        self.start_urls = self.get_start_urls()
 
     def get_now_time(self):
         """Gets a datetime"""
@@ -48,10 +46,10 @@ class GeneralSpider(BaseSpider):
 
     def get_start_urls(self):
         """Extracts urls from a text file into the list of URLs to crawl"""
-        if not settings.get('URLS'):
+        if not self.settings.get('URLS'):
             raise ValueError('No text file. Use -s URLS=somefile.txt')
 
-        with open(settings.get('URLS')) as data:
+        with open(self.settings.get('URLS')) as data:
             return [line.rstrip('\r\n') for line in data]
 
     def get_content_type(self, headers):
@@ -104,11 +102,10 @@ class GeneralSpider(BaseSpider):
         else:
             if 'text/html' not in self.get_content_type(response.headers):
                 # For linked content, find the urlscan it linked from
+                
                 urlscan = model.URLScan.objects.get(
-
                     site_scan=sitescan,
-                    page_url_hash=
-                    sha256(response.meta['referrer']).hexdigest())
+                    page_url_hash=sha256(response.meta['referrer']).hexdigest())
             else:
                 # Only create urlscans for text/html
                 urlscan, us_created = model.URLScan.objects.get_or_create(
