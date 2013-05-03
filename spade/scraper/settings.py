@@ -39,10 +39,10 @@ HTTPCACHE_POLICY = 'scrapy.contrib.httpcache.RFC2616Policy'
 # download cache expires every 4 hours
 HTTPCACHE_EXPIRATION_SECS = 60 * 60 * 4
 HTTPCACHE_DIR = os.path.join(settings.BASE_PATH, 'webcache')
-HTTPCACHE_STORAGE = 'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage'
+HTTPCACHE_STORAGE = 'spade.scraper.httpcache.SpadeFilesystemCacheStorage'
 DEPTH_LIMIT = 2
 
-DOWNLOAD_DELAY =1
+DOWNLOAD_DELAY =2
 DOWNLOAD_TIMEOUT=15
 CONCURRENT_REQUESTS = 500
 CONCURRENT_REQUESTS_PER_DOMAIN = 16
