@@ -34,6 +34,7 @@ class GeneralSpider(BaseSpider):
         """
         Set URLs to traverse from
         """
+        self._urls = []
 
     def get_now_time(self):
         """Gets a datetime"""
@@ -44,13 +45,40 @@ class GeneralSpider(BaseSpider):
         """Function for logging events"""
         log.msg(msg, level=log.DEBUG)
 
-    def get_start_urls(self):
-        """Extracts urls from a text file into the list of URLs to crawl"""
-        if not self.settings.get('URLS'):
-            raise ValueError('No text file. Use -s URLS=somefile.txt')
+    @property
+    def start_urls(self):
+        if not self._urls:
+            if not self.settings.get('URLS'):
+                raise ValueError('No text file. Use -s URLS=somefile.txt')
+            with open(self.settings.get('URLS')) as data:
+                self._urls = list(set([line.rstrip('\r\n') for line in data]))
+        return self._urls
 
-        with open(self.settings.get('URLS')) as data:
-            return [line.rstrip('\r\n') for line in data]
+    def start_requests(self):
+        """convert start_urls to requests and return them"""
+        for url in self.start_urls:
+            for request in self.make_requests_from_url(url):
+                yield request
+
+    def make_requests_from_url(self, url):
+        """
+        Generates one request per user_agent
+        """
+        sitescan, _ = model.SiteScan.objects.get_or_create(
+            batch=self.batch,
+            site_url_hash=sha256(get_domain(url)).hexdigest(),
+            defaults={'site_url': url})
+
+        # Generate different UA requests for each UA
+        for batch_user_agent in self.batch_user_agents:
+            ua = batch_user_agent
+            new_request = Request(url, dont_filter=True)
+            new_request.headers.setdefault('User-Agent', ua.ua_string)
+            new_request.meta['sitescan'] = sitescan
+            new_request.meta['user_agent'] = ua
+            self.log("Created request for {0} with ua {1}".format(
+                                                        url, ua.ua_string))
+            yield new_request
 
     def get_content_type(self, headers):
         """Gets a content type from the headers"""
@@ -71,106 +99,77 @@ class GeneralSpider(BaseSpider):
         content_type = self.get_content_type(response.headers)
 
         sitescan = response.meta.get('sitescan')
-        if sitescan is None:
-            # This sitescan needs to be created
-            sitescan, ss_created = model.SiteScan.objects.get_or_create(
 
-                batch=self.batch,
-                site_url_hash=sha256(get_domain(response.url)).hexdigest(),
-                defaults={'site_url': response.url})
+        if 'text/html' not in self.get_content_type(response.headers):
 
-            if not ss_created:
-                # Duplicate URL in the text file, ignore this site
-                return
-
-        if response.meta.get('user_agent') is None:
-            # Generate different UA requests for each UA
-            for batch_user_agent in self.batch_user_agents:
-                ua = batch_user_agent
-
-                # Generate new request
-                new_request = Request(response.url)
-                new_request.headers.setdefault('User-Agent', ua.ua_string)
-                new_request.meta['referrer'] = response.meta.get('referrer')
-                new_request.meta['sitescan'] = sitescan
-                new_request.meta['user_agent'] = ua
-                new_request.meta['content_type'] = content_type
-
-                yield new_request
-
-
+            # For linked content, find the urlscan it linked from
+            urlscan = model.URLScan.objects.get(
+                site_scan=sitescan,
+                page_url_hash=sha256(response.meta['referrer']).hexdigest())
         else:
-            if 'text/html' not in self.get_content_type(response.headers):
-                # For linked content, find the urlscan it linked from
-                
-                urlscan = model.URLScan.objects.get(
-                    site_scan=sitescan,
-                    page_url_hash=sha256(response.meta['referrer']).hexdigest())
-            else:
-                # Only create urlscans for text/html
-                urlscan, us_created = model.URLScan.objects.get_or_create(
+            # Only create urlscans for text/html
+            urlscan, us_created = model.URLScan.objects.get_or_create(
 
-                    site_scan=sitescan,
-                    page_url_hash=sha256(response.url).hexdigest(),
-                    defaults={'page_url': response.url,
-                              'timestamp': self.get_now_time()})
+                site_scan=sitescan,
+                page_url_hash=sha256(response.url).hexdigest(),
+                defaults={'page_url': response.url,
+                          'timestamp': self.get_now_time()})
 
-                # Continue crawling
-                # Parse stylesheet links, scripts, and hyperlinks
-                hxs = HtmlXPathSelector(response)
+            # Continue crawling
+            # Parse stylesheet links, scripts, and hyperlinks
+            hxs = HtmlXPathSelector(response)
 
-                # Extract other target links
-                try:
-                    css_links = hxs.select('//link/@href').extract()
-                except TypeError:
-                    css_links = []
+            # Extract other target links
+            try:
+                css_links = hxs.select('//link/@href').extract()
+            except TypeError:
+                css_links = []
 
-                try:
-                    js_links = hxs.select('//script/@src').extract()
-                except TypeError:
-                    js_links = []
+            try:
+                js_links = hxs.select('//script/@src').extract()
+            except TypeError:
+                js_links = []
 
-                try:
-                    hyperlinks = hxs.select('//a/@href').extract()
-                except TypeError:
-                    hyperlinks = []
+            try:
+                hyperlinks = hxs.select('//a/@href').extract()
+            except TypeError:
+                hyperlinks = []
 
-                # Using a set removes duplicate links.
-                all_links = set(hyperlinks + js_links + css_links)
+            # Using a set removes duplicate links.
+            all_links = set(hyperlinks + js_links + css_links)
 
-                # Examine links, yield requests if they are valid
-                for url in all_links:
+            # Examine links, yield requests if they are valid
+            for url in all_links:
 
-                    if not url.startswith('http://'):
-                        # ensure that links are to real sites
-                        if url.startswith('javascript:'):
-                            continue
-                        else:
-                            url = urljoin(response.url, url)
+                if not url.startswith('http://'):
+                    # ensure that links are to real sites
+                    if url.startswith('javascript:'):
+                        continue
+                    else:
+                        url = urljoin(response.url, url)
 
-                    ua = response.meta['user_agent']
+                ua = response.meta['user_agent']
 
-                    request = Request(url)
-                    request.headers.setdefault('User-Agent', ua.ua_string)
-                    request.meta['referrer'] = response.url
-                    request.meta['sitescan'] = sitescan
-                    request.meta['user_agent'] = ua
-                    request.meta['content_type'] = None
+                request = Request(url)
+                request.headers.setdefault('User-Agent', ua.ua_string)
+                request.meta['referrer'] = response.url
+                request.meta['sitescan'] = sitescan
+                request.meta['user_agent'] = ua
+                request.meta['content_type'] = None
 
-                    yield request
+                yield request
 
-
-            # The response contains a user agent, we should yield an item
-            item = MarkupItem()
-            item['content_type'] = self.get_content_type(response.headers)
-            item['filename'] = os.path.basename(urlparse(response.url).path)
-            item['headers'] = unicode(response.headers)
-            item['meta'] = response.meta
-            item['raw_content'] = response.body
-            item['sitescan'] = sitescan
-            item['urlscan'] = urlscan
-            item['url'] = response.url
-            item['user_agent'] = response.meta.get('user_agent')
-            item['redirected_from'] = response.meta.get('redirected_from',
-                                                        u'')
-            yield item
+        # The response contains a user agent, we should yield an item
+        item = MarkupItem()
+        item['content_type'] = self.get_content_type(response.headers)
+        item['filename'] = os.path.basename(urlparse(response.url).path)
+        item['headers'] = unicode(response.headers)
+        item['meta'] = response.meta
+        item['raw_content'] = response.body
+        item['sitescan'] = sitescan
+        item['urlscan'] = urlscan
+        item['url'] = response.url
+        item['user_agent'] = response.meta.get('user_agent')
+        item['redirected_from'] = response.meta.get('redirected_from',
+                                                    u'')
+        yield item

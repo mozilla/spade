@@ -34,10 +34,10 @@ class ScraperPipeline(object):
         # Parse each file based on what its MIME specifies
         if 'text/html' == item['content_type']:
             # First save the request contents into a URLContent
-            urlcontent = model.URLContent.objects.create(
+            urlcontent,_ = model.URLContent.objects.get_or_create(
                 url_scan=item['urlscan'],
                 user_agent=item['user_agent'],
-                redirected_from=item['redirected_from'])
+                defaults={'redirected_from':item['redirected_from']})
 
             # Store raw markup
             file_content = ContentFile(item['raw_content'])
@@ -119,7 +119,7 @@ class ScraperPipeline(object):
         spider.batch.save()
 
         # save initial site list
-        file_content = ContentFile('\n'.join(spider.get_start_urls()))
+        file_content = ContentFile('\n'.join(spider.start_urls))
         filename = str(spider.batch).replace(' ', '')
         spider.batch.sitelist.save(filename, file_content)
         spider.batch.sitelist.close()

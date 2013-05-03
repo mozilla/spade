@@ -67,8 +67,18 @@ class Command(BaseCommand):
             else:
                 ua_type = UserAgent.MOBILE
 
-            new_ua = UserAgent.objects.create(
-                ua_string=str(new), ua_human_name=str(human_name), primary_ua=primary, ua_type=ua_type)
+            new_ua, created = UserAgent.objects.get_or_create(
+                ua_string=str(new),
+                defaults={
+                    'ua_human_name': str(human_name),
+                    'primary_ua': primary,
+                    'ua_type': ua_type
+                }
+            )
+            if not created:
+                new_ua.ua_human_name = str(human_name)
+                new_ua.primary_ua = primary
+                new_ua.ua_type = ua_type
             self.stdout.write('Successfully inserted "%s"\n' % new_ua)
 
         elif remove:

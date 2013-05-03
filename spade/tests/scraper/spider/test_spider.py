@@ -150,44 +150,12 @@ def test_spider_name(spider):
 
 def test_spider_read_from_file(spider):
     """Ensure the test list of urls was read correctly"""
-    if len(spider.get_start_urls()) != 1:
+    if len(spider.start_urls) != 1:
         assert False
-    elif spider.get_start_urls()[0] == "http://localhost:8181":
+    elif spider.start_urls[0] == "http://localhost:8181":
         assert True
     else:
         assert False
-
-
-def test_useragents_spider(spider, scrape_request, html_headers,
-                           mock_html_nolinks):
-    """Ensure multiple requests with different user agent strings emitted"""
-    ua1 = factories.BatchUserAgentFactory.build(ua_string='Firefox / 11.0')
-    ua2 = factories.BatchUserAgentFactory.build(ua_string='Chrome / 20.0')
-    spider.batch_user_agents = [ua1, ua2]
-
-    # Generate a mock response
-    mock_response = Response('http://test:12345',
-                             body=mock_html_nolinks)
-    mock_response.request = scrape_request
-    mock_response.headers = html_headers
-    mock_response.status = 200
-    mock_response.encoding = u'utf-8'
-    mock_response.flags = []
-
-    # Call the spider on the mock response
-    pipeline_generator = spider.parse(mock_response)
-
-    # Assert that we have two requests for this linkless page, one for each
-    # of the user agents we inserted
-    request_uas = []
-    for new_request in pipeline_generator:
-        if isinstance(new_request, Request):
-            request_uas.append(new_request.meta['user_agent'].ua_string)
-        else:
-            # We're not expecting anything other than Requests
-            assert False
-
-    assert set(request_uas) == set([u'Firefox / 11.0', u'Chrome / 20.0'])
 
 
 def test_spider_crawls_links(spider, scrape_request, html_headers,
@@ -204,25 +172,25 @@ def test_spider_crawls_links(spider, scrape_request, html_headers,
     mock_response.request = scrape_request
     mock_response.headers = html_headers
     mock_response.meta['user_agent'] = ua
+    mock_response.meta['sitescan'] = factories.SiteScanFactory()
     mock_response.status = 200
     mock_response.flags = []
 
     # Call spider on the mock response
     pipeline_generator = spider.parse(mock_response)
 
-    # Assert that we got the expected set of new requests generated in the
-    # spider and nothing else
+    # We should have two new requests and one MarkupItem
     sites_expected = set([
-            mock_response.url + '/link1.html',
-            mock_response.url + '/link2.html',
-            ])
+        mock_response.url + '/link1.html',
+        mock_response.url + '/link2.html',
+    ])
 
     sites_collected = []
-    for new_request in pipeline_generator:
-        if isinstance(new_request, Request):
-            sites_collected.append(new_request.url)
+    for elem in pipeline_generator:
+        if isinstance(elem, Request):
+            sites_collected.append(elem.url)
         else:
-            pass
+            assert isinstance(elem, MarkupItem)
 
     assert sites_expected == set(sites_collected)
 
