@@ -204,6 +204,9 @@ class URLContent(models.Model):
         return u"'{0}' scanned with '{1}'".format(
             self.url_scan, self.user_agent.ua_string)
 
+    class Meta:
+        unique_together = ['url_scan', 'user_agent']
+
 
 class LinkedCSS(models.Model):
     """A single linked CSS file."""

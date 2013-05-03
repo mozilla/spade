@@ -33,7 +33,7 @@ spade/settings/local.py
 
 #Scrapy stuff
 .scrapy
-
+webcache/
 # generated files from storage
 media/*
 

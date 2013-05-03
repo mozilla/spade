@@ -8,7 +8,10 @@ from django.core.management.base import BaseCommand
 from twisted.internet import reactor
 from scrapy.crawler import Crawler
 from scrapy.settings import Settings
+from scrapy.utils.project import get_project_settings
 from scrapy import log
+
+from spade.scraper.spiders.general_spider import GeneralSpider
 
 
 class Command(BaseCommand):
@@ -22,9 +25,10 @@ class Command(BaseCommand):
             self.stdout.write(u"Usage: {0}\n".format(self.args))
             self.stdout.write(self.help)
         else:
-            settings = Settings()
+            settings = get_project_settings()
             settings.overrides['URLS'] = args[0]
             crawler = Crawler(settings)
+            spider = GeneralSpider()
             crawler.configure()
             crawler.crawl(spider)
             crawler.start()

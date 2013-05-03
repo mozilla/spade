@@ -9,11 +9,9 @@
 # Allow scrapy to access django models
 import os
 
-BOT_NAME = 'scraper'
-BOT_VERSION = '1.0'
-
 # Allow scrapy to use "DjangoItem" (beta)
 os.environ['DJANGO_SETTINGS_MODULE'] = 'spade.settings'
+from django.conf import settings
 
 SPIDER_MODULES = ['spade.scraper.spiders']
 NEWSPIDER_MODULE = 'spade.scraper.spiders'
@@ -36,12 +34,17 @@ SPIDER_MIDDLEWARES = {
     'spade.scraper.middlewares.OffsiteMiddleware': 543,
 }
 
+HTTPCACHE_ENABLED = True
+HTTPCACHE_POLICY = 'scrapy.contrib.httpcache.RFC2616Policy'
+# download cache expires every 4 hours
+HTTPCACHE_EXPIRATION_SECS = 60 * 60 * 4
+HTTPCACHE_DIR = os.path.join(settings.BASE_PATH, 'webcache')
+HTTPCACHE_STORAGE = 'spade.scraper.httpcache.SpadeFilesystemCacheStorage'
 DEPTH_LIMIT = 2
 
-DOWNLOAD_DELAY = 0
-DOWNLOAD_TIMEOUT=20
-ENCODING_ALIASES = {'gb2312':'zh-cn', 'cp1251':'win-1251'}
-CONCURRENT_REQUESTS = 64
+DOWNLOAD_DELAY =2
+DOWNLOAD_TIMEOUT=15
+CONCURRENT_REQUESTS = 500
 CONCURRENT_REQUESTS_PER_DOMAIN = 16
 LOG_LEVEL='INFO'
 DEPTH_PRIORITY = 1
