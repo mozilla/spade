@@ -9,7 +9,7 @@ class apache {
             }
 
             file { "/etc/httpd/conf.d/spade.conf":
-                source => "$PROJ_DIR/puppet/files/etc/httpd/conf.d/spade.conf",
+                content => template("$PROJ_DIR/puppet/files/etc/httpd/conf.d/spade.conf"),
                 owner => "root", group => "root", mode => 0644,
                 require => [
                     Package['httpd-devel']
@@ -33,7 +33,7 @@ class apache {
             }
 
             file { "/etc/apache2/sites-available/spade.conf":
-                source => "$PROJ_DIR/puppet/files/etc/httpd/conf.d/spade.conf",
+                content => template("$PROJ_DIR/puppet/files/etc/httpd/conf.d/spade.conf"),
                 owner => "root", group => "root", mode => 0644,
                 require => [
                     Package['apache2-dev']

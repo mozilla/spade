@@ -26,14 +26,14 @@ class python {
 
             exec {
                 "virtualenv-create":
-                cwd => "/home/vagrant",
+                cwd => "/home/${APP_USER}",
                 user => "vagrant",
-                command => "/usr/bin/virtualenv --no-site-packages /home/vagrant/spade-venv",
-                creates => "/home/vagrant/spade-venv"
+                command => "/usr/bin/virtualenv --no-site-packages ${VENV_DIR}",
+                creates => $VENV_DIR
             }
 
             exec { "pip-install-compiled":
-                command => "/home/vagrant/spade-venv/bin/pip install -r $PROJ_DIR/requirements/compiled.txt",
+                command => "${VENV_DIR}/bin/pip install -r $PROJ_DIR/requirements/compiled.txt",
                 require => Exec['virtualenv-create'],
                 timeout => 600,
             }
@@ -63,21 +63,21 @@ class python {
 
             exec {
                 "virtualenv-create":
-                cwd => "/home/vagrant",
-                user => "vagrant",
-                command => "/usr/local/bin/virtualenv --no-site-packages /home/vagrant/spade-venv",
-                creates => "/home/vagrant/spade-venv"
+                cwd => "/home/${APP_USER}",
+                user => $APP_USER,
+                command => "/usr/local/bin/virtualenv --no-site-packages ${VENV_DIR}",
+                creates => "${VENV_DIR}"
             }
 
             exec { 
                 "pip-cache-ownership":
-                     command => "/bin/chown -R vagrant:vagrant $PROJ_DIR/puppet/cache/pip && /bin/chmod ug+rw -R $PROJ_DIR/puppet/cache/pip",
-                     unless => '/bin/su vagrant -c "/usr/bin/test -w $PROJ_DIR/puppet/cache/pip"';
+                     command => "/bin/chown -R ${APP_USER}:${APP_USER} $PROJ_DIR/puppet/cache/pip && /bin/chmod ug+rw -R $PROJ_DIR/puppet/cache/pip",
+                     unless => '/bin/su ${APP_USER} -c "/usr/bin/test -w $PROJ_DIR/puppet/cache/pip"';
                 "pip-install-compiled":
                      require => Exec['pip-cache-ownership','virtualenv-create'],
-                     user => "vagrant",
+                     user => $APP_USER,
                      cwd => '/tmp', 
-                     command => "/home/vagrant/spade-venv/bin/pip install --download-cache=$PROJ_DIR/puppet/cache/pip -r $PROJ_DIR/requirements/compiled.txt",
+                     command => "${VENV_DIR}/bin/pip install --download-cache=$PROJ_DIR/puppet/cache/pip -r $PROJ_DIR/requirements/compiled.txt",
                      timeout => 1200;
             }
         }

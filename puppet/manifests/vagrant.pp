@@ -3,8 +3,9 @@
 #
 import "classes/*.pp"
 
-$PROJ_DIR = "/home/vagrant/project"
-
+$APP_USER = "vagrant"
+$PROJ_DIR = "/home/${APP_USER}/project"
+$VENV_DIR = "/home/${APP_USER}/spade-venv"
 # You can make these less generic if you like, but these are box-specific
 # so it's not required.
 
