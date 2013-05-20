@@ -2,7 +2,7 @@
 # ever, so we have to use a different package on CentOS than Ubuntu.
 class apache {
     case $operatingsystem {
-        centos: {
+        'centos', 'Amazon': {
             package { "httpd-devel":
                 ensure => present,
                 before => File['/etc/httpd/conf.d/spade.conf'];
@@ -26,7 +26,7 @@ class apache {
             }
 
         }
-        ubuntu: {
+        'ubuntu': {
             package { "apache2-dev":
                 ensure => present,
                 before => File['/etc/apache2/sites-available/spade.conf'];

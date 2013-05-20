@@ -1,5 +1,5 @@
-# Get mysql up and running
 class rabbitmq {
+    
     package { "rabbitmq-server":
         ensure => installed;
     }

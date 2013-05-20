@@ -1,20 +1,22 @@
 # Install python and compiled modules for project
 class python {
     case $operatingsystem {
-        centos: {
+        'centos', 'Amazon': {
             package {
-                ["python-devel",
-                 "python-libs",
-                 "python-distribute",
-                 "python-mod_wsgi",
-                 "libatlas-base-dev"]:
+                ["gcc",
+                 "python-devel",
+                 "python-setuptools",
+                 "mod_wsgi",
+                 "atlas-devel",
+                 "libxml2-devel",
+                 "libxslt-devel"]:
                     ensure => installed;
             }
 
             exec { "pip-install":
                 command => "easy_install -U pip",
                 creates => "/usr/bin/pip",
-                require => Package["python-devel", "python-distribute"]
+                require => Package["python-devel", "python-setuptools"]
             }
 
             exec { "virtualenv-install":
@@ -27,7 +29,7 @@ class python {
             exec {
                 "virtualenv-create":
                 cwd => "/home/${APP_USER}",
-                user => "vagrant",
+                user => "${APP_USER}",
                 command => "/usr/bin/virtualenv --no-site-packages ${VENV_DIR}",
                 creates => $VENV_DIR
             }
@@ -36,10 +38,11 @@ class python {
                 command => "${VENV_DIR}/bin/pip install -r $PROJ_DIR/requirements/compiled.txt",
                 require => Exec['virtualenv-create'],
                 timeout => 600,
+                user => "${APP_USER}"
             }
         }
 
-        ubuntu: {
+        'ubuntu': {
             package {
                 ["python-dev", "python", "python-distribute","libapache2-mod-wsgi", "python-wsgi-intercept",  "libxml2-dev", "libxslt1-dev"]:
                     ensure => installed;

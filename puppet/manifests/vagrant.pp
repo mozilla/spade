@@ -4,7 +4,7 @@
 import "classes/*.pp"
 
 $APP_USER = "vagrant"
-$PROJ_DIR = "/home/${APP_USER}/project"
+$PROJ_DIR = "/home/${APP_USER}/spade"
 $VENV_DIR = "/home/${APP_USER}/spade-venv"
 # You can make these less generic if you like, but these are box-specific
 # so it's not required.
@@ -26,13 +26,11 @@ Exec {
 class dev {
     class {
         init: before => Class[mysql];
-        mysql: before  => Class[python];
+        mysql: before => Class[python];
         python: before => Class[apache];
-        apache: before => Class[spade];
-        spade: before => Class[rabbitmq];
-        rabbitmq:;
-
+        apache: before => Class[rabbitmq];
+        rabbitmq: before => Class[spade];
+        spade:;
     }
 }
-
 include dev
