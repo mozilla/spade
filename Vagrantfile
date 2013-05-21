@@ -13,7 +13,7 @@ rescue Errno::ENOENT # No vagrantconfig_local.yaml found -- that's OK; just
 end
 
 CONF = _config
-MOUNT_POINT = '/home/vagrant/project'
+MOUNT_POINT = '/home/vagrant/spade'
 
 Vagrant::Config.run do |config|
     config.vm.box = "precise32"
