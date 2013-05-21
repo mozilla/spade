@@ -41,3 +41,5 @@ media/*
 .vagrant
 
 .DS_Store
+
+spade.log
