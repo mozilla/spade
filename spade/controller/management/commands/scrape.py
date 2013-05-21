@@ -9,9 +9,13 @@ from twisted.internet import reactor
 from scrapy.crawler import Crawler
 from scrapy.settings import Settings
 from scrapy.utils.project import get_project_settings
-from scrapy import log
-
+from scrapy import log, signals
+from scrapy.xlib.pydispatch import dispatcher
 from spade.scraper.spiders.general_spider import GeneralSpider
+
+
+def stop_reactor():
+    reactor.stop()
 
 
 class Command(BaseCommand):
@@ -21,6 +25,7 @@ class Command(BaseCommand):
         u"  on each site from the specified text file\n")
 
     def handle(self, *args, **options):
+
         if (not len(args) == 1) or (args[0] == u"help"):
             self.stdout.write(u"Usage: {0}\n".format(self.args))
             self.stdout.write(self.help)
@@ -32,5 +37,16 @@ class Command(BaseCommand):
             crawler.configure()
             crawler.crawl(spider)
             crawler.start()
-            log.start()
-            reactor.run()
+            log.start_from_crawler(crawler)
+
+            # stop the reactor once the spider has finished
+            dispatcher.connect(stop_reactor, signal=signals.spider_closed)
+
+            try:
+                log.msg("Running reactor...")
+                reactor.run()
+            except KeyboardInterrupt:
+                stop_reactor()
+            finally:
+                log.msg("Reactor stopped")
+                log.msg("#" * 40)

@@ -28,8 +28,8 @@ DOWNLOADER_MIDDLEWARES = {
 # Also disable depth middleware and replace with our own which only applies to
 # HTML (not CSS or Javascripts)
 SPIDER_MIDDLEWARES = {
-    'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware':None,
-    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware':None,
+    'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': None,
+    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware': None,
     'spade.scraper.middlewares.DepthMiddleware': 542,
     'spade.scraper.middlewares.OffsiteMiddleware': 543,
 }
@@ -42,14 +42,15 @@ HTTPCACHE_DIR = os.path.join(settings.BASE_PATH, 'webcache')
 HTTPCACHE_STORAGE = 'spade.scraper.httpcache.SpadeFilesystemCacheStorage'
 DEPTH_LIMIT = 2
 
-DOWNLOAD_DELAY =2
-DOWNLOAD_TIMEOUT=15
+DOWNLOAD_DELAY = .25
+DOWNLOAD_TIMEOUT = 15
 CONCURRENT_REQUESTS = 500
 CONCURRENT_REQUESTS_PER_DOMAIN = 16
-LOG_LEVEL='INFO'
+LOG_LEVEL = 'INFO'
+LOG_FILE = 'spade.log'
 DEPTH_PRIORITY = 1
 
 #Obey robots.txt
-ROBOTSTXT_OBEY=True
+ROBOTSTXT_OBEY = True
 
 DUPEFILTER_CLASS = "spade.scraper.dupefilter.MultipleUADupeFilter"
