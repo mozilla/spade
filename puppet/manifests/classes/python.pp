@@ -53,15 +53,18 @@ class python {
                 creates => "/usr/local/bin/pip",
                 require => Package["python-distribute"]
             }
-            file { "$PROJ_DIR/puppet/cache/pip":
+            file { "${PROJ_DIR}/puppet/cache/pip":
                     ensure => directory
             }
 
             exec { "virtualenv-install":
-                command => "/usr/local/bin/pip install --download-cache=$PROJ_DIR/puppet/cache/pip -U virtualenv",
+                command => "/usr/local/bin/pip install --download-cache=${PROJ_DIR}/puppet/cache/pip -U virtualenv",
                 creates => "/usr/local/bin/virtualenv",
                 timeout => 600,
-                require => [ Exec['pip-install'] ]
+                require => [
+                    Exec['pip-install'],
+                    File["${PROJ_DIR}/puppet/cache/pip"]
+                ]
             }
 
             exec {
@@ -74,13 +77,16 @@ class python {
 
             exec { 
                 "pip-cache-ownership":
-                     command => "/bin/chown -R ${APP_USER}:${APP_USER} $PROJ_DIR/puppet/cache/pip && /bin/chmod ug+rw -R $PROJ_DIR/puppet/cache/pip",
-                     unless => '/bin/su ${APP_USER} -c "/usr/bin/test -w $PROJ_DIR/puppet/cache/pip"';
+                     command => "/bin/chown -R ${APP_USER}:${APP_USER} ${PROJ_DIR}/puppet/cache/pip && /bin/chmod ug+rw -R ${PROJ_DIR}/puppet/cache/pip",
+                     unless => '/bin/su ${APP_USER} -c "/usr/bin/test -w ${PROJ_DIR}/puppet/cache/pip"';
                 "pip-install-compiled":
-                     require => Exec['pip-cache-ownership','virtualenv-create'],
+                     require => [
+                        Exec['pip-cache-ownership','virtualenv-create'],
+                        File["${PROJ_DIR}/puppet/cache/pip"]
+                    ],
                      user => $APP_USER,
                      cwd => '/tmp', 
-                     command => "${VENV_DIR}/bin/pip install --download-cache=$PROJ_DIR/puppet/cache/pip -r $PROJ_DIR/requirements/compiled.txt",
+                     command => "${VENV_DIR}/bin/pip install --download-cache=${PROJ_DIR}/puppet/cache/pip -r ${PROJ_DIR}/requirements/compiled.txt",
                      timeout => 1200;
             }
         }
