@@ -36,7 +36,7 @@ export RABBITMQ_VHOST='${RABBITMQ_VHOST}'
     }
 
     exec {"source /etc/profile.d/spade.sh":
-        unless => "echo $SPADE_DATABASE_NAME",
+        unless => 'echo $SPADE_DATABASE_NAME',
         require => File["/etc/profile.d/spade.sh"]
     }
         
