@@ -4,7 +4,7 @@
 {% block content %}
 <div class="left-column">
     <!-- This div holds the logo -->
-    <a href="{% url dashboard %}" style="border:none;"><div class="logo"></div></a>
+    <a href="{% url "dashboard" %}" style="border:none;"><div class="logo"></div></a>
 
     <!-- Actual leftside content -->
     <div class="left-content">
@@ -54,7 +54,7 @@
                     <tr>
                         <td>{{ site.site_url }}</td>
                         <td>{{ site.sitescandata.css_issues }}</td>
-                        <td class="report-link"><a href="{% url site_css_report site.id %}">View Site Evaluation Report</a></td>
+                        <td class="report-link"><a href="{% url "site_css_report" site.id %}">View Site Evaluation Report</a></td>
                     </tr>
                     {% endfor %}
                 </table>
@@ -87,7 +87,7 @@
                     {% for site in ua_issues_sites %}
                     <tr>
                         <td>{{ site.site_url }}</td>
-                        <td class="report-link"><a href="{% url site_ua_report site.id %}">View Site Evaluation Report</a></td>
+                        <td class="report-link"><a href="{% url "site_ua_report" site.id %}">View Site Evaluation Report</a></td>
                     </tr>
                     {% endfor %}
                 </table>
