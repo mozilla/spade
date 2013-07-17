@@ -187,6 +187,8 @@ class URLScan(models.Model):
 class URLContent(models.Model):
     """
     The content for a particular user-agent from one scanned URL.
+    The same content could be reached through different redirections,
+    so redirected_from is included in the unique_together
 
     Stores raw markup and headers; linked CSS and JS are stored in the
     ``LinkedCSS`` and ``LinkedJS`` tables.
@@ -194,7 +196,8 @@ class URLContent(models.Model):
     """
     url_scan = models.ForeignKey(URLScan)
     user_agent = models.ForeignKey(BatchUserAgent)
-    redirected_from = models.TextField()
+    redirected_from = models.TextField(blank=True, null=True)
+    redirected_from_hash = models.CharField(max_length=64, blank=True, null=True)
     raw_markup = models.FileField(
         max_length=500, upload_to=html_filename)
     headers = models.FileField(
@@ -205,7 +208,7 @@ class URLContent(models.Model):
             self.url_scan, self.user_agent.ua_string)
 
     class Meta:
-        unique_together = ['url_scan', 'user_agent']
+        unique_together = ['url_scan', 'user_agent', 'redirected_from_hash']
 
 
 class LinkedCSS(models.Model):
