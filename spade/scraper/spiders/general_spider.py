@@ -43,7 +43,7 @@ class GeneralSpider(BaseSpider):
 
     def log(self, msg):
         """Function for logging events"""
-        log.msg(msg, level=log.DEBUG)
+        log.msg(msg, level=log.INFO)
 
     @property
     def start_urls(self):
