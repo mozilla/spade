@@ -10,7 +10,6 @@ from scrapy.crawler import Crawler
 from scrapy.settings import Settings
 from scrapy.utils.project import get_project_settings
 from scrapy import log, signals
-from scrapy.xlib.pydispatch import dispatcher
 from spade.scraper.spiders.general_spider import GeneralSpider
 
 
@@ -40,7 +39,7 @@ class Command(BaseCommand):
             log.start_from_crawler(crawler)
 
             # stop the reactor once the spider has finished
-            dispatcher.connect(stop_reactor, signal=signals.spider_closed)
+            crawler.signals.connect(reactor.stop, signal=signals.spider_closed)
 
             try:
                 log.msg("Running reactor...")
