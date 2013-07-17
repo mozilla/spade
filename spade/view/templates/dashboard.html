@@ -31,7 +31,7 @@
                     {% for batch in batches_data %}
                     <tr>
                         <td class="id">{{ batch.id }}</td>
-                        <td><a href="{% url batch_report batch.id %}">{{ batch.finish_time }}</a></td>
+                        <td><a href="{% url "batch_report" batch.id %}">{{ batch.finish_time }}</a></td>
                         <td>{{ batch.ua_issue_percent|floatformat:-2 }}</td>
                         <td>{{ batch.css_issue_percent|floatformat:-2 }}</td>
                         <td>{{ batch.ua_issues_fixed }}</td>
