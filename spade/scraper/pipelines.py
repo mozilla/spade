@@ -8,6 +8,7 @@ from hashlib import sha256, sha1
 from spade import model
 from spade.utils.cssparser import CSSParser
 from spade.controller.tasks import parse_css
+from django.conf import settings
 
 class ScraperPipeline(object):
     def __init__(self):
@@ -97,8 +98,13 @@ class ScraperPipeline(object):
 
             if created:
                 # Parse out rules and properties
-                
-                parse_css.delay(linkedcss)
+                use_celery = getattr(settings, 'USE_CELERY', False)
+                if use_celery:
+                    parse_css.delay(linkedcss)
+                else:
+                    spider.log("Parsing css {0}".format(linkedcss))
+                    self.css_parser.parse(linkedcss)
+                    spider.log("Ended parsing css {0}".format(linkedcss))
 
         return item
 

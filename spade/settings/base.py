@@ -170,3 +170,5 @@ LOGGING = {
         },
     }
 }
+
+USE_CELERY= True
