@@ -323,7 +323,8 @@ class BatchData(models.Model):
     def css_issues_pctg(self):
         total = 0
         issues = 0
-        for sitescan in self.batch.sitescan_set.iterator():
+        for sitescan in self.batch.sitescan_set.filter(
+                            sitescandata__pk__isnull=False).iterator():
             data = sitescan.sitescandata
             total += 1
             if data.css_issues:
@@ -336,7 +337,8 @@ class BatchData(models.Model):
     def ua_issues_pctg(self):
         total = 0
         issues = 0
-        for sitescan in self.batch.sitescan_set.iterator():
+        for sitescan in self.batch.sitescan_set.filter(
+                            sitescandata__pk__isnull=False).iterator():
             data = sitescan.sitescandata
             total += 1
             if data.ua_issues:
